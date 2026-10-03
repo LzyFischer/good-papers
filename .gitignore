@@ -1,0 +1,9 @@
+node_modules
+.next
+.env*.local
+.env
+next-env.d.ts
+*.tsbuildinfo
+
+# local Claude Code preview config
+.claude/
