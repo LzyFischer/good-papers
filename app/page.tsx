@@ -3,13 +3,59 @@ import { Icon } from "@/components/Icons";
 import { PaperCard } from "@/components/PaperCard";
 import { AREAS } from "@/lib/areas";
 import { getVerdicts } from "@/lib/papers";
-import { PERSONAS, PERSONA_IDS, type PersonaId } from "@/lib/personas";
+import { PERSONA_IDS } from "@/lib/personas";
 import { serverClient } from "@/lib/supabase";
 import { FRESH_THRESHOLD, SCORING, type Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 const PERSONA_COUNT = PERSONA_IDS.length;
+
+// Hot quotes: the sharpest recent comments, from readers and the AI panel alike.
+// hot = Jev quote score × (1 + likes + replies / 2), decaying over about a week.
+async function hotQuotes(n = 5) {
+  const since = new Date(Date.now() - 30 * 86400_000).toISOString();
+  const { data } = await serverClient()
+    .from("comment_feed")
+    .select("id, paper_id, author_kind, author_name, body, quote_score, likes, replies, created_at")
+    .gte("quote_score", 0.6)
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(300);
+  type Row = {
+    id: string; paper_id: string; author_kind: string; author_name: string | null; body: string;
+    quote_score: number; likes: number; replies: number; created_at: string;
+  };
+  const top = ((data ?? []) as Row[])
+    .map((c) => {
+      const days = (Date.now() - Date.parse(c.created_at)) / 86400_000;
+      return { c, hot: (c.quote_score * (1 + c.likes + c.replies / 2)) / (1 + days / 7) };
+    })
+    .sort((a, b) => b.hot - a.hot)
+    .slice(0, n)
+    .map(({ c }) => c);
+  const { data: papers } = await serverClient()
+    .from("papers")
+    .select("id, title")
+    .in("id", [...new Set(top.map((c) => c.paper_id))]);
+  const titles = new Map((papers ?? []).map((p) => [p.id as string, (p.title as string).split(":")[0]]));
+  return top.map((c) => ({
+    id: c.id,
+    paper_id: c.paper_id,
+    title: titles.get(c.paper_id) ?? "this paper",
+    author: c.author_name ?? "reader",
+    ai: c.author_kind === "ai",
+    likes: c.likes,
+    replies: c.replies,
+    quote: firstSentence(c.body),
+  }));
+}
+
+function firstSentence(text: string, max = 180) {
+  const m = text.match(/^.{20,}?[.!?](?=\s|$)/);
+  const s = m ? m[0] : text;
+  return s.length > max ? s.slice(0, max).replace(/\s+\S*$/, "") + "…" : s;
+}
 
 type Props = { searchParams: Promise<{ area?: string }> };
 
@@ -29,19 +75,7 @@ export default async function Home({ searchParams }: Props) {
   const papers = (data ?? []) as Score[];
   const verdicts = await getVerdicts(papers.map((p) => p.id));
 
-  const { data: hotRows } = await serverClient()
-    .from("ai_verdicts")
-    .select("persona, take, paper_id, papers(title)")
-    .not("take", "is", null)
-    .eq("fresh", false)
-    .order("created_at", { ascending: false })
-    .limit(4);
-  const hot = (hotRows ?? []) as unknown as {
-    persona: PersonaId;
-    take: string;
-    paper_id: string;
-    papers: { title: string } | null;
-  }[];
+  const hot = await hotQuotes();
 
   return (
     <main className="wrap">
@@ -74,14 +108,23 @@ export default async function Home({ searchParams }: Props) {
         <aside className="side">
           {hot.length > 0 && (
             <div className="box">
-              <h2>Hot takes</h2>
+              <h2>Hot quotes</h2>
               <ul className="hot">
                 {hot.map((h) => (
-                  <li key={`${h.paper_id}-${h.persona}`}>
-                    <q>{h.take}</q>
+                  <li key={h.id}>
+                    <q>{h.quote}</q>
                     <span>
-                      {PERSONAS[h.persona]?.name ?? h.persona} on{" "}
-                      <Link href={`/paper/${h.paper_id}`}>{h.papers?.title.split(":")[0] ?? "this paper"}</Link>
+                      {h.author}
+                      {h.ai && <span className="ai-badge">AI</span>} on{" "}
+                      <Link href={`/paper/${h.paper_id}`}>{h.title}</Link>
+                      {(h.likes > 0 || h.replies > 0) && (
+                        <>
+                          {" "}
+                          · {h.likes > 0 && `♥ ${h.likes}`}
+                          {h.likes > 0 && h.replies > 0 && " · "}
+                          {h.replies > 0 && `${h.replies} repl${h.replies === 1 ? "y" : "ies"}`}
+                        </>
+                      )}
                     </span>
                   </li>
                 ))}

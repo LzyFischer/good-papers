@@ -146,7 +146,8 @@ button { font: inherit; }
 .hot { list-style: none; margin: 0; padding: 0; display: grid; gap: .85rem; }
 .hot li { font-size: .9rem; }
 .hot q { display: block; font-weight: 600; margin-bottom: .15rem; quotes: none; }
-.hot span { color: var(--muted); font-size: .8rem; }
+.hot li > span { color: var(--muted); font-size: .8rem; }
+.hot .ai-badge { margin-left: .3rem; }
 .legend { display: grid; gap: .5rem; font-size: .86rem; margin: 0; padding: 0; list-style: none; }
 .legend li { display: flex; gap: .5rem; align-items: center; }
 
