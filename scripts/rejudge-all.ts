@@ -4,6 +4,7 @@
 // Needs TYPESAFE_API_KEY and SUPABASE_SERVICE_ROLE_KEY in .env.local
 // (ANTHROPIC_API_KEY optional, for the two takes).
 import { judgePaper, mapLimit } from "../lib/judge";
+import { getCitationCounts } from "../lib/openalex";
 import { storeJudgement } from "../lib/papers";
 import { adminClient } from "../lib/supabase";
 import type { Paper } from "../lib/types";
@@ -22,7 +23,10 @@ async function main() {
     orgs: r.orgs ?? [],
     tags: r.tags ?? [],
     publishedOn: r.published_on,
+    citedByCount: r.cited_by_count ?? null,
   }));
+  const citations = await getCitationCounts(papers.map((p) => p.id));
+  for (const p of papers) p.citedByCount = citations.get(p.id) ?? p.citedByCount;
   console.log(`Re-judging ${papers.length} papers`);
 
   let ok = 0;

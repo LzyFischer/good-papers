@@ -132,6 +132,7 @@ button { font: inherit; }
 .dot--rotten { background: var(--rotten-soft); border: 2px solid var(--rotten); }
 .tag--area { text-decoration: none; color: var(--ai); background: var(--ai-soft); border-color: transparent; }
 .tag--area:hover { text-decoration: underline; }
+.pubinfo { margin: -.8rem 0 1rem; font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .filter { margin: 0 0 1rem; font-size: .92rem; color: var(--muted); }
 .filter b { color: var(--ink); }
 .filter a { margin-left: .5rem; }

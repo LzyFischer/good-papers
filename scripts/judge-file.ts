@@ -4,6 +4,7 @@
 // (ANTHROPIC_API_KEY optional, for the one-line takes).
 import { readFileSync } from "node:fs";
 import { judgePaper } from "../lib/judge";
+import { getCitationCounts } from "../lib/openalex";
 import { manualId, storeJudgement } from "../lib/papers";
 import type { Paper } from "../lib/types";
 
@@ -24,6 +25,7 @@ type Entry = {
 async function main() {
   const file = process.argv[2] ?? "scripts/my-papers.json";
   const entries = JSON.parse(readFileSync(file, "utf8")) as Entry[];
+  const citations = await getCitationCounts(entries.map((e) => e.id ?? ""));
 
   for (const e of entries) {
     const paper: Paper = {
@@ -37,6 +39,7 @@ async function main() {
       orgs: e.orgs ?? [],
       tags: e.tags ?? [],
       publishedOn: e.publishedOn ?? null,
+      citedByCount: e.id ? citations.get(e.id) ?? null : null,
     };
     if (!paper.abstract) {
       console.warn(`Skipped "${paper.title}": add its abstract first.`);

@@ -11,6 +11,7 @@ export type Paper = {
   orgs: string[];
   tags: string[]; // e.g. "Oral", "Findings"
   publishedOn: string | null; // YYYY-MM-DD
+  citedByCount: number | null; // from OpenAlex; null for manual papers
 };
 
 // One row of the paper_scores view (see supabase/migrations/003_scoring.sql).
@@ -32,6 +33,7 @@ export type Score = {
   ai_fresh: number;
   ai_total: number;
   score: number | null; // 0..1, see SCORING below; null when nothing has judged it
+  cited_by_count: number | null;
 };
 
 export type AiVerdict = {

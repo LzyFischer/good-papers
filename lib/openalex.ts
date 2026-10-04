@@ -2,7 +2,7 @@ import type { Paper } from "./types";
 
 const BASE = "https://api.openalex.org";
 const FIELDS =
-  "id,display_name,authorships,publication_year,publication_date,primary_location,abstract_inverted_index,doi";
+  "id,display_name,authorships,publication_year,publication_date,primary_location,abstract_inverted_index,doi,cited_by_count";
 
 // "Newest papers" feed: arXiv (S4306400194) papers in the Artificial Intelligence
 // subfield (1702). Override with OPENALEX_NEWEST_FILTER if you want another slice.
@@ -43,6 +43,7 @@ function toPaper(w: any): Paper {
     orgs: [...orgs].slice(0, 8),
     tags: [],
     publishedOn: w.publication_date ?? null,
+    citedByCount: typeof w.cited_by_count === "number" ? w.cited_by_count : null,
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -74,4 +75,20 @@ export async function getNewestPapers(days = 3, limit = 25): Promise<Paper[]> {
   if (!res.ok) throw new Error(`OpenAlex newest failed (${res.status}): ${await res.text()}`);
   const data = await res.json();
   return (data.results ?? []).map(toPaper);
+}
+
+// Current citation counts for OpenAlex ids (50 per request).
+export async function getCitationCounts(ids: string[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  const works = ids.filter((id) => /^W\d+$/.test(id));
+  for (let i = 0; i < works.length; i += 50) {
+    const batch = works.slice(i, i + 50);
+    const p = params({ filter: `openalex_id:${batch.join("|")}`, per_page: "50" });
+    p.set("select", "id,cited_by_count");
+    const res = await fetch(`${BASE}/works?${p}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`OpenAlex citations failed (${res.status})`);
+    const data = await res.json();
+    for (const w of data.results ?? []) out.set(String(w.id).replace("https://openalex.org/", ""), w.cited_by_count ?? 0);
+  }
+  return out;
 }

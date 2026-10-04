@@ -1,4 +1,5 @@
-// The AI panel: 20 reviewers, each one Jev "noul" (yes/no) question about the
+// The AI panel: 20 reviewers (21 when a paper has a real citation record, see
+// citationRecord in judge.ts), each one Jev "noul" (yes/no) question about the
 // paper's title and abstract. Jev reads questions literally and has no notion
 // of role-play, so a persona's identity lives entirely in the concrete
 // condition it checks. Personas differ in what they value and in how strict
@@ -16,6 +17,7 @@ type Persona = {
   focus: string;
   tier: Tier;
   bar?: number; // yes probability needed for "fresh"; default 0.5, never below it
+  needsCitations?: boolean; // only asked when the paper is old enough for citations to mean something
   instructions: string;
   criteria: { true: string; false: string };
 };
@@ -180,6 +182,18 @@ export const PERSONAS = {
     criteria: {
       true: "Explicitly states an observation, regularity, or principle others could reuse",
       false: "The only takeaway is that the proposed method scores higher",
+    },
+  },
+  impact: {
+    name: "Citation tracker",
+    focus: "community uptake",
+    tier: "medium",
+    needsCitations: true,
+    instructions:
+      "Does `citations` show that the research community has picked this paper up, with more citations than is typical for a paper of its age?",
+    criteria: {
+      true: "Roughly 20 or more citations per year since publication, or several hundred in total",
+      false: "Few citations for the time it has been out",
     },
   },
   clarity: {

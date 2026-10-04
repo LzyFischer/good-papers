@@ -13,6 +13,18 @@ export function formatAuthors(authors: string[], max = 4) {
   return `${authors.slice(0, max).join(", ")} and ${authors.length - max} more`;
 }
 
+// "Sep 28, 2026"; OpenAlex stores year-only dates as Jan 1, so show just the year then.
+export function formatPublished(date: string | null | undefined, year: number | null) {
+  if (!date) return year ? String(year) : null;
+  if (date.endsWith("-01-01")) return date.slice(0, 4);
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 function Table({ icon, label, fresh, total, note, ai }: {
   icon: IconName; label: string; fresh: number; total: number; note?: string; ai?: boolean;
 }) {
@@ -32,7 +44,8 @@ function Table({ icon, label, fresh, total, note, ai }: {
 }
 
 type Props = {
-  paper: Pick<Paper, "id" | "title" | "authors" | "year" | "venue" | "url" | "orgs" | "tags">;
+  paper: Pick<Paper, "id" | "title" | "authors" | "year" | "venue" | "url" | "orgs" | "tags"> &
+    Partial<Pick<Paper, "publishedOn" | "citedByCount">>;
   score: Score | null;
   verdicts: AiVerdict[];
   linkTitle?: boolean; // link the title to our paper page (lists) or to the source (paper page)
@@ -45,6 +58,8 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
   const type = score?.paper_type ? PAPER_TYPES[score.paper_type]?.label : null;
   const ordered = PERSONA_IDS.map((id) => verdicts.find((x) => x.persona === id)).filter(Boolean) as AiVerdict[];
   const takes = spokespersons(ordered);
+  const published = formatPublished(paper.publishedOn ?? score?.published_on, paper.year);
+  const citations = paper.citedByCount ?? score?.cited_by_count ?? null;
 
   const title = linkTitle ? (
     <Link href={`/paper/${paper.id}`}>{paper.title}</Link>
@@ -90,6 +105,13 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
         </div>
         <h2 className="title">{title}</h2>
         <p className="authors">{formatAuthors(paper.authors)}</p>
+        {(published || citations !== null) && (
+          <p className="pubinfo">
+            {published && <>Published {published}</>}
+            {published && citations !== null && " · "}
+            {citations !== null && `${citations.toLocaleString("en-US")} citation${citations === 1 ? "" : "s"}`}
+          </p>
+        )}
 
         <div className="tables">
           <Table icon="readers" label="Readers" fresh={score?.reader_fresh ?? 0} total={score?.reader_total ?? 0} />

@@ -19,10 +19,38 @@ export type Judgement = {
 const criteriaOf = (rec: Record<string, { criteria: string }>) =>
   Object.fromEntries(Object.entries(rec).map(([k, v]) => [k, v.criteria]));
 
+// Citation record for Jev. Citations only ever add evidence: OpenAlex undercounts
+// arXiv preprints (many year-old preprints show 0), and Jev reads a low count as a
+// strike against the paper. So the record (and the citation persona) is used only
+// for papers at least 6 months old with real uptake, MIN_CITES_PER_YEAR or more.
+const MIN_CITES_PER_YEAR = 10;
+
+export function citationRecord(paper: Pick<Paper, "citedByCount" | "publishedOn" | "year">, now = Date.now()) {
+  if (paper.citedByCount === null || paper.citedByCount === undefined) return null;
+  const published = paper.publishedOn ?? (paper.year ? `${paper.year}-07-01` : null);
+  if (!published) return null;
+  const months = (now - Date.parse(published)) / (30.44 * 86400_000);
+  if (!(months >= 6)) return null;
+  const perYear = paper.citedByCount / (months / 12);
+  if (perYear < MIN_CITES_PER_YEAR) return null;
+  return {
+    total: paper.citedByCount,
+    per_year: Math.round(perYear),
+    months_since_publication: Math.round(months),
+  };
+}
+
 export async function judgePaper(paper: Paper, opts: { withTakes?: boolean } = {}): Promise<Judgement> {
   if (!paper.abstract) throw new Error(`No abstract for ${paper.id}; the AI panel needs one`);
 
-  const state = { title: paper.title, abstract: paper.abstract, venue: paper.venue ?? "unknown" };
+  const citations = citationRecord(paper);
+  const state = {
+    title: paper.title,
+    abstract: paper.abstract,
+    venue: paper.venue ?? "unknown",
+    ...(citations ? { citations } : {}),
+  };
+  const panel = PERSONA_IDS.filter((id) => citations || !(PERSONAS[id] as { needsCitations?: boolean }).needsCitations);
   const questions: Record<string, JevQuestion> = {
     area_group: {
       type: "choice",
@@ -35,14 +63,14 @@ export async function judgePaper(paper: Paper, opts: { withTakes?: boolean } = {
       criteria: criteriaOf(PAPER_TYPES),
     },
   };
-  for (const id of PERSONA_IDS) {
+  for (const id of panel) {
     const p = PERSONAS[id];
     questions[`persona_${id}`] = { type: "noul", instructions: p.instructions, criteria: { ...p.criteria } };
   }
 
   const { answers, model } = await systemOne(state, questions);
 
-  const verdicts: Verdict[] = PERSONA_IDS.map((persona) => {
+  const verdicts: Verdict[] = panel.map((persona) => {
     const a = answers[`persona_${persona}`];
     const probability = a && a.type === "noul" ? a.noul : 0.5;
     const bar: number = (PERSONAS[persona] as { bar?: number }).bar ?? 0.5;

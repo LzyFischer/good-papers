@@ -1,10 +1,11 @@
 // Daily job (see vercel.json): pull the newest AI papers from OpenAlex,
-// give each an AI panel verdict, then fill in any missing one-line takes.
+// give each an AI panel verdict, fill in any missing one-line takes, and
+// refresh stored citation counts.
 // Vercel Cron sends "Authorization: Bearer $CRON_SECRET" automatically.
 import { NextResponse } from "next/server";
 import { judgePaper, mapLimit } from "@/lib/judge";
 import { getNewestPapers } from "@/lib/openalex";
-import { fillMissingTakes, isAuthorized, storeJudgement } from "@/lib/papers";
+import { fillMissingTakes, isAuthorized, refreshCitations, storeJudgement } from "@/lib/papers";
 import { serverClient } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,7 @@ export async function GET(req: Request) {
     }
   });
   const takesFilled = await fillMissingTakes(5);
+  const citationsRefreshed = await refreshCitations().catch((e) => String(e));
 
-  return NextResponse.json({ judged: results.filter((r) => r.ok).length, results, takesFilled });
+  return NextResponse.json({ judged: results.filter((r) => r.ok).length, results, takesFilled, citationsRefreshed });
 }

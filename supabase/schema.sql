@@ -14,6 +14,7 @@ create table public.papers (
   area         text,                           -- set by Jev, see lib/areas.ts
   paper_type   text,
   published_on date,
+  cited_by_count int,                         -- from OpenAlex, refreshed by the cron
   created_at   timestamptz not null default now()
 );
 
@@ -119,7 +120,8 @@ select
   case when reader_total = 0 and ai_total = 0 then null
        else 0.1 * prior + 0.9 * (reader_fresh + 5 * prior) / (reader_total + 5)
   end as score,
-  last_activity
+  last_activity,
+  cited_by_count
 from s;
 
 grant select on public.paper_scores to anon, authenticated;

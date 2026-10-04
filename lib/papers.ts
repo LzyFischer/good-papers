@@ -1,4 +1,4 @@
-import { getPaper } from "./openalex";
+import { getCitationCounts, getPaper } from "./openalex";
 import { adminClient, serverClient } from "./supabase";
 import { writeTakes } from "./takes";
 import type { Judgement } from "./judge";
@@ -31,6 +31,7 @@ function rowToPaper(r: any): Paper {
     orgs: r.orgs ?? [],
     tags: r.tags ?? [],
     publishedOn: r.published_on,
+    citedByCount: r.cited_by_count ?? null,
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -86,6 +87,7 @@ export async function storeJudgement(
     area: j.area,
     paper_type: j.paperType,
     published_on: paper.publishedOn,
+    cited_by_count: paper.citedByCount,
   });
   if (pErr) throw pErr;
 
@@ -149,6 +151,15 @@ export async function fillMissingTakes(limit = 5): Promise<number> {
     done++;
   }
   return done;
+}
+
+// Citation counts change daily; refresh the stored ones from OpenAlex.
+export async function refreshCitations(limit = 200): Promise<number> {
+  const db = adminClient();
+  const { data } = await db.from("papers").select("id").like("id", "W%").limit(limit);
+  const counts = await getCitationCounts((data ?? []).map((r: { id: string }) => r.id));
+  for (const [id, n] of counts) await db.from("papers").update({ cited_by_count: n }).eq("id", id);
+  return counts.size;
 }
 
 export function isAuthorized(req: Request) {
