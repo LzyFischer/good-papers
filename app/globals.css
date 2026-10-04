@@ -114,9 +114,6 @@ button { font: inherit; }
 .vbtn:active { transform: scale(.97); }
 .vbtn:disabled { opacity: .6; cursor: wait; }
 .vote { align-items: center; }
-.vbtn-abstain { font: 600 .85rem var(--body); color: var(--muted); background: none; border: 1px dashed var(--line); border-radius: 999px; padding: .45rem .9rem; cursor: pointer; }
-.vbtn-abstain[aria-pressed="true"] { color: var(--ink); border-style: solid; border-color: var(--ink); }
-.vbtn-abstain:disabled { opacity: .6; cursor: wait; }
 
 /* AI panel */
 .panel { margin-top: 1rem; border-top: 1px dashed var(--line); padding-top: .8rem; }

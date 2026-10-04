@@ -80,9 +80,6 @@ export function VoteButtons({ paper }: { paper: PaperStub }) {
             Rotten<small>Not worth reading</small>
           </span>
         </button>
-        <button className="vbtn-abstain" aria-pressed={vote === null} disabled={busy} onClick={() => cast(null)}>
-          Read it, no verdict
-        </button>
       </div>
       <p className="hint">
         Only vote on papers you&apos;ve read.{!session && " Sign in with GitHub to vote."}

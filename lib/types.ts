@@ -52,4 +52,4 @@ export type AiVerdict = {
 export const SCORING = { AI_WEIGHT: 0.1, PRIOR_VOTES: 5 };
 
 // Headline score needed for the "Fresh" label.
-export const FRESH_THRESHOLD = 0.6;
+export const FRESH_THRESHOLD = 0.5;

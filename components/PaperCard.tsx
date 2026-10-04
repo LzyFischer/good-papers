@@ -92,13 +92,7 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
         <p className="authors">{formatAuthors(paper.authors)}</p>
 
         <div className="tables">
-          <Table
-            icon="readers"
-            label="Readers"
-            fresh={score?.reader_fresh ?? 0}
-            total={score?.reader_total ?? 0}
-            note={score?.reader_abstain ? `${score.reader_abstain} abstained` : undefined}
-          />
+          <Table icon="readers" label="Readers" fresh={score?.reader_fresh ?? 0} total={score?.reader_total ?? 0} />
           <Table icon="ai" label="AI panel" fresh={score?.ai_fresh ?? 0} total={score?.ai_total ?? 0} ai />
         </div>
 
