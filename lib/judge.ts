@@ -49,7 +49,9 @@ export async function judgePaper(
   if (!paper.abstract) throw new Error(`No abstract for ${paper.id}; the AI panel needs one`);
 
   const citations = citationRecord(paper);
-  const full = opts.fullText === false ? null : await getFullText(paper).catch(() => null);
+  // Full text is off unless FULL_TEXT=1: it costs ~5x the Jev tokens.
+  const wantFull = opts.fullText ?? process.env.FULL_TEXT === "1";
+  const full = wantFull ? await getFullText(paper).catch(() => null) : null;
   const state = {
     title: paper.title,
     abstract: paper.abstract,
@@ -80,7 +82,8 @@ export async function judgePaper(
   const verdicts: Verdict[] = panel.map((persona) => {
     const a = answers[`persona_${persona}`];
     const probability = a && a.type === "noul" ? a.noul : 0.5;
-    const bar: number = (PERSONAS[persona] as { bar?: number }).bar ?? 0.5;
+    const p = PERSONAS[persona] as { bar?: number; barFull?: number };
+    const bar = (full ? p.barFull : p.bar) ?? 0.5;
     return { persona, fresh: probability >= bar, probability, take: null };
   });
 

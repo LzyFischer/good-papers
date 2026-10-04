@@ -6,14 +6,14 @@
 // condition it checks. Personas differ in what they value and in how strict
 // that condition is (tier), so good papers rarely get 20/20 and weak ones
 // rarely 0/20. A yes probability of at least `bar` (default 0.5) counts as
-// "fresh". Jev's wording alone is close to all-or-nothing, so bars were set
-// from the probabilities on ~70 papers (recent arXiv ML plus a few classics),
-// judged with full text, to put lenient ≈ 80%, medium ≈ 50%, strict ≈ 10-20%
-// of papers at fresh. Reading full text shifts probabilities (Reviewer 2 gets
-// harsher, the evidence checks more lenient), so re-calibrate if that changes.
-// Most personas ask about significance rather than abstract checklists
-// (code, efficiency, baselines), which unfairly sank analysis papers.
-// Re-calibrate after editing a persona.
+// "fresh"; when the panel reads full text (FULL_TEXT=1) `barFull` is used
+// instead, because full text shifts probabilities (Reviewer 2 gets harsher,
+// the evidence checks more lenient). Jev's wording alone is close to
+// all-or-nothing, so both sets were calibrated on ~70 papers (recent arXiv ML
+// plus a few classics) to put lenient ≈ 80%, medium ≈ 50%, strict ≈ 10-20%
+// of papers at fresh. Most personas ask about significance rather than
+// abstract checklists (code, efficiency, baselines), which unfairly sank
+// analysis papers. Re-calibrate after editing a persona.
 // Edit freely: these strings are the whole persona definition.
 
 export type Tier = "lenient" | "medium" | "strict";
@@ -22,7 +22,8 @@ type Persona = {
   name: string;
   focus: string;
   tier: Tier;
-  bar?: number; // yes probability needed for "fresh"; default 0.5, never below it
+  bar?: number; // yes probability needed for "fresh" (abstract only); default 0.5, never below it
+  barFull?: number; // the same when reading full text; default 0.5
   needsCitations?: boolean; // only asked when the paper is old enough for citations to mean something
   instructions: string;
   criteria: { true: string; false: string };
@@ -34,7 +35,8 @@ export const PERSONAS = {
     name: "First-year PhD student",
     focus: "is it interesting?",
     tier: "lenient",
-    bar: 0.8,
+    bar: 0.74,
+    barFull: 0.8,
     instructions:
       "Does the paper describe an idea that a first-year machine learning PhD student would find interesting and could follow?",
     criteria: {
@@ -46,7 +48,7 @@ export const PERSONAS = {
     name: "The Generalist",
     focus: "clarity and reach",
     tier: "lenient",
-    bar: 0.6,
+    barFull: 0.6,
     instructions:
       "Would a machine learning researcher outside this subfield understand from the paper what problem is solved and why it matters?",
     criteria: {
@@ -58,7 +60,8 @@ export const PERSONAS = {
     name: "Course instructor",
     focus: "worth teaching?",
     tier: "lenient",
-    bar: 0.78,
+    bar: 0.75,
+    barFull: 0.78,
     instructions:
       "Does the paper contain a concept, finding, or technique general enough to be worth mentioning in a graduate machine learning course?",
     criteria: {
@@ -81,7 +84,8 @@ export const PERSONAS = {
     name: "Trend watcher",
     focus: "timely topic",
     tier: "lenient",
-    bar: 0.88,
+    bar: 0.85,
+    barFull: 0.88,
     instructions:
       "Does the paper address a question that the machine learning community is actively working on right now?",
     criteria: {
@@ -95,7 +99,8 @@ export const PERSONAS = {
     name: "The Methodologist",
     focus: "rigor, baselines",
     tier: "medium",
-    bar: 0.8,
+    bar: 0.67,
+    barFull: 0.8,
     instructions:
       "Does the paper describe an evaluation broad enough to support its main claim, such as several datasets, models, or settings with comparisons to existing methods?",
     criteria: {
@@ -107,7 +112,8 @@ export const PERSONAS = {
     name: "The Novelty Hunter",
     focus: "is the idea new?",
     tier: "medium",
-    bar: 0.75,
+    bar: 0.71,
+    barFull: 0.75,
     instructions:
       "Does the paper introduce a new problem setting, finding, or technique that goes beyond a straightforward variant of existing methods?",
     criteria: {
@@ -119,7 +125,8 @@ export const PERSONAS = {
     name: "The Practitioner",
     focus: "can I use it?",
     tier: "medium",
-    bar: 0.57,
+    bar: 0.53,
+    barFull: 0.57,
     instructions:
       "Could practitioners act on the result described in the paper, for example through released code or tools, a method that plugs into existing systems, or concrete guidance they can follow?",
     criteria: {
@@ -131,7 +138,8 @@ export const PERSONAS = {
     name: "Motivation critic",
     focus: "why is this needed?",
     tier: "medium",
-    bar: 0.94,
+    bar: 0.89,
+    barFull: 0.94,
     instructions:
       "Does the paper name a specific limitation of prior methods, beyond saying the topic matters, and design its approach around that limitation?",
     criteria: {
@@ -143,7 +151,8 @@ export const PERSONAS = {
     name: "Ablation fan",
     focus: "why does it work?",
     tier: "medium",
-    bar: 0.68,
+    bar: 0.6,
+    barFull: 0.68,
     instructions:
       "Does the paper go beyond headline results to explain what drives them, for example through ablations, controlled comparisons, diagnostic analysis, or a mechanism?",
     criteria: {
@@ -155,7 +164,8 @@ export const PERSONAS = {
     name: "Question weigher",
     focus: "does the question matter?",
     tier: "medium",
-    bar: 0.85,
+    bar: 0.82,
+    barFull: 0.85,
     instructions:
       "Does the paper address a question whose answer matters a lot for its field, such as a widely held assumption, a major risk, or a central capability?",
     criteria: {
@@ -167,7 +177,8 @@ export const PERSONAS = {
     name: "Agenda setter",
     focus: "changes what we do next?",
     tier: "medium",
-    bar: 0.78,
+    bar: 0.76,
+    barFull: 0.78,
     instructions:
       "Would the findings in the paper, if they hold, change what researchers in this area build, measure, or believe?",
     criteria: {
@@ -179,7 +190,8 @@ export const PERSONAS = {
     name: "Domain expert",
     focus: "standard benchmarks",
     tier: "medium",
-    bar: 0.74,
+    bar: 0.61,
+    barFull: 0.74,
     instructions:
       "Does the paper indicate evaluation on public or widely used benchmarks, datasets, or tasks of its field, whether named or described?",
     criteria: {
@@ -191,7 +203,8 @@ export const PERSONAS = {
     name: "Insight seeker",
     focus: "takeaway",
     tier: "medium",
-    bar: 0.85,
+    bar: 0.79,
+    barFull: 0.85,
     instructions:
       "Does the paper state a finding or principle that is useful beyond the specific method it proposes?",
     criteria: {
@@ -215,7 +228,8 @@ export const PERSONAS = {
     name: "Writing editor",
     focus: "precise summary",
     tier: "medium",
-    bar: 0.94,
+    bar: 0.75,
+    barFull: 0.94,
     instructions:
       "Does the paper state the problem, the method, and at least one concrete result, each in specific terms?",
     criteria: {
@@ -251,7 +265,7 @@ export const PERSONAS = {
     name: "Surprise detector",
     focus: "did I expect that?",
     tier: "strict",
-    bar: 0.55,
+    barFull: 0.55,
     instructions:
       "Does the paper report a result that most researchers in the field would not have predicted, or that contradicts a common belief?",
     criteria: {
@@ -263,7 +277,8 @@ export const PERSONAS = {
     name: "Evidence skeptic",
     focus: "is the evidence strong?",
     tier: "strict",
-    bar: 0.8,
+    bar: 0.73,
+    barFull: 0.8,
     instructions:
       "Does the paper support its main conclusion with strong evidence, such as sizable effects across several models, datasets, or settings, or a formal proof?",
     criteria: {
