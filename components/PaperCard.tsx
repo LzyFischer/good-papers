@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AREAS, PAPER_TYPES } from "@/lib/areas";
 import { orgKind, shortOrg } from "@/lib/orgs";
-import { PERSONAS, PERSONA_IDS, TIERS, spokespersons } from "@/lib/personas";
+import { PERSONAS, PERSONA_IDS, TIERS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
 import { Icon, type IconName } from "./Icons";
 import { basisOf, verdictOf } from "./Score";
@@ -57,7 +57,6 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
   const area = score?.area && AREAS[score.area] ? { key: score.area, label: AREAS[score.area].label } : null;
   const type = score?.paper_type ? PAPER_TYPES[score.paper_type]?.label : null;
   const ordered = PERSONA_IDS.map((id) => verdicts.find((x) => x.persona === id)).filter(Boolean) as AiVerdict[];
-  const takes = spokespersons(ordered);
   const published = formatPublished(paper.publishedOn ?? score?.published_on, paper.year);
   const citations = paper.citedByCount ?? score?.cited_by_count ?? null;
 
@@ -150,23 +149,6 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
                 );
               })}
             </div>
-            {takes.length > 0 && (
-              <ul className="takes">
-                {takes.map((x) => (
-                  <li key={x.persona} className="take">
-                    <Icon name={x.fresh ? "fresh" : "rotten"} />
-                    <p>
-                      <span className="who">
-                        {x.fresh ? "Strongest case for" : "Strongest case against"}{" "}
-                        <em>({PERSONAS[x.persona].name})</em>
-                      </span>
-                      <br />
-                      {x.take ?? `${Math.round(x.probability * 100)}% likely to call it worth reading.`}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
           </details>
         )}
       </div>
