@@ -93,7 +93,7 @@ button { font: inherit; }
 .title a:hover { text-decoration: underline; }
 .authors { margin: 0 0 1rem; color: var(--muted); font-size: .9rem; }
 
-.tables { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin-bottom: 1rem; }
+.tables { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-bottom: 1rem; }
 @media (max-width: 36rem) { .tables { grid-template-columns: minmax(0, 1fr); } }
 .tbl { border: 1px solid var(--line); border-radius: 10px; padding: .6rem .7rem; display: grid; grid-template-columns: auto 1fr; gap: .1rem .55rem; align-items: center; }
 .tbl .icon { width: 1.6rem; height: 1.6rem; grid-row: span 2; }
@@ -113,6 +113,10 @@ button { font: inherit; }
 .vbtn.r[aria-pressed="true"] { background: var(--rotten); color: var(--surface); }
 .vbtn:active { transform: scale(.97); }
 .vbtn:disabled { opacity: .6; cursor: wait; }
+.vote { align-items: center; }
+.vbtn-abstain { font: 600 .85rem var(--body); color: var(--muted); background: none; border: 1px dashed var(--line); border-radius: 999px; padding: .45rem .9rem; cursor: pointer; }
+.vbtn-abstain[aria-pressed="true"] { color: var(--ink); border-style: solid; border-color: var(--ink); }
+.vbtn-abstain:disabled { opacity: .6; cursor: wait; }
 
 /* AI panel */
 .panel { margin-top: 1rem; border-top: 1px dashed var(--line); padding-top: .8rem; }
@@ -121,6 +125,19 @@ button { font: inherit; }
 .take { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr); gap: .6rem; align-items: start; }
 .take p { margin: 0; font-size: .92rem; }
 .take .who { font-weight: 600; }
+.dots-wrap { display: grid; gap: .35rem; margin-top: .75rem; }
+.dots-row { display: flex; align-items: center; gap: .6rem; }
+.dots-label { width: 6.5rem; flex: none; font-size: .8rem; color: var(--muted); text-transform: capitalize; }
+.dots-label b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.dots { display: flex; flex-wrap: wrap; gap: .3rem; }
+.dot { width: .85rem; height: .85rem; border-radius: 50%; cursor: help; }
+.dot--fresh { background: var(--fresh); }
+.dot--rotten { background: var(--rotten-soft); border: 2px solid var(--rotten); }
+.tag--area { text-decoration: none; color: var(--ai); background: var(--ai-soft); border-color: transparent; }
+.tag--area:hover { text-decoration: underline; }
+.filter { margin: 0 0 1rem; font-size: .92rem; color: var(--muted); }
+.filter b { color: var(--ink); }
+.filter a { margin-left: .5rem; }
 .take .who em { font-style: normal; font-weight: 400; color: var(--muted); }
 
 /* Sidebar */

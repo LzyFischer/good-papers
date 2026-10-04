@@ -1,5 +1,5 @@
 -- Rotten Paper schema (fresh install). Run once in Supabase → SQL Editor.
--- Already ran the v1 schema? Run migrations/002_rotten_paper.sql instead.
+-- Already ran the v1 schema? Run migrations/002_rotten_paper.sql, then 003_scoring.sql.
 
 create table public.papers (
   id           text primary key,          -- OpenAlex id (W…) or manual id (rp-…)
@@ -21,7 +21,7 @@ create table public.papers (
 create table public.ratings (
   user_id       uuid not null default auth.uid() references auth.users(id) on delete cascade,
   paper_id      text not null references public.papers(id) on delete cascade,
-  worth_reading boolean not null,
+  worth_reading boolean,                    -- null: read it, no verdict
   note          text,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
@@ -87,34 +87,39 @@ drop policy if exists "reviewer scores are public" on public.reviewer_scores;
 create policy "reviewer scores are public" on public.reviewer_scores
   for select to anon, authenticated using (true);
 
--- Public scores: three tables (readers, AI panel, reviewers) plus the pooled
--- headline. The view runs with its owner's rights, so it counts everyone's
--- ratings while exposing only totals (never who rated, never notes).
+-- Public scores: readers and AI panel plus the headline score (see SCORING in lib/types.ts).
+-- The view runs with its owner's rights, so it counts everyone's ratings while
+-- exposing only totals (never who rated, never notes).
 create view public.paper_scores as
 with r as (
-  select paper_id, count(*)::int as total, count(*) filter (where worth_reading)::int as fresh,
-         max(updated_at) as last_at
+  select paper_id,
+         count(worth_reading)::int                           as total,   -- fresh + rotten
+         count(*) filter (where worth_reading)::int          as fresh,
+         count(*) filter (where worth_reading is null)::int  as abstain,
+         max(updated_at)                                     as last_at
   from public.ratings group by paper_id
 ), a as (
   select paper_id, count(*)::int as total, count(*) filter (where fresh)::int as fresh,
          max(created_at) as last_at
   from public.ai_verdicts group by paper_id
-), v as (
-  select paper_id, sum(total)::int as total, sum(fresh)::int as fresh
-  from public.reviewer_scores group by paper_id
+), s as (
+  select p.*,
+         coalesce(r.fresh, 0) as reader_fresh, coalesce(r.total, 0) as reader_total,
+         coalesce(r.abstain, 0) as reader_abstain,
+         coalesce(a.fresh, 0) as ai_fresh, coalesce(a.total, 0) as ai_total,
+         case when a.total > 0 then a.fresh::float8 / a.total else 0.5 end as prior,
+         greatest(r.last_at, a.last_at, p.created_at) as last_activity
+  from public.papers p
+  left join r on r.paper_id = p.id
+  left join a on a.paper_id = p.id
 )
 select
-  p.id, p.title, p.authors, p.year, p.venue, p.url, p.orgs, p.tags,
-  p.area, p.paper_type, p.published_on,
-  coalesce(r.fresh, 0) as reader_fresh, coalesce(r.total, 0) as reader_total,
-  coalesce(a.fresh, 0) as ai_fresh,     coalesce(a.total, 0) as ai_total,
-  coalesce(v.fresh, 0) as rev_fresh,    coalesce(v.total, 0) as rev_total,
-  coalesce(r.fresh, 0) + coalesce(a.fresh, 0) + coalesce(v.fresh, 0) as fresh,
-  coalesce(r.total, 0) + coalesce(a.total, 0) + coalesce(v.total, 0) as total,
-  greatest(r.last_at, a.last_at, p.created_at) as last_activity
-from public.papers p
-left join r on r.paper_id = p.id
-left join a on a.paper_id = p.id
-left join v on v.paper_id = p.id;
+  id, title, authors, year, venue, url, orgs, tags, area, paper_type, published_on,
+  reader_fresh, reader_total, reader_abstain, ai_fresh, ai_total,
+  case when reader_total = 0 and ai_total = 0 then null
+       else 0.1 * prior + 0.9 * (reader_fresh + 5 * prior) / (reader_total + 5)
+  end as score,
+  last_activity
+from s;
 
 grant select on public.paper_scores to anon, authenticated;

@@ -2,7 +2,7 @@ import { getPaper } from "./openalex";
 import { adminClient, serverClient } from "./supabase";
 import { writeTakes } from "./takes";
 import type { Judgement } from "./judge";
-import type { PersonaId } from "./personas";
+import { spokespersons, type PersonaId } from "./personas";
 import type { AiVerdict, Paper, Score } from "./types";
 
 export const PAPER_ID = /^(W\d+|rp-[a-z0-9-]+)$/;
@@ -89,7 +89,10 @@ export async function storeJudgement(
   });
   if (pErr) throw pErr;
 
-  const { error: vErr } = await db.from("ai_verdicts").upsert(
+  // Replace the whole panel, so a re-judge with a changed persona list leaves no stale rows.
+  const { error: dErr } = await db.from("ai_verdicts").delete().eq("paper_id", paper.id);
+  if (dErr) throw dErr;
+  const { error: vErr } = await db.from("ai_verdicts").insert(
     j.verdicts.map((v) => ({
       paper_id: paper.id,
       persona: v.persona,
@@ -113,21 +116,32 @@ export async function storeJudgement(
   }
 }
 
-// Papers judged on page view get verdicts first; their takes are written later by the cron.
+// Papers judged on page view get verdicts first; the cron writes the two takes
+// (strongest supporter, strongest critic) afterwards for papers that have none.
 export async function fillMissingTakes(limit = 5): Promise<number> {
   const db = adminClient();
-  const { data } = await db.from("ai_verdicts").select("paper_id").is("take", null).limit(200);
-  const ids = [...new Set((data ?? []).map((r: { paper_id: string }) => r.paper_id))].slice(0, limit);
+  const { data } = await db
+    .from("ai_verdicts")
+    .select("paper_id, take")
+    .order("created_at", { ascending: false })
+    .limit(2000);
+  const withTake = new Set<string>();
+  const seen: string[] = [];
+  for (const r of (data ?? []) as { paper_id: string; take: string | null }[]) {
+    if (r.take) withTake.add(r.paper_id);
+    if (!seen.includes(r.paper_id)) seen.push(r.paper_id);
+  }
+  const ids = seen.filter((id) => !withTake.has(id)).slice(0, limit);
   let done = 0;
   for (const id of ids) {
     const { data: row } = await db.from("papers").select("*").eq("id", id).maybeSingle();
     if (!row?.abstract) continue;
     const paper = rowToPaper(row);
-    const { data: vs } = await db.from("ai_verdicts").select("persona, fresh").eq("paper_id", id);
-    const verdicts = (vs ?? []) as { persona: PersonaId; fresh: boolean }[];
-    const takes = await writeTakes(paper, verdicts).catch(() => null);
+    const { data: vs } = await db.from("ai_verdicts").select("persona, fresh, probability").eq("paper_id", id);
+    const speakers = spokespersons((vs ?? []) as { persona: PersonaId; fresh: boolean; probability: number }[]);
+    const takes = await writeTakes(paper, speakers).catch(() => null);
     if (!takes) continue;
-    for (const v of verdicts) {
+    for (const v of speakers) {
       if (takes[v.persona]) {
         await db.from("ai_verdicts").update({ take: takes[v.persona] }).eq("paper_id", id).eq("persona", v.persona);
       }

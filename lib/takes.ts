@@ -19,7 +19,7 @@ export async function writeTakes(
     .map(
       (v) =>
         `- ${v.persona}: ${PERSONAS[v.persona].name}, who cares about ${PERSONAS[v.persona].focus}. Verdict: ${
-          v.fresh ? "FRESH (worth reading)" : "ROTTEN (skip it)"
+          v.fresh ? "FRESH (worth reading)" : "ROTTEN (not worth reading)"
         }`,
     )
     .join("\n");
@@ -30,7 +30,7 @@ Paper title: ${paper.title}
 Venue: ${paper.venue ?? "unknown"}
 Abstract: ${paper.abstract}
 
-For each reviewer persona below, write one sentence (at most 25 words) in that persona's voice that justifies the given verdict. Make it specific to this paper, sharp and quotable, but fair: refer only to what the abstract states, and never invent results, numbers, or flaws it does not support. No hype words, no emojis.
+For each reviewer persona below (the panel's strongest supporter and strongest critic), write one sentence (at most 25 words) in that persona's voice that justifies the given verdict. Make it specific to this paper, sharp and quotable, but fair: refer only to what the abstract states, and never invent results, numbers, or flaws it does not support. No hype words, no emojis.
 
 ${lines}
 

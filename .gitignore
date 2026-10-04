@@ -7,3 +7,4 @@ next-env.d.ts
 
 # local Claude Code preview config
 .claude/
+.DS_Store

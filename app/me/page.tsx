@@ -7,7 +7,7 @@ import { Icon } from "@/components/Icons";
 import { browserClient } from "@/lib/supabase";
 
 type Row = {
-  worth_reading: boolean;
+  worth_reading: boolean | null; // null: read it, no verdict
   note: string | null;
   updated_at: string;
   papers: { id: string; title: string; year: number | null; venue: string | null } | null;
@@ -52,10 +52,14 @@ export default function MyPapers() {
           {rows.map((r) =>
             r.papers ? (
               <li key={r.papers.id} className="paper-row">
-                <span className={`chip ${r.worth_reading ? "chip--fresh" : "chip--stale"}`}>
-                  <Icon name={r.worth_reading ? "fresh" : "rotten"} />
-                  {r.worth_reading ? "Fresh" : "Rotten"}
-                </span>
+                {r.worth_reading === null ? (
+                  <span className="chip chip--pending">Read</span>
+                ) : (
+                  <span className={`chip ${r.worth_reading ? "chip--fresh" : "chip--stale"}`}>
+                    <Icon name={r.worth_reading ? "fresh" : "rotten"} />
+                    {r.worth_reading ? "Fresh" : "Rotten"}
+                  </span>
+                )}
                 <div>
                   <Link href={`/paper/${r.papers.id}`} className="paper-title">
                     {r.papers.title}

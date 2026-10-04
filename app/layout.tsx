@@ -7,7 +7,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Rotten Paper: fresh or rotten?", template: "%s | Rotten Paper" },
-  description: "Is this paper worth reading? Verdicts from readers, an AI panel, and conference reviewers.",
+  description: "Is this paper worth reading? Verdicts from readers, warm-started by an AI panel.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

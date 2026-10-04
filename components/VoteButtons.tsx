@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { browserClient } from "@/lib/supabase";
 import { signIn, useSession } from "./AuthButton";
 import { Icon } from "./Icons";
-import { getMyVotes, setMyVote } from "./myVotes";
+import { getMyVotes, setMyVote, type Vote } from "./myVotes";
 
 export type PaperStub = {
   id: string;
@@ -19,30 +19,31 @@ export type PaperStub = {
 export function VoteButtons({ paper }: { paper: PaperStub }) {
   const router = useRouter();
   const { session } = useSession();
-  const [vote, setVote] = useState<boolean | null>(null);
+  // undefined: no vote; true/false: fresh/rotten; null: read it, abstained.
+  const [vote, setVote] = useState<Vote | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) {
-      setVote(null);
+      setVote(undefined);
       return;
     }
-    getMyVotes(session.user.id).then((m) => setVote(m.has(paper.id) ? m.get(paper.id)! : null));
+    getMyVotes(session.user.id).then((m) => setVote(m.has(paper.id) ? m.get(paper.id) : undefined));
   }, [session, paper.id]);
 
-  async function cast(choice: boolean) {
+  async function cast(choice: Vote) {
     if (!session) {
       signIn();
       return;
     }
-    const next = vote === choice ? null : choice;
+    const next = vote === choice ? undefined : choice;
     const supabase = browserClient();
     setBusy(true);
     setError(null);
 
     let err = null;
-    if (next === null) {
+    if (next === undefined) {
       ({ error: err } = await supabase.from("ratings").delete().eq("user_id", session.user.id).eq("paper_id", paper.id));
     } else {
       ({ error: err } = await supabase
@@ -76,11 +77,16 @@ export function VoteButtons({ paper }: { paper: PaperStub }) {
         <button className="vbtn r" aria-pressed={vote === false} disabled={busy} onClick={() => cast(false)}>
           <Icon name="rotten" />
           <span>
-            Rotten<small>Skip it</small>
+            Rotten<small>Not worth reading</small>
           </span>
         </button>
+        <button className="vbtn-abstain" aria-pressed={vote === null} disabled={busy} onClick={() => cast(null)}>
+          Read it, no verdict
+        </button>
       </div>
-      {!session && <p className="hint">Sign in with GitHub to vote.</p>}
+      <p className="hint">
+        Only vote on papers you&apos;ve read.{!session && " Sign in with GitHub to vote."}
+      </p>
       {error && (
         <p className="hint" role="status">
           {error}

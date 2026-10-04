@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { AREAS, PAPER_TYPES } from "@/lib/areas";
 import { orgKind, shortOrg } from "@/lib/orgs";
-import { PERSONAS, PERSONA_IDS } from "@/lib/personas";
+import { PERSONAS, PERSONA_IDS, TIERS, spokespersons } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
 import { Icon, type IconName } from "./Icons";
-import { verdictOf } from "./Score";
+import { basisOf, verdictOf } from "./Score";
 import { VoteButtons } from "./VoteButtons";
 
 export function formatAuthors(authors: string[], max = 4) {
@@ -23,7 +23,10 @@ function Table({ icon, label, fresh, total, note, ai }: {
       <span className="n">
         {pct} <span className="l">{label}</span>
       </span>
-      <span className="l">{total ? `${fresh}/${total} fresh${note ? `, ${note}` : ""}` : "No votes yet"}</span>
+      <span className="l">
+        {total ? `${fresh}/${total} fresh` : "No votes yet"}
+        {note ? `, ${note}` : ""}
+      </span>
     </div>
   );
 }
@@ -38,9 +41,10 @@ type Props = {
 
 export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel = false }: Props) {
   const v = verdictOf(score);
-  const area = score?.area ? AREAS[score.area]?.label : null;
+  const area = score?.area && AREAS[score.area] ? { key: score.area, label: AREAS[score.area].label } : null;
   const type = score?.paper_type ? PAPER_TYPES[score.paper_type]?.label : null;
   const ordered = PERSONA_IDS.map((id) => verdicts.find((x) => x.persona === id)).filter(Boolean) as AiVerdict[];
+  const takes = spokespersons(ordered);
 
   const title = linkTitle ? (
     <Link href={`/paper/${paper.id}`}>{paper.title}</Link>
@@ -58,11 +62,7 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
         <Icon name={v ? (v.fresh ? "fresh" : "rotten") : "pending"} />
         <b>{v ? `${v.pct}%` : "?"}</b>
         <span className="word">{v ? (v.fresh ? "Fresh" : "Rotten") : "Not judged"}</span>
-        {score && score.total > 0 && (
-          <small>
-            {score.total} verdicts{score.ai_total ? ", AI panel included" : ""}
-          </small>
-        )}
+        {v && score && <small>{basisOf(score)}</small>}
       </div>
 
       <div className="card-body">
@@ -81,16 +81,25 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
               </span>
             );
           })}
-          {area && <span className="tag">{area}</span>}
+          {area && (
+            <Link href={`/?area=${area.key}`} className="tag tag--area">
+              {area.label}
+            </Link>
+          )}
           {type && <span className="tag">{type}</span>}
         </div>
         <h2 className="title">{title}</h2>
         <p className="authors">{formatAuthors(paper.authors)}</p>
 
         <div className="tables">
-          <Table icon="readers" label="Readers" fresh={score?.reader_fresh ?? 0} total={score?.reader_total ?? 0} />
+          <Table
+            icon="readers"
+            label="Readers"
+            fresh={score?.reader_fresh ?? 0}
+            total={score?.reader_total ?? 0}
+            note={score?.reader_abstain ? `${score.reader_abstain} abstained` : undefined}
+          />
           <Table icon="ai" label="AI panel" fresh={score?.ai_fresh ?? 0} total={score?.ai_total ?? 0} ai />
-          <Table icon="reviewer" label="Reviewers" fresh={score?.rev_fresh ?? 0} total={score?.rev_total ?? 0} />
         </div>
 
         <VoteButtons
@@ -99,21 +108,49 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
 
         {ordered.length > 0 && (
           <details className="panel" open={openPanel}>
-            <summary>AI panel verdicts ({ordered.length})</summary>
-            <ul className="takes">
-              {ordered.map((x) => (
-                <li key={x.persona} className="take">
-                  <Icon name={x.fresh ? "fresh" : "rotten"} />
-                  <p>
-                    <span className="who">
-                      {PERSONAS[x.persona]?.name ?? x.persona} <em>({PERSONAS[x.persona]?.focus})</em>
+            <summary>
+              AI panel: {ordered.filter((x) => x.fresh).length} of {ordered.length} reviewers say fresh
+            </summary>
+            <div className="dots-wrap">
+              {TIERS.map((tier) => {
+                const group = ordered.filter((x) => PERSONAS[x.persona]?.tier === tier);
+                if (group.length === 0) return null;
+                return (
+                  <div key={tier} className="dots-row">
+                    <span className="dots-label">
+                      {tier} <b>{group.filter((x) => x.fresh).length}/{group.length}</b>
                     </span>
-                    <br />
-                    {x.take ?? `${Math.round(x.probability * 100)}% likely to call it worth reading.`}
-                  </p>
-                </li>
-              ))}
-            </ul>
+                    <span className="dots" role="list">
+                      {group.map((x) => (
+                        <span
+                          key={x.persona}
+                          role="listitem"
+                          className={`dot ${x.fresh ? "dot--fresh" : "dot--rotten"}`}
+                          title={`${PERSONAS[x.persona].name} (${PERSONAS[x.persona].focus}): ${Math.round(x.probability * 100)}% worth reading`}
+                        />
+                      ))}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            {takes.length > 0 && (
+              <ul className="takes">
+                {takes.map((x) => (
+                  <li key={x.persona} className="take">
+                    <Icon name={x.fresh ? "fresh" : "rotten"} />
+                    <p>
+                      <span className="who">
+                        {x.fresh ? "Strongest case for" : "Strongest case against"}{" "}
+                        <em>({PERSONAS[x.persona].name})</em>
+                      </span>
+                      <br />
+                      {x.take ?? `${Math.round(x.probability * 100)}% likely to call it worth reading.`}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </details>
         )}
       </div>

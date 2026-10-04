@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "judge": "tsx --env-file=.env.local scripts/judge-file.ts"
+    "judge": "tsx --env-file=.env.local scripts/judge-file.ts",
+    "rejudge": "tsx --env-file=.env.local scripts/rejudge-all.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
