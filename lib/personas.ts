@@ -5,9 +5,12 @@
 // condition it checks. Personas differ in what they value and in how strict
 // that condition is (tier), so good papers rarely get 20/20 and weak ones
 // rarely 0/20. A yes probability of at least `bar` (default 0.5) counts as
-// "fresh". Jev's wording alone is close to all-or-nothing, so personas that
-// said yes to nearly everything got a higher bar, calibrated on ~64 recent
-// arXiv ML papers to put lenient ≈ 55-90%, medium ≈ 30-55%, strict ≈ 5-25%.
+// "fresh". Jev's wording alone is close to all-or-nothing, so bars were set
+// from the probabilities on ~70 papers (recent arXiv ML plus a few classics) to
+// put lenient ≈ 55-80%, medium ≈ 50%, strict ≈ 10-20% of papers at fresh.
+// Most personas ask about significance rather than abstract checklists
+// (code, efficiency, baselines), which unfairly sank analysis papers.
+// Re-calibrate after editing a persona.
 // Edit freely: these strings are the whole persona definition.
 
 export type Tier = "lenient" | "medium" | "strict";
@@ -28,6 +31,7 @@ export const PERSONAS = {
     name: "First-year PhD student",
     focus: "is it interesting?",
     tier: "lenient",
+    bar: 0.75,
     instructions:
       "Does `abstract` describe an idea that a first-year machine learning PhD student would find interesting and could follow?",
     criteria: {
@@ -50,6 +54,7 @@ export const PERSONAS = {
     name: "Course instructor",
     focus: "worth teaching?",
     tier: "lenient",
+    bar: 0.77,
     instructions:
       "Does `abstract` contain a concept, finding, or technique general enough to be worth mentioning in a graduate machine learning course?",
     criteria: {
@@ -72,7 +77,7 @@ export const PERSONAS = {
     name: "Trend watcher",
     focus: "timely topic",
     tier: "lenient",
-    bar: 0.9,
+    bar: 0.86,
     instructions:
       "Does `abstract` address a question that the machine learning community is actively working on right now?",
     criteria: {
@@ -86,6 +91,7 @@ export const PERSONAS = {
     name: "The Methodologist",
     focus: "rigor, baselines",
     tier: "medium",
+    bar: 0.57,
     instructions:
       "Does `abstract` describe an evaluation broad enough to support its main claim, such as several datasets, models, or settings with comparisons to existing methods?",
     criteria: {
@@ -97,7 +103,7 @@ export const PERSONAS = {
     name: "The Novelty Hunter",
     focus: "is the idea new?",
     tier: "medium",
-    bar: 0.76,
+    bar: 0.74,
     instructions:
       "Does `abstract` introduce a new problem setting, finding, or technique that goes beyond a straightforward variant of existing methods?",
     criteria: {
@@ -107,20 +113,21 @@ export const PERSONAS = {
   },
   prac: {
     name: "The Practitioner",
-    focus: "deployability",
+    focus: "can I use it?",
     tier: "medium",
+    bar: 0.56,
     instructions:
-      "Could an engineer adopt the result described in `abstract`, for example because code is released, compute cost is modest, or the method plugs into existing systems?",
+      "Could practitioners act on the result described in `abstract`, for example through released code or tools, a method that plugs into existing systems, or concrete guidance they can follow?",
     criteria: {
-      true: "Mentions released code, efficiency, low cost, or a drop-in component",
-      false: "Requires large training runs, special infrastructure, or gives no sign of usable artifacts",
+      true: "Offers code, a drop-in method, a tool, or actionable guidance for people building or deploying systems",
+      false: "Nothing a practitioner could use or act on, or it needs infrastructure few have",
     },
   },
   motivation: {
     name: "Motivation critic",
     focus: "why is this needed?",
     tier: "medium",
-    bar: 0.94,
+    bar: 0.93,
     instructions:
       "Does `abstract` name a specific limitation of prior methods, beyond saying the topic matters, and design its approach around that limitation?",
     criteria: {
@@ -132,33 +139,36 @@ export const PERSONAS = {
     name: "Ablation fan",
     focus: "why does it work?",
     tier: "medium",
+    bar: 0.61,
     instructions:
-      "Does `abstract` report analysis of why the approach works, such as ablations, diagnostic experiments, or an explanation of the mechanism?",
+      "Does `abstract` go beyond headline results to explain what drives them, for example through ablations, controlled comparisons, diagnostic analysis, or a mechanism?",
     criteria: {
-      true: "Mentions ablations, analysis, or a mechanism behind the results",
-      false: "Reports only headline scores with no analysis of what drives them",
+      true: "Describes analysis that isolates causes or explains a mechanism behind the results",
+      false: "Reports only outcomes, with no analysis of what drives them",
     },
   },
-  efficiency: {
-    name: "Compute-conscious reviewer",
-    focus: "cost vs gain",
+  stakes: {
+    name: "Question weigher",
+    focus: "does the question matter?",
     tier: "medium",
+    bar: 0.82,
     instructions:
-      "Does `abstract` suggest the gains come without a large increase in compute, data, or model size, or that the method reduces cost?",
+      "Does `abstract` address a question whose answer matters a lot for its field, such as a widely held assumption, a major risk, or a central capability?",
     criteria: {
-      true: "Claims efficiency, lower cost, or gains at comparable compute",
-      false: "Gains appear to come from more compute, data, or parameters, or cost is ignored",
+      true: "The question is central to the field or to how AI affects people, not a side detail",
+      false: "A narrow or incremental question that few researchers depend on",
     },
   },
-  repro: {
-    name: "Reproducibility checker",
-    focus: "can I rerun it?",
+  shift: {
+    name: "Agenda setter",
+    focus: "changes what we do next?",
     tier: "medium",
+    bar: 0.79,
     instructions:
-      "Does `abstract` give enough concrete detail to reproduce the work, such as released code or data, or named public datasets and models?",
+      "Would the findings in `abstract`, if they hold, change what researchers in this area build, measure, or believe?",
     criteria: {
-      true: "Code or data is released, or public datasets and models are named",
-      false: "Private data, unnamed models, or no concrete experimental details",
+      true: "Suggests a new direction, a new way to evaluate, or overturns a common practice",
+      false: "Adds a data point but leaves the field's practice unchanged",
     },
   },
   benchmarks: {
@@ -176,7 +186,7 @@ export const PERSONAS = {
     name: "Insight seeker",
     focus: "takeaway",
     tier: "medium",
-    bar: 0.8,
+    bar: 0.81,
     instructions:
       "Does `abstract` state a finding or principle that is useful beyond the specific method it proposes?",
     criteria: {
@@ -200,7 +210,7 @@ export const PERSONAS = {
     name: "Writing editor",
     focus: "precise summary",
     tier: "medium",
-    bar: 0.85,
+    bar: 0.83,
     instructions:
       "Does `abstract` state the problem, the method, and at least one concrete result, each in specific terms?",
     criteria: {
@@ -214,7 +224,7 @@ export const PERSONAS = {
     name: "Reviewer 2",
     focus: "finds the weakest claim",
     tier: "strict",
-    bar: 0.55,
+    bar: 0.62,
     instructions:
       "Are all claims in `abstract` precise and proportionate to the evidence it describes, with no overclaiming?",
     criteria: {
@@ -233,37 +243,38 @@ export const PERSONAS = {
       false: "A solid but incremental contribution, or evidence too narrow for a highlight",
     },
   },
-  theorist: {
-    name: "The Theorist",
-    focus: "principled grounding",
+  surprise: {
+    name: "Surprise detector",
+    focus: "did I expect that?",
     tier: "strict",
     instructions:
-      "Does `abstract` provide a formal guarantee, proof, or principled derivation for its method or finding?",
+      "Does `abstract` report a result that most researchers in the field would not have predicted, or that contradicts a common belief?",
     criteria: {
-      true: "Mentions theorems, bounds, guarantees, or a derivation from first principles",
-      false: "Purely empirical or heuristic, with no formal grounding",
+      true: "A counterintuitive finding or a result that overturns a common assumption",
+      false: "Results are what one would expect, e.g. a new method improving a benchmark",
     },
   },
   skeptic: {
-    name: "Benchmark skeptic",
-    focus: "are gains real?",
+    name: "Evidence skeptic",
+    focus: "is the evidence strong?",
     tier: "strict",
+    bar: 0.7,
     instructions:
-      "Does `abstract` report large and consistent gains over strong recent baselines, quantified with specific numbers?",
+      "Does `abstract` support its main conclusion with strong evidence, such as sizable effects across several models, datasets, or settings, or a formal proof?",
     criteria: {
-      true: "Specific, sizable improvements over named strong baselines across settings",
-      false: "Gains are unquantified, marginal, against weak baselines, or on a single setting",
+      true: "Large, consistent effects across settings, or a proof, rather than a single favorable result",
+      false: "Effects are marginal, unquantified, or shown in one setting only",
     },
   },
-  scale: {
-    name: "Scale tester",
-    focus: "holds at scale?",
+  landmark: {
+    name: "Future citer",
+    focus: "will this be a standard reference?",
     tier: "strict",
     instructions:
-      "Does `abstract` validate the work at realistic scale, such as large modern models, large real-world datasets, or production settings?",
+      "Is the work in `abstract` likely to become a standard reference that later papers routinely cite, such as a widely adopted method, benchmark, dataset, or finding?",
     criteria: {
-      true: "Results on large modern models, large real data, or deployed systems",
-      false: "Only small models, toy or synthetic data, or small benchmarks",
+      true: "Likely to be reused or cited as the reference for its idea, benchmark, or finding",
+      false: "Likely to be one of many similar papers on the topic",
     },
   },
 } satisfies Record<string, Persona>;
