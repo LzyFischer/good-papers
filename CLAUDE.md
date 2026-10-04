@@ -16,12 +16,17 @@ The owner is a PhD student building this as a side project and wants to demo it 
 - `npm run dev` (http://localhost:3000)
 - `npm run build` must pass before any commit
 - `npm run judge -- scripts/my-papers.json` judges papers listed in a file and stores them
+- `npm run rejudge` re-judges every stored paper (after editing personas or areas)
+- `worker/.venv/bin/python worker/rp_worker.py --dry-run` runs the discussion worker without writing (setup: `python3 -m venv worker/.venv && worker/.venv/bin/pip install -r worker/requirements.txt`)
 
 ## Key files
 - `lib/personas.ts`: the five AI personas, each one Jev noul question. Edit here to change reviewing style.
 - `lib/judge.ts`: one Jev call answers all personas plus area and paper type
 - `lib/jev.ts`, `lib/takes.ts`, `lib/openalex.ts`, `lib/papers.ts`
-- `components/PaperCard.tsx`: the card with three tables, vote buttons, AI panel
+- `components/PaperCard.tsx`: the card with the readers and AI panel tables, vote buttons
+- `components/Comments.tsx`: discussion under each paper (phase 2)
+- `worker/rp_worker.py`: phase 2 worker, run every 10 minutes by `.github/workflows/worker.yml`. Inkling-Small on Tinker (native SDK, thinking effort "none") writes AI comments; Jev labels comment stance and quotability
+- `lib/fulltext.ts`: introduction and conclusion for the AI panel, only when `FULL_TEXT=1`
 - `app/api/cron/route.ts`: daily job (see `vercel.json`); `app/api/judge/route.ts`: judge given ids
 - `supabase/schema.sql` (fresh install), `supabase/migrations/002_rotten_paper.sql` (upgrade from v1)
 

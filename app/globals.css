@@ -173,3 +173,27 @@ button { font: inherit; }
 
 .foot { color: var(--muted); font-size: .82rem; padding-top: 1.5rem; padding-bottom: 2.5rem; border-top: 1px solid var(--line); }
 @media (prefers-reduced-motion: reduce) { .vbtn { transition: none; } }
+
+/* Discussion */
+.discussion { margin-top: 2rem; }
+.discussion h2 { font: 700 1.2rem var(--display); margin: 0 0 .75rem; display: flex; align-items: center; gap: .5rem; }
+.discussion .count { font: 600 .8rem var(--body); color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: .1rem .5rem; }
+.composer { display: grid; gap: .5rem; justify-items: start; margin-bottom: 1rem; }
+.composer textarea { width: 100%; font: inherit; color: var(--ink); padding: .6rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; resize: vertical; }
+.composer .button-primary:disabled { opacity: .5; cursor: default; }
+.comments, .replies { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
+.replies { margin: .6rem 0 0 1rem; padding-left: .9rem; border-left: 2px solid var(--line); }
+.comment { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: .75rem .9rem; }
+.replies .comment { background: none; border: 0; padding: 0; }
+.comment--ai .comment-head b { color: var(--ai); }
+.comment-head { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; font-size: .85rem; }
+.ai-badge { font: 700 .66rem/1 var(--body); letter-spacing: .04em; color: var(--ai); background: var(--ai-soft); border-radius: 4px; padding: .2rem .35rem; }
+.stance { font: 600 .7rem/1 var(--body); border-radius: 4px; padding: .2rem .4rem; text-transform: capitalize; }
+.stance--fresh { color: var(--fresh); background: var(--fresh-soft); }
+.stance--rotten { color: var(--rotten); background: var(--rotten-soft); }
+.comment-time { color: var(--muted); font-size: .78rem; margin-left: auto; }
+.comment-body { margin: .35rem 0 .3rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.comment-actions { display: flex; gap: .9rem; }
+.link-button { font: 600 .8rem var(--body); color: var(--muted); background: none; border: 0; padding: 0; cursor: pointer; }
+.link-button:hover { color: var(--ink); }
+.link-button[aria-pressed="true"] { color: var(--rotten); }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Comments } from "@/components/Comments";
 import { NoteBox } from "@/components/NoteBox";
 import { PaperCard } from "@/components/PaperCard";
 import { jevConfigured } from "@/lib/jev";
@@ -52,6 +53,9 @@ export default async function PaperPage({ params }: Props) {
           <p>{paper.abstract}</p>
         </section>
       )}
+      <Comments
+        paper={{ id: paper.id, title: paper.title, authors: paper.authors, year: paper.year, venue: paper.venue, url: paper.url }}
+      />
     </main>
   );
 }

@@ -1,0 +1,33 @@
+# Discussion worker (worker/rp_worker.py): Jev labels new comments, the AI panel
+# answers readers and opens discussions on newly judged papers.
+# Needs repository secrets: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+# TINKER_API_KEY, TYPESAFE_API_KEY.
+name: worker
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # GitHub may delay scheduled runs by several minutes
+  workflow_dispatch:
+
+concurrency:
+  group: worker
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: worker/requirements.txt
+      - run: pip install -r worker/requirements.txt
+      - run: python worker/rp_worker.py
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TINKER_API_KEY: ${{ secrets.TINKER_API_KEY }}
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
