@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import os
+from concurrent.futures import ThreadPoolExecutor
 import random
 import re
 import sys
@@ -28,9 +29,12 @@ from pathlib import Path
 
 import httpx
 
+from voices import LENGTH_WORDS, VOICES
+
 ROOT = Path(__file__).resolve().parent.parent
 MODEL = os.environ.get("WORKER_MODEL", "thinkingmachines/Inkling-Small")
-MAX_WORDS = 70  # hard cap after generation; the prompt asks for 60
+MAX_WORDS = 70  # hard cap after generation; prompts ask for 25 or 50 depending on the voice
+SEED_WORKERS = 8  # papers seeded in parallel
 
 
 def load_env() -> None:
@@ -66,6 +70,12 @@ def load_personas() -> dict[str, dict]:
         }
     if len(out) < 10:
         sys.exit("Could not parse lib/personas.ts; did its format change?")
+    missing = [pid for pid in out if pid not in VOICES]
+    if missing:
+        sys.exit(f"worker/voices.py has no voice for: {', '.join(missing)}")
+    for pid, p in out.items():
+        v = VOICES[pid]
+        p.update(handle=v["handle"], voice=v["voice"], words=LENGTH_WORDS[v["length"]])
     return out
 
 
@@ -180,6 +190,9 @@ def clean(text: str) -> str:
         close = re.search(r'["”]', text[1:])
         text = (text[1 : close.start() + 1] + text[close.end() + 1 :]) if close else text[1:]
     text = text.strip().strip('"“”').strip()
+    # Dashes are the loudest AI tell; people type commas.
+    text = re.sub(r"\s*[—–]\s*|\s+-\s+", ", ", text)
+    text = re.sub(r",\s*,", ",", text).replace("**", "")
     text = re.sub(r"^(As an AI[^.]*\.|Sure[,!.]?|Certainly[,!.]?)\s*", "", text, flags=re.I)
     words = text.split(" ")
     if len(words) > MAX_WORDS:
@@ -190,13 +203,21 @@ def clean(text: str) -> str:
 
 
 STYLE = (
-    "You are {name}, an AI reviewer persona in the comment section of Rotten Paper, where researchers discuss "
-    "whether papers are worth reading. What you care about most: {focus}. Write like a sharp researcher posting "
-    "on a forum: first person, plain English, one point made well. Lead with your sharpest line: a first "
-    "sentence of at most 20 words that would stand on its own as a quote. Never open with 'I read this', "
-    "'This paper is worth', 'I care about', or a restatement of the title. Be specific to this paper and use only what "
-    "the provided text states; never invent numbers, results, or flaws. Do not flatter, do not hedge everything, "
-    "and do not use the words fresh or rotten. No emojis, hashtags, preamble, or sign-off. At most 60 words."
+    "You are posting in the comment section of Rotten Paper, a forum where ML researchers argue about whether "
+    "papers are worth reading. Your handle is {handle}. Who you are: {voice}. What you look at first: {focus}. "
+    "Your personality should come through in how you write, never by describing yourself. Never mention a role, "
+    "being a reviewer or persona, or being an AI.\n"
+    "Write like a real person typing a forum comment, not like an assistant:\n"
+    "- At most {words} words. Short is good. Fragments are fine.\n"
+    "- Your first sentence is your sharpest line and must make sense quoted on its own.\n"
+    "- Contractions and plain verbs (is, has, does). Have an opinion and own it.\n"
+    "- No em dashes or en dashes. No 'not X, but Y' contrasts. No lists of three. No closing summary line.\n"
+    "- Avoid crucial, pivotal, robust, showcase, delve, underscore, landscape, notably, compelling, groundbreaking.\n"
+    "- No hedging stacks, no pleasantries, no emojis or hashtags.\n"
+    "- Do not open with 'I read this', 'This paper', or the title.\n"
+    "- Harsh about the work is fine if that's you; never insult people.\n"
+    "- Use only what the provided text says. Never invent numbers, results, or flaws.\n"
+    "- Don't use the words fresh or rotten."
 )
 
 
@@ -215,9 +236,8 @@ def paper_text(paper: dict) -> str:
 
 # --- AI debate --------------------------------------------------------------
 
-MAX_DEBATE_REPLIES = 4  # replies under the opener, alternating critic and supporter
-CONTINUE_P = 0.6  # after each reply the debate goes on with this chance...
-# ...and only while Jev finds the latest reply adds a point not made before.
+MAX_DEBATE_REPLIES = 4  # replies under the opener, alternating critic and supporter;
+# after the first rebuttal the debate goes on only while Jev finds the latest reply adds a new point.
 NEW_POINT = {
     "type": "noul",
     "instructions": "Does `comment` make a point about the paper that is not already made in `discussion`?",
@@ -235,26 +255,24 @@ def debate_turn(writer: Writer, p: dict, paper: dict, thread: list[tuple[str, st
         task = (f"You think this paper is {position}. Open the discussion with your take: the one thing that "
                 "decides it for you, in your own voice.")
     else:
-        convo = "\n".join(f"{personas[pid]['name']}: {text}" for pid, text in thread)
+        convo = "\n".join(f"{personas[pid]['handle']}: {text}" for pid, text in thread)
         task = (f"Discussion so far:\n{convo}\n\nYou think this paper is {position}. Reply directly to the last "
                 "comment. Hold your position and do not concede the main point: answer their strongest argument "
                 "and bring one point nobody has made yet. Do not open with stock phrases like 'You miss the point' "
-                "or 'You say'; start with your own claim.")
+                "or 'You say', and don't echo their wording; start with your own claim.")
     return writer.write(system_for(p), f"{paper_text(paper)}\n\n{task}")
 
 
 def debate(writer: Writer, personas: dict, paper: dict, pro: str, con: str) -> list[tuple[str, str]]:
-    """Supporter opens, critic and supporter take turns until a random stop, Jev
-    finds nothing new, or MAX_DEBATE_REPLIES. Each turn is checked with Jev for
+    """Supporter opens, critic and supporter take turns until Jev finds nothing
+    new in the latest reply, or MAX_DEBATE_REPLIES. Each turn is checked with Jev for
     its stance and rewritten once if the persona drifted to the other side."""
     thread: list[tuple[str, str]] = []
     for turn in range(MAX_DEBATE_REPLIES + 1):
-        if turn >= 2 and random.random() > CONTINUE_P:
-            break
         pid, side = (pro, "fresh") if turn % 2 == 0 else (con, "rotten")
         for attempt in range(2):
             text = debate_turn(writer, personas[pid], paper, thread, personas, side, opener=turn == 0)
-            convo = "\n".join(f"{personas[q]['name']}: {t}" for q, t in thread)
+            convo = "\n".join(f"{personas[q]['handle']}: {t}" for q, t in thread)
             a = jev({"paper_title": paper["title"], "discussion": convo or "(none)", "comment": text},
                     {"stance": COMMENT_QUESTIONS["stance"], "new_point": NEW_POINT})
             if a.get("stance", {}).get("choice") == side or attempt == 1:
@@ -327,11 +345,11 @@ def reply_to_readers(db: DB, writer: Writer, personas: dict, limit: int, dry: bo
             "they did not mention. You may end with a short question that keeps the discussion going."
         )
         text = writer.write(system_for(p), prompt)
-        print(f"reply  {c['id'][:8]}  as {p['name']}: {text[:90]!r}")
+        print(f"reply  {c['id'][:8]}  as {p['handle']}: {text[:90]!r}")
         if not dry and text:
             db.insert("comments", [{
                 "paper_id": paper["id"], "parent_id": root, "author_kind": "ai", "user_id": None,
-                "author_name": p["name"], "persona": voice, "body": text,
+                "author_name": p["handle"], "persona": voice, "body": text,
             }])
             db.update("comments", {"id": c["id"]}, {"needs_reply": False})
     return len(pending)
@@ -352,10 +370,11 @@ def seed_discussions(db: DB, writer: Writer, personas: dict, limit: int, dry: bo
             raise
         discussed = set()  # dry run before migration 005: no comments table yet
     todo = [p for p in papers if p["id"] not in discussed][:limit]
-    for s in todo:
+
+    def one(s: dict) -> None:
         paper = db.get("papers", select="id,title,venue,abstract", id=f"eq.{s['id']}")[0]
         if not paper.get("abstract"):
-            continue
+            return
         verdicts = [v for v in db.get("ai_verdicts", select="persona,fresh,probability", paper_id=f"eq.{paper['id']}")
                     if v["persona"] in personas]
         fresh = sorted([v for v in verdicts if v["fresh"]], key=lambda v: -v["probability"])
@@ -374,26 +393,35 @@ def seed_discussions(db: DB, writer: Writer, personas: dict, limit: int, dry: bo
             "including what you would want to check before deciding if it is worth reading.",
         )
         thread = debate(writer, personas, paper, pro, con)
-        print(f"seed   {paper['title'][:60]}")
-        for i, (pid, text) in enumerate(thread):
-            print(f"  {'↳ ' if i else ''}{personas[pid]['name']}: {text}")
-        print(f"  {personas[middle]['name']}: {middle_text}")
+        log = [f"seed   {paper['title'][:60]}"]
+        log += [f"  {'↳ ' if i else ''}{personas[pid]['handle']}: {text}" for i, (pid, text) in enumerate(thread)]
+        log.append(f"  {personas[middle]['handle']}: {middle_text}")
+        print("\n".join(log), flush=True)
         if dry:
-            continue
+            return
         ai = {"paper_id": paper["id"], "author_kind": "ai", "user_id": None}
         (pid, text), replies = thread[0], thread[1:]
-        first = db.insert("comments", [{**ai, "author_name": personas[pid]["name"], "persona": pid, "body": text}])[0]
+        first = db.insert("comments", [{**ai, "author_name": personas[pid]["handle"], "persona": pid, "body": text}])[0]
         for pid, text in replies:  # one at a time, so created_at keeps the debate's order
             db.insert("comments", [
-                {**ai, "parent_id": first["id"], "author_name": personas[pid]["name"], "persona": pid, "body": text},
+                {**ai, "parent_id": first["id"], "author_name": personas[pid]["handle"], "persona": pid, "body": text},
             ])
-        db.insert("comments", [{**ai, "author_name": personas[middle]["name"], "persona": middle, "body": middle_text}])
+        db.insert("comments", [{**ai, "author_name": personas[middle]["handle"], "persona": middle, "body": middle_text}])
+
+    def safe(s: dict) -> None:
+        try:
+            one(s)
+        except Exception as e:  # one bad paper shouldn't stop the run
+            print(f"seed   FAILED {s['title'][:60]}: {e}", flush=True)
+
+    with ThreadPoolExecutor(max_workers=SEED_WORKERS) as pool:
+        list(pool.map(safe, todo))
     return len(todo)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--seed", type=int, default=5, help="papers to open a discussion on")
+    ap.add_argument("--seed", type=int, default=50, help="papers to open a discussion on")
     ap.add_argument("--reply", type=int, default=30, help="reader comments to answer")
     ap.add_argument("--score", type=int, default=100, help="comments to label with Jev")
     ap.add_argument("--dry-run", action="store_true", help="print, write nothing")

@@ -14,8 +14,8 @@ export const maxDuration = 300;
 export async function GET(req: Request) {
   if (!isAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const max = Number(process.env.CRON_MAX_PAPERS ?? 15);
-  const newest = await getNewestPapers(3, 40);
+  const max = Number(process.env.CRON_MAX_PAPERS ?? 50);
+  const newest = await getNewestPapers(3, 100);
   const { data: existing } = await serverClient()
     .from("ai_verdicts")
     .select("paper_id")
