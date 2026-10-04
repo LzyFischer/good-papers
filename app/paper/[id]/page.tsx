@@ -7,7 +7,7 @@ import { judgePaper } from "@/lib/judge";
 import { getPaperAnywhere, getScores, getVerdicts, storeJudgement } from "@/lib/papers";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 type Props = { params: Promise<{ id: string }> };
 

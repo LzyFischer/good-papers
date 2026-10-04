@@ -2,6 +2,7 @@
 // paper type, in parallel against the same state ("ask everything at once").
 // Second call: the fine-grained area inside the chosen group.
 import { AREA_GROUPS, PAPER_TYPES } from "./areas";
+import { getFullText } from "./fulltext";
 import { systemOne, type JevQuestion } from "./jev";
 import { PERSONAS, PERSONA_IDS, spokespersons, type PersonaId } from "./personas";
 import { writeTakes } from "./takes";
@@ -13,6 +14,7 @@ export type Judgement = {
   area: string | null;
   paperType: string;
   model: string;
+  textSource: string | null; // where the introduction/conclusion came from; null = abstract only
   verdicts: Verdict[];
 };
 
@@ -40,13 +42,18 @@ export function citationRecord(paper: Pick<Paper, "citedByCount" | "publishedOn"
   };
 }
 
-export async function judgePaper(paper: Paper, opts: { withTakes?: boolean } = {}): Promise<Judgement> {
+export async function judgePaper(
+  paper: Paper,
+  opts: { withTakes?: boolean; fullText?: boolean } = {},
+): Promise<Judgement> {
   if (!paper.abstract) throw new Error(`No abstract for ${paper.id}; the AI panel needs one`);
 
   const citations = citationRecord(paper);
+  const full = opts.fullText === false ? null : await getFullText(paper).catch(() => null);
   const state = {
     title: paper.title,
     abstract: paper.abstract,
+    ...(full ? { introduction: full.introduction, conclusion: full.conclusion ?? "(not found)" } : {}),
     venue: paper.venue ?? "unknown",
     ...(citations ? { citations } : {}),
   };
@@ -107,7 +114,7 @@ export async function judgePaper(paper: Paper, opts: { withTakes?: boolean } = {
   }
 
   const paperType = answers.paper_type?.type === "choice" ? answers.paper_type.choice : "method";
-  return { area, paperType, model, verdicts };
+  return { area, paperType, model, textSource: full?.source ?? null, verdicts };
 }
 
 // Run async work over items with a small concurrency limit.
