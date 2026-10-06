@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { AREAS, PAPER_TYPES } from "@/lib/areas";
+import { AREAS } from "@/lib/areas";
 import { orgKind, shortOrg } from "@/lib/orgs";
 import { PERSONAS, PERSONA_IDS, TIERS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
 import { Icon, type IconName } from "./Icons";
-import { Gauge, basisOf, tierOf } from "./Score";
+import { Gauge, tierOf } from "./Score";
 import { VoteButtons } from "./VoteButtons";
 
 export function formatAuthors(authors: string[], max = 4) {
@@ -23,6 +23,23 @@ export function formatPublished(date: string | null | undefined, year: number | 
     year: "numeric",
     timeZone: "UTC",
   });
+}
+
+// Each author links to all their papers on the site.
+function AuthorLinks({ authors, max }: { authors: string[]; max: number }) {
+  if (authors.length === 0) return <>Unknown authors</>;
+  const shown = authors.slice(0, max);
+  return (
+    <>
+      {shown.map((a, i) => (
+        <span key={`${a}-${i}`}>
+          {i > 0 && ", "}
+          <Link href={`/?author=${encodeURIComponent(a)}`}>{a}</Link>
+        </span>
+      ))}
+      {authors.length > max && ` and ${authors.length - max} more`}
+    </>
+  );
 }
 
 function Table({ icon, label, fresh, total, note, ai }: {
@@ -56,7 +73,6 @@ type Props = {
 export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel = false }: Props) {
   const v = tierOf(score);
   const area = score?.area && AREAS[score.area] ? { key: score.area, label: AREAS[score.area].label } : null;
-  const type = score?.paper_type ? PAPER_TYPES[score.paper_type]?.label : null;
   const ordered = PERSONA_IDS.map((id) => verdicts.find((x) => x.persona === id)).filter(Boolean) as AiVerdict[];
   const published = formatPublished(paper.publishedOn ?? score?.published_on, paper.year);
   const citations = paper.citedByCount ?? score?.cited_by_count ?? null;
@@ -76,8 +92,6 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
       <div className={`score ${v ? `tone-${v.tone}` : "pending"}`}>
         {v ? <Gauge pct={v.pct} tone={v.tone} /> : <span className="gauge gauge--lg gauge--empty"><b>?</b></span>}
         <span className="word">{v ? v.label : "Not rated yet"}</span>
-        {v?.early && <span className="early">Early read</span>}
-        {v && score && <small>{basisOf(score)}</small>}
       </div>
 
       <div className="card-body">
@@ -91,9 +105,9 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
           {paper.orgs.slice(0, 5).map((o) => {
             const kind = orgKind(o);
             return (
-              <span key={o} className={`tag ${kind ? `org-${kind}` : ""}`} title={o}>
+              <Link key={o} href={`/?org=${encodeURIComponent(o)}`} className={`tag ${kind ? `org-${kind}` : ""}`} title={`All papers from ${o}`}>
                 {shortOrg(o)}
-              </span>
+              </Link>
             );
           })}
           {area && (
@@ -101,10 +115,11 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
               {area.label}
             </Link>
           )}
-          {type && <span className="tag">{type}</span>}
         </div>
         <h2 className="title">{title}</h2>
-        <p className="authors">{formatAuthors(paper.authors)}</p>
+        <p className="authors">
+          <AuthorLinks authors={paper.authors} max={linkTitle ? 4 : 60} />
+        </p>
         {(published || citations !== null) && (
           <p className="pubinfo">
             {published && <>Published {published}</>}

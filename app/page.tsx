@@ -58,10 +58,13 @@ function firstSentence(text: string, max = 180) {
   return s.length > max ? s.slice(0, max).replace(/\s+\S*$/, "") + "…" : s;
 }
 
-type Props = { searchParams: Promise<{ area?: string }> };
+type Props = { searchParams: Promise<{ area?: string; org?: string; author?: string }> };
+
+// PostgREST array "contains" with a quoted element, so names with commas or spaces work.
+const arrayHas = (v: string) => `{"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"}`;
 
 export default async function Home({ searchParams }: Props) {
-  const { area } = await searchParams;
+  const { area, org, author } = await searchParams;
   const activeArea = area && AREAS[area] ? area : null;
 
   let q = serverClient()
@@ -72,6 +75,9 @@ export default async function Home({ searchParams }: Props) {
     .order("last_activity", { ascending: false })
     .limit(30);
   if (activeArea) q = q.eq("area", activeArea);
+  if (org) q = q.filter("orgs", "cs", arrayHas(org));
+  if (author) q = q.filter("authors", "cs", arrayHas(author));
+  const filtered = activeArea ? AREAS[activeArea].label : org ? `papers from ${org}` : author ? `papers by ${author}` : null;
   const { data } = await q;
   const papers = (data ?? []) as Score[];
   const verdicts = await getVerdicts(papers.map((p) => p.id));
@@ -91,15 +97,15 @@ export default async function Home({ searchParams }: Props) {
 
       <div className="layout">
         <section aria-label="Papers">
-          {activeArea && (
+          {filtered && (
             <p className="filter">
-              Showing <b>{AREAS[activeArea].label}</b> <Link href="/">Show all papers</Link>
+              Showing <b>{filtered}</b> <Link href="/">Show all papers</Link>
             </p>
           )}
 
           {papers.length === 0 ? (
             <p className="empty">
-              No judged papers{activeArea ? " in this area" : ""} yet. Search for a paper you&apos;ve read and add the
+              No rated papers{filtered ? " here" : ""} yet. Search for a paper you&apos;ve read and add the
               first verdict.
             </p>
           ) : (

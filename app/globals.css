@@ -217,3 +217,9 @@ button { font: inherit; }
 .prose h2 { font: 700 1.2rem var(--display); margin: 1.75rem 0 .5rem; }
 .prose p, .prose li { line-height: 1.6; }
 .prose ul { padding-left: 1.2rem; display: grid; gap: .4rem; }
+
+/* Org tags and author names link to their papers */
+.meta a.tag { text-decoration: none; }
+.meta a.tag:hover { border-color: currentColor; }
+.authors a { text-decoration: none; }
+.authors a:hover { text-decoration: underline; color: var(--ink); }

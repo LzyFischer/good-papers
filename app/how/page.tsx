@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PERSONAS, PERSONA_IDS } from "@/lib/personas";
-import { EARLY_READERS, SCORING, TIERS } from "@/lib/types";
+import { SCORING, TIERS } from "@/lib/types";
 
 export const metadata: Metadata = { title: "How scores work" };
 
@@ -25,8 +25,8 @@ export default function How() {
         ))}
       </ul>
       <p>
-        A low score means a narrower audience, not a bad paper. Until {EARLY_READERS} readers have voted, the score is
-        marked <b>Early read</b>: it rests mostly on the AI panel.
+        A low score means a narrower audience, not a bad paper. Until readers have voted, the score rests on the AI
+        panel, shown on every card.
       </p>
 
       <h2>Readers</h2>
