@@ -71,8 +71,8 @@ with r as (
          coalesce(r.fresh, 0) as reader_fresh, coalesce(r.total, 0) as reader_total,
          coalesce(r.abstain, 0) as reader_abstain,
          coalesce(a.fresh, 0) as ai_fresh, coalesce(a.total, 0) as ai_total,
-         -- The AI alone is never sure: its share maps into 20..80%, so only readers can push a score to the ends.
-         case when a.total > 0 then 0.2 + 0.6 * a.fresh::float8 / a.total else 0.5 end as prior,
+         -- The AI alone only vouches: its share maps into 50..100%; only readers can rate a paper below 50%.
+         case when a.total > 0 then 0.5 + 0.5 * a.fresh::float8 / a.total else 0.5 end as prior,
          coalesce(r.total_w, 0)::float8 as total_w,
          coalesce(r.fresh_w, 0)::float8 as fresh_w,
          coalesce(r.coi, 0) as reader_coi,

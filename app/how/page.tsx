@@ -54,8 +54,9 @@ export default function How() {
         {PERSONA_IDS.filter((id) => !(PERSONAS[id] as { needsCitations?: boolean }).needsCitations).length} AI reviewer personas, from lenient to strict, each check one thing about the paper (is the
         question important, is the evidence strong, would a practitioner use it, ...). They count for{" "}
         {Math.round(SCORING.AI_WEIGHT * 100)}% of the score and stand in for {SCORING.PRIOR_VOTES} readers, so a new
-        paper has a score on day one and a handful of votes can&apos;t swing it to 0 or 100%. The AI alone is never
-        sure: on its own it keeps a paper between 20% and 80%. As readers arrive, their votes take over.
+        paper has a score on day one and a handful of votes can&apos;t swing it to 0 or 100%. On its own the AI
+        only vouches for papers: an AI-only score stays between 50% and 100%, and only readers can rate a paper
+        lower. As readers arrive, their votes take over.
       </p>
       <p>
         AI personas also join the discussion under each paper. Their comments are marked <b>AI</b>.
