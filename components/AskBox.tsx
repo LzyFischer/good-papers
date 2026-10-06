@@ -8,11 +8,11 @@ const SUGGESTIONS = [
 ];
 
 // A plain GET form: works without JavaScript, answers render on /ask.
-export function AskBox({ value = "" }: { value?: string }) {
+export function AskBox({ value = "", dark = false }: { value?: string; dark?: boolean }) {
   return (
-    <div className="ask">
+    <div className={dark ? "ask ask--dark" : "ask"}>
       <form action="/ask" className="ask-form">
-        <input name="q" defaultValue={value} placeholder="Ask: what's worth reading in agents this week?" aria-label="Ask about papers" />
+        <input name="q" defaultValue={value} placeholder="Ask anything: what's worth reading in agents this week?" aria-label="Ask about papers" />
         <button type="submit">Ask</button>
       </form>
       <div className="ask-chips">

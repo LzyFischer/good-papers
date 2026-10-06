@@ -34,14 +34,17 @@ export function MiniCard({ s }: { s: Score }) {
   );
 }
 
-export function Shelf({ title, papers, children, more }: {
-  title: string; papers: Score[]; children?: React.ReactNode; more?: { href: string; label: string };
+export function Shelf({ id, title, note, papers, children, more }: {
+  id?: string; title: string; note?: string; papers: Score[]; children?: React.ReactNode; more?: { href: string; label: string };
 }) {
   if (papers.length === 0 && !children) return null;
   return (
-    <section className="shelf" aria-label={title}>
+    <section className="shelf" aria-label={title} id={id}>
       <div className="shelf-head">
-        <h2>{title}</h2>
+        <div>
+          <h2>{title}</h2>
+          {note && <p className="shelf-note">{note}</p>}
+        </div>
         {children}
         {more && <Link href={more.href} className="shelf-more">{more.label}</Link>}
       </div>

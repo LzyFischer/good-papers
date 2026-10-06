@@ -56,8 +56,8 @@ export type AiVerdict = {
 };
 
 // How the headline score is computed (in SQL, the paper_scores view). Keep in sync.
-//   ai     = 0.5 + 0.5 * share of the AI panel upvoting (0.5 if the panel has not run):
-//            the AI alone only vouches (50..100%); only readers can rate a paper below 50%
+//   ai     = 0.4 + 0.5 * the paper's percentile rank by AI-panel share (0.5 if not judged):
+//            graded on a curve, because Jev rarely says no and raw shares bunch up high
 //   share  = readers' upvote share: reputation-weighted, without conflict-of-interest
 //            votes, or the cross-camp consensus once 8+ readers voted (worker/reputation.py)
 //   reader = (share * W + PRIOR_VOTES * ai) / (W + PRIOR_VOTES), W = summed reader weights

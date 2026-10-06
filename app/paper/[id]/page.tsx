@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Comments } from "@/components/Comments";
 import { NoteBox } from "@/components/NoteBox";
-import { PaperCard } from "@/components/PaperCard";
+import { PaperHero } from "@/components/PaperHero";
 import { jevConfigured } from "@/lib/jev";
 import { judgePaper } from "@/lib/judge";
 import { getPaperAnywhere, getScores, getVerdicts, storeJudgement } from "@/lib/papers";
@@ -50,23 +50,23 @@ export default async function PaperPage({ params }: Props) {
 
   return (
     <main className="wrap page paper-page">
-      <PaperCard
-        paper={{ ...paper, tags: paper.tags.length ? paper.tags : score?.tags ?? [] }}
+      <PaperHero
+        paper={{ ...paper, tags: paper.tags.length ? paper.tags : score?.tags ?? [], orgs: paper.orgs.length ? paper.orgs : score?.orgs ?? [] }}
         score={score}
         verdicts={verdicts}
-        linkTitle={false}
-        openPanel
       />
       <NoteBox paperId={paper.id} />
-      {paper.abstract && (
-        <section className="abstract">
-          <h2>Abstract</h2>
-          <p>{paper.abstract}</p>
-        </section>
-      )}
-      <Comments
-        paper={{ id: paper.id, title: paper.title, authors: paper.authors, year: paper.year, venue: paper.venue, url: paper.url }}
-      />
+      <div className="paper-cols">
+        {paper.abstract && (
+          <section className="abstract">
+            <h2>Abstract</h2>
+            <p>{paper.abstract}</p>
+          </section>
+        )}
+        <Comments
+          paper={{ id: paper.id, title: paper.title, authors: paper.authors, year: paper.year, venue: paper.venue, url: paper.url }}
+        />
+      </div>
     </main>
   );
 }

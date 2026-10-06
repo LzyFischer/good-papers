@@ -319,7 +319,22 @@ def score_comments(db: DB, limit: int, dry: bool) -> int:
     return len(rows)
 
 
+def ancestors(db: DB, comment_id: str, depth: int = 8) -> list[dict]:
+    """The comment and the chain of comments it replies to, oldest first."""
+    chain, cur = [], comment_id
+    while cur and len(chain) < depth:
+        rows = db.get("comments", select="id,parent_id,author_kind,author_name,persona,body", id=f"eq.{cur}")
+        if not rows:
+            break
+        chain.append(rows[0])
+        cur = rows[0]["parent_id"]
+    return list(reversed(chain))
+
+
 def reply_to_readers(db: DB, writer: Writer, personas: dict, limit: int, dry: bool) -> int:
+    """Each waiting reader comment gets a reply right under it; a substantive one also
+    draws a second agent who answers the first from the other side, so readers see
+    agents arguing with each other rather than one bot answering."""
     pending = db.get(
         "comments",
         select="id,paper_id,parent_id,body,author_name,stance",
@@ -330,43 +345,53 @@ def reply_to_readers(db: DB, writer: Writer, personas: dict, limit: int, dry: bo
     )
     for c in pending:
         paper = db.get("papers", select="id,title,venue,abstract", id=f"eq.{c['paper_id']}")[0]
-        root = c["parent_id"] or c["id"]
-        thread = db.get(
-            "comments",
-            select="id,author_kind,author_name,persona,body",
-            **{"or": f"(id.eq.{root},parent_id.eq.{root})"},
-            order="created_at.asc",
-        )
-        # Keep the same voice if the reader answered a persona; otherwise pick a
-        # persona whose verdict on the paper disagrees with the reader, so the
-        # reply adds a different angle instead of agreeing.
-        voice = next((t["persona"] for t in reversed(thread) if t["author_kind"] == "ai" and t["persona"]), None)
+        thread = ancestors(db, c["id"])
+        verdicts = [v for v in db.get("ai_verdicts", select="persona,fresh,probability", paper_id=f"eq.{paper['id']}")
+                    if v["persona"] in personas]
+        # Keep the voice the reader answered; otherwise someone who disagrees with them.
+        voice = next((t["persona"] for t in reversed(thread[:-1]) if t["author_kind"] == "ai" and t["persona"]), None)
         if voice not in personas:
-            verdicts = db.get("ai_verdicts", select="persona,fresh,probability", paper_id=f"eq.{paper['id']}")
             want_fresh = c.get("stance") in ("doubt", "critical")
-            pool = [v for v in verdicts if v["persona"] in personas and v["fresh"] == want_fresh] or [
-                v for v in verdicts if v["persona"] in personas
-            ]
-            pool.sort(key=lambda v: abs(v["probability"] - 0.5), reverse=True)
-            voice = pool[0]["persona"] if pool else "r2"
+            pool = [v for v in verdicts if v["fresh"] == want_fresh] or verdicts
+            voice = pick(sorted(pool, key=lambda v: -abs(v["probability"] - 0.5))) if pool else "r2"
         p = personas[voice]
-        convo = "\n".join(
-            f"{'You' if t.get('persona') == voice else (t['author_name'] or 'reader')}: {t['body']}" for t in thread[-6:]
-        )
-        prompt = (
-            f"{paper_text(paper)}\n\nDiscussion so far:\n{convo}\n\n"
+        convo = "\n".join(f"{'You' if t.get('persona') == voice else (t['author_name'] or 'reader')}: {t['body']}"
+                          for t in thread[-6:])
+        text = writer.write(system_for(p), (
+            f"{paper_text(paper)}\n\nThread:\n{convo}\n\n"
             f"Reply to {c['author_name'] or 'the reader'}'s latest comment. Engage with their specific point: agree "
             "where they are right, push back where the paper's text says otherwise, and add one concrete angle "
-            "they did not mention. You may end with a short question that keeps the discussion going."
-        )
-        text = writer.write(system_for(p), prompt)
+            "they did not mention. You may end with a short question that keeps the discussion going."))
         print(f"reply  {c['id'][:8]}  as {p['handle']}: {text[:90]!r}")
-        if not dry and text:
+        if dry or not text:
+            continue
+        first = db.insert("comments", [{
+            "paper_id": paper["id"], "parent_id": c["id"], "author_kind": "ai", "user_id": None,
+            "author_name": p["handle"], "persona": voice, "body": text,
+        }])[0]
+        db.update("comments", {"id": c["id"]}, {"needs_reply": False})
+
+        # A second agent from the other side answers the first, if the reader gave them something to chew on.
+        if len(c["body"]) < 60:
+            continue
+        side_fresh = next((v["fresh"] for v in verdicts if v["persona"] == voice), True)
+        others = [v for v in verdicts if v["persona"] != voice and v["fresh"] != side_fresh] or \
+                 [v for v in verdicts if v["persona"] != voice]
+        if not others:
+            continue
+        q = personas[pick(sorted(others, key=lambda v: -abs(v["probability"] - 0.5)))]
+        convo2 = convo + f"\n{p['handle']}: {text}"
+        text2 = writer.write(system_for(q), (
+            f"{paper_text(paper)}\n\nThread:\n{convo2}\n\n"
+            f"Jump in and reply to {p['handle']}'s last comment. You see this paper differently: say where they "
+            "are wrong or missing something, using only what the paper's text supports. Address them directly, "
+            "don't repeat their wording."))
+        if text2:
             db.insert("comments", [{
-                "paper_id": paper["id"], "parent_id": root, "author_kind": "ai", "user_id": None,
-                "author_name": p["handle"], "persona": voice, "body": text,
+                "paper_id": paper["id"], "parent_id": first["id"], "author_kind": "ai", "user_id": None,
+                "author_name": q["handle"], "persona": q["id"], "body": text2,
             }])
-            db.update("comments", {"id": c["id"]}, {"needs_reply": False})
+            print(f"reply  ↳ {q['handle']}: {text2[:90]!r}")
     return len(pending)
 
 
@@ -417,10 +442,11 @@ def seed_discussions(db: DB, writer: Writer, personas: dict, limit: int, dry: bo
         ai = {"paper_id": paper["id"], "author_kind": "ai", "user_id": None}
         (pid, text), replies = thread[0], thread[1:]
         first = db.insert("comments", [{**ai, "author_name": personas[pid]["handle"], "persona": pid, "body": text}])[0]
-        for pid, text in replies:  # one at a time, so created_at keeps the debate's order
-            db.insert("comments", [
-                {**ai, "parent_id": first["id"], "author_name": personas[pid]["handle"], "persona": pid, "body": text},
-            ])
+        parent = first["id"]
+        for pid, text in replies:  # each turn answers the previous one: a nested chain
+            parent = db.insert("comments", [
+                {**ai, "parent_id": parent, "author_name": personas[pid]["handle"], "persona": pid, "body": text},
+            ])[0]["id"]
         db.insert("comments", [{**ai, "author_name": personas[middle]["handle"], "persona": middle, "body": middle_text}])
 
     def safe(s: dict) -> None:

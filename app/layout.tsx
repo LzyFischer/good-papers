@@ -6,8 +6,8 @@ import { SearchForm } from "@/components/SearchForm";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Rotten Paper: is it worth reading?", template: "%s | Rotten Paper" },
-  description: "Is this paper worth reading? Verdicts from readers, warm-started by an AI panel.",
+  title: { default: "Rotten Paper: read the good ones", template: "%s | Rotten Paper" },
+  description: "New ML papers, scored by the people who read them, with a 20-reviewer AI panel from day one.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -30,14 +30,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Icon name="brand" />
               Rotten Paper
             </Link>
+            <nav className="nav" aria-label="Sections">
+              <Link href="/#trending">Trending</Link>
+              <Link href="/#must-read">Must read</Link>
+              <Link href="/ask">Ask</Link>
+              <Link href="/how">How it works</Link>
+            </nav>
             <SearchForm />
             <AuthButton />
           </div>
         </header>
         {children}
         <footer className="foot wrap">
-          Paper data from <a href="https://openalex.org">OpenAlex</a>. AI panel verdicts by Jev from each paper&apos;s
-          abstract, with one-line takes written by a language model.
+          Paper data from <a href="https://openalex.org">OpenAlex</a>, arXiv and Hugging Face. AI panel verdicts by Jev;
+          AI comments, TL;DRs and consensus lines by a language model. <a href="/how">How scores work</a>.
         </footer>
       </body>
     </html>

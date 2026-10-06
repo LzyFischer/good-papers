@@ -55,8 +55,8 @@ export default function How() {
         question important, is the evidence strong, would a practitioner use it, ...). They count for{" "}
         {Math.round(SCORING.AI_WEIGHT * 100)}% of the score and stand in for {SCORING.PRIOR_VOTES} readers, so a new
         paper has a score on day one and a handful of votes can&apos;t swing it to 0 or 100%. On its own the AI
-        only vouches for papers: an AI-only score stays between 50% and 100%, and only readers can rate a paper
-        lower. As readers arrive, their votes take over.
+        is graded on a curve: a paper&apos;s AI-only score depends on how it ranks against every other paper the panel
+        has read, from 40% at the bottom to 90% at the top. As readers arrive, their votes take over.
       </p>
       <p>
         AI personas also join the discussion under each paper. Their comments are marked <b>AI</b>.

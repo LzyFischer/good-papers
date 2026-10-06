@@ -1,70 +1,58 @@
 import Link from "next/link";
 import { AskBox } from "@/components/AskBox";
-import { Icon } from "@/components/Icons";
-import { Shelf } from "@/components/Shelf";
 import { PaperCard } from "@/components/PaperCard";
+import { Gauge, tierOf } from "@/components/Score";
+import { Shelf } from "@/components/Shelf";
 import { AREAS } from "@/lib/areas";
 import { getVerdicts } from "@/lib/papers";
 import { PERSONAS, PERSONA_IDS } from "@/lib/personas";
 import { serverClient } from "@/lib/supabase";
 import { WINDOWS, shelf, trending, type Window } from "@/lib/trending";
-import { SCORING, TIERS, type Score } from "@/lib/types";
+import type { Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 // The standing panel; the citation persona only joins for well-cited papers.
 const PERSONA_COUNT = PERSONA_IDS.filter((id) => !(PERSONAS[id] as { needsCitations?: boolean }).needsCitations).length;
 
-// Hot quotes: the sharpest recent comments, from readers and the AI panel alike.
-// hot = Jev quote score × (1 + likes + replies / 2), decaying over about a week.
-async function hotQuotes(n = 5) {
-  const since = new Date(Date.now() - 30 * 86400_000).toISOString();
-  const { data } = await serverClient()
-    .from("comment_feed")
-    .select("id, paper_id, author_kind, author_name, body, quote_score, likes, replies, created_at")
-    .gte("quote_score", 0.6)
-    .gte("created_at", since)
-    .order("created_at", { ascending: false })
-    .limit(300);
-  type Row = {
-    id: string; paper_id: string; author_kind: string; author_name: string | null; body: string;
-    quote_score: number; likes: number; replies: number; created_at: string;
-  };
-  const top = ((data ?? []) as Row[])
-    .map((c) => {
-      const days = (Date.now() - Date.parse(c.created_at)) / 86400_000;
-      return { c, hot: (c.quote_score * (1 + c.likes + c.replies / 2)) / (1 + days / 7) };
-    })
-    .sort((a, b) => b.hot - a.hot)
-    .slice(0, n)
-    .map(({ c }) => c);
-  const { data: papers } = await serverClient()
-    .from("papers")
-    .select("id, title")
-    .in("id", [...new Set(top.map((c) => c.paper_id))]);
-  const titles = new Map((papers ?? []).map((p) => [p.id as string, (p.title as string).split(":")[0]]));
-  return top.map((c) => ({
-    id: c.id,
-    paper_id: c.paper_id,
-    title: titles.get(c.paper_id) ?? "this paper",
-    author: c.author_name ?? "reader",
-    ai: c.author_kind === "ai",
-    likes: c.likes,
-    replies: c.replies,
-    quote: firstSentence(c.body),
-  }));
-}
-
-function firstSentence(text: string, max = 180) {
-  const m = text.match(/^.{20,}?[.!?](?=\s|$)/);
-  const s = m ? m[0] : text;
-  return s.length > max ? s.slice(0, max).replace(/\s+\S*$/, "") + "…" : s;
-}
-
 type Props = { searchParams: Promise<{ area?: string; org?: string; author?: string; t?: string }> };
 
 // PostgREST array "contains" with a quoted element, so names with commas or spaces work.
 const arrayHas = (v: string) => `{"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"}`;
+
+async function stats() {
+  const db = serverClient();
+  const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
+  // (Reader votes aren't countable here: ratings are private under row-level security.)
+  const [papers, comments, week] = await Promise.all([
+    db.from("paper_scores").select("id", { count: "exact", head: true }).not("score", "is", null).not("area", "is", null),
+    db.from("comments").select("id", { count: "exact", head: true }),
+    db.from("paper_scores").select("id", { count: "exact", head: true }).not("area", "is", null).gte("published_on", weekAgo),
+  ]);
+  return { papers: papers.count ?? 0, comments: comments.count ?? 0, week: week.count ?? 0 };
+}
+
+// The paper at the top of the page: the hottest one this week that has a picture and a consensus line.
+function Spotlight({ s }: { s: Score }) {
+  const t = tierOf(s);
+  return (
+    <Link href={`/paper/${s.id}`} className="spot">
+      <span className="spot-kicker">Paper of the day</span>
+      {s.thumbnail && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={s.thumbnail} alt="" className="spot-img" />
+      )}
+      <span className="spot-body">
+        {t && <Gauge pct={t.pct} tone={t.tone} />}
+        <span>
+          <span className="spot-tier">{t?.label}</span>
+          <span className="spot-title">{s.title}</span>
+        </span>
+      </span>
+      {s.panel_consensus ? <q className="spot-quote">{s.panel_consensus}</q> : s.tldr && <span className="spot-tldr">{s.tldr}</span>}
+    </Link>
+  );
+}
 
 export default async function Home({ searchParams }: Props) {
   const { area, org, author, t } = await searchParams;
@@ -87,112 +75,73 @@ export default async function Home({ searchParams }: Props) {
   const papers = (data ?? []) as Score[];
   const verdicts = await getVerdicts(papers.map((p) => p.id));
 
-  const hot = await hotQuotes();
-  const browsing = !area && !org && !author;
-  const [hotNow, must, debated, fresh] = browsing
-    ? await Promise.all([trending(window), shelf("must"), shelf("debated"), shelf("new")])
-    : [[], [], [], []];
+  const browsing = !filtered;
+  const [hotNow, must, debated, fresh, n] = browsing
+    ? await Promise.all([trending(window), shelf("must"), shelf("debated"), shelf("new"), stats()])
+    : [[], [], [], [], null];
+  const spot = [...hotNow, ...must].find((s) => s.thumbnail && s.panel_consensus) ?? hotNow[0] ?? must[0];
 
   return (
-    <main className="wrap">
-      <section className="intro">
-        <h1>Is it worth reading? The newest papers, rated.</h1>
-        <p>
-          Every paper is rated by readers like you, with an AI panel of {PERSONA_COUNT} reviewer personas to get it
-          started. Upvote or downvote the ones you&apos;ve read. Upvotes measure attention; we measure whether a
-          paper is worth your time. <Link href="/how">How scores work</Link>
-        </p>
-      </section>
-
-      <AskBox />
-
+    <main>
       {browsing && (
-        <>
-          <Shelf title="Trending" papers={hotNow}>
-            <nav className="seg" aria-label="Trending window">
-              {(Object.keys(WINDOWS) as Window[]).map((w) => (
-                <Link key={w} href={w === "week" ? "/" : `/?t=${w}`} aria-current={w === window ? "page" : undefined} scroll={false}>
-                  {w === "day" ? "Daily" : w === "week" ? "Weekly" : "Monthly"}
-                </Link>
-              ))}
-            </nav>
-          </Shelf>
-          <Shelf title="Must read" papers={must} />
-          <Shelf title="Most debated" papers={debated} />
-          <Shelf title="New today" papers={fresh} />
-          <h2 className="section-title">All papers</h2>
-        </>
+        <section className="hero">
+          <div className="wrap hero-in">
+            <div className="hero-copy">
+              <h1>
+                Read the <span className="hl">good ones</span>.
+              </h1>
+              <p className="hero-lede">
+                New ML papers, scored by the people who actually read them. {PERSONA_COUNT} AI reviewers give every paper a
+                first read the day it lands; your votes take it from there.
+              </p>
+              {n && (
+                <p className="hero-stats">
+                  <span><b>{n.papers.toLocaleString("en-US")}</b> papers rated</span>
+                  <span><b>{n.comments.toLocaleString("en-US")}</b> comments</span>
+                  <span><b>{n.week.toLocaleString("en-US")}</b> new this week</span>
+                </p>
+              )}
+              <AskBox dark />
+            </div>
+            {spot && <Spotlight s={spot} />}
+          </div>
+        </section>
       )}
 
-      <div className="layout">
-        <section aria-label="Papers">
-          {filtered && (
-            <p className="filter">
-              Showing <b>{filtered}</b> <Link href="/">Show all papers</Link>
-            </p>
-          )}
+      <div className="wrap home-body">
+        {browsing && (
+          <>
+            <Shelf id="trending" title="Trending" note="What readers here and on Hugging Face are upvoting" papers={hotNow}>
+              <nav className="seg" aria-label="Trending window">
+                {(Object.keys(WINDOWS) as Window[]).map((w) => (
+                  <Link key={w} href={w === "week" ? "/#trending" : `/?t=${w}#trending`} aria-current={w === window ? "page" : undefined} scroll={false}>
+                    {w === "day" ? "Today" : w === "week" ? "This week" : "This month"}
+                  </Link>
+                ))}
+              </nav>
+            </Shelf>
+            <Shelf id="must-read" title="Must read" note="The top fifth of everything rated" papers={must} />
+            <Shelf id="debated" title="Most debated" note="Where the reviewers can't agree" papers={debated} />
+            <Shelf id="new" title="New today" note="Fresh off arXiv" papers={fresh} />
+            <div className="section-head">
+              <h2 className="section-title">All papers</h2>
+              <Link href="/how">How scores work</Link>
+            </div>
+          </>
+        )}
 
+        {filtered && (
+          <p className="filter">
+            Showing <b>{filtered}</b> <Link href="/">Show all papers</Link>
+          </p>
+        )}
+        <section aria-label="Papers" className="all-papers">
           {papers.length === 0 ? (
-            <p className="empty">
-              No rated papers{filtered ? " here" : ""} yet. Search for a paper you&apos;ve read and add the
-              first verdict.
-            </p>
+            <p className="empty">No rated papers{filtered ? " here" : ""} yet. Search for a paper you&apos;ve read and add the first verdict.</p>
           ) : (
             papers.map((s) => <PaperCard key={s.id} paper={s} score={s} verdicts={verdicts.get(s.id) ?? []} />)
           )}
         </section>
-
-        <aside className="side">
-          {hot.length > 0 && (
-            <div className="box">
-              <h2>Hot quotes</h2>
-              <ul className="hot">
-                {hot.map((h) => (
-                  <li key={h.id}>
-                    <q>{h.quote}</q>
-                    <span>
-                      {h.author}
-                      {h.ai && <span className="ai-badge">AI</span>} on{" "}
-                      <Link href={`/paper/${h.paper_id}`}>{h.title}</Link>
-                      {(h.likes > 0 || h.replies > 0) && (
-                        <>
-                          {" "}
-                          · {h.likes > 0 && `♥ ${h.likes}`}
-                          {h.likes > 0 && h.replies > 0 && " · "}
-                          {h.replies > 0 && `${h.replies} repl${h.replies === 1 ? "y" : "ies"}`}
-                        </>
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <div className="box">
-            <h2>How to read a score</h2>
-            <ul className="legend">
-              {TIERS.map((t) => (
-                <li key={t.label}>
-                  <span className={`chip-dot tone-${t.tone}`} />
-                  {t.label}: {Math.round(t.min * 100)}%{t.min > 0 ? " and up" : " and up, read by a narrower audience"}
-                </li>
-              ))}
-              <li>
-                <Icon name="readers" />
-                Readers who read the paper. Their votes are weighted by track record; votes from a paper&apos;s authors
-                or their colleagues don&apos;t count.
-              </li>
-              <li>
-                <Icon name="ai" />
-                AI panel: {PERSONA_COUNT} reviewer personas. They count for {Math.round(SCORING.AI_WEIGHT * 100)}% and
-                stand in for readers until there are enough votes.
-              </li>
-            </ul>
-            <p className="hint">
-              <Link href="/how">How scores work</Link>
-            </p>
-          </div>
-        </aside>
       </div>
     </main>
   );

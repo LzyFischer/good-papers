@@ -27,7 +27,7 @@ export function formatPublished(date: string | null | undefined, year: number | 
 }
 
 // Each author links to all their papers on the site.
-function AuthorLinks({ authors, max, paperId }: { authors: string[]; max: number; paperId: string }) {
+export function AuthorLinks({ authors, max, paperId }: { authors: string[]; max: number; paperId: string }) {
   if (authors.length === 0) return <>Unknown authors</>;
   const shown = authors.slice(0, max);
   return (
@@ -40,6 +40,35 @@ function AuthorLinks({ authors, max, paperId }: { authors: string[]; max: number
       ))}
       {authors.length > max && ` and ${authors.length - max} more`}
     </>
+  );
+}
+
+// The AI panel as dots grouped by tier; hover a dot for what that reviewer checks.
+export function AiDots({ ordered }: { ordered: AiVerdict[] }) {
+  return (
+    <div className="dots-wrap">
+      {TIERS.map((tier) => {
+        const group = ordered.filter((x) => PERSONAS[x.persona]?.tier === tier);
+        if (group.length === 0) return null;
+        return (
+          <div key={tier} className="dots-row">
+            <span className="dots-label">
+              {tier} <b>{group.filter((x) => x.fresh).length}/{group.length}</b>
+            </span>
+            <span className="dots" role="list">
+              {group.map((x) => (
+                <span
+                  key={x.persona}
+                  role="listitem"
+                  className={`dot ${x.fresh ? "dot--up" : "dot--down"}`}
+                  title={`${PERSONAS[x.persona].focus}: ${Math.round(x.probability * 100)}% worth reading`}
+                />
+              ))}
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -178,29 +207,7 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
             <summary>
               AI panel: {ordered.filter((x) => x.fresh).length} of {ordered.length} reviewers recommend it
             </summary>
-            <div className="dots-wrap">
-              {TIERS.map((tier) => {
-                const group = ordered.filter((x) => PERSONAS[x.persona]?.tier === tier);
-                if (group.length === 0) return null;
-                return (
-                  <div key={tier} className="dots-row">
-                    <span className="dots-label">
-                      {tier} <b>{group.filter((x) => x.fresh).length}/{group.length}</b>
-                    </span>
-                    <span className="dots" role="list">
-                      {group.map((x) => (
-                        <span
-                          key={x.persona}
-                          role="listitem"
-                          className={`dot ${x.fresh ? "dot--up" : "dot--down"}`}
-                          title={`${PERSONAS[x.persona].focus}: ${Math.round(x.probability * 100)}% worth reading`}
-                        />
-                      ))}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            <AiDots ordered={ordered} />
           </details>
         )}
       </div>
