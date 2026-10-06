@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AREAS } from "@/lib/areas";
 import { arxivIdOf } from "@/lib/arxiv";
-import { orgKind, shortOrg } from "@/lib/orgs";
+import { orgKind, shortOrg, venueLabel } from "@/lib/orgs";
 import { PERSONAS, PERSONA_IDS, TIERS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
 import { Icon, type IconName } from "./Icons";
@@ -127,7 +127,7 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
 
       <div className="card-body">
         <div className="meta">
-          {paper.venue && <span className="tag venue">{paper.venue}{paper.year ? ` ${paper.year}` : ""}</span>}
+          {paper.venue && <span className={`tag venue ${/arxiv/i.test(paper.venue) ? "venue--preprint" : ""}`}>{venueLabel(paper.venue, paper.year)}</span>}
           {paper.tags.map((t) => (
             <span key={t} className={`tag ${t === "Oral" ? "oral" : ""}`}>
               {t}
@@ -136,13 +136,13 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
           {paper.orgs.slice(0, 5).map((o) => {
             const kind = orgKind(o);
             return (
-              <Link key={o} href={`/org/${encodeURIComponent(o)}`} className={`tag ${kind ? `org-${kind}` : ""}`} title={`All papers from ${o}`}>
+              <Link key={o} href={`/?org=${encodeURIComponent(o)}`} className={`tag ${kind ? `org-${kind}` : ""}`} title={`All papers from ${o}`}>
                 {shortOrg(o)}
               </Link>
             );
           })}
           {area && (
-            <Link href={`/area/${area.key}`} className="tag tag--area">
+            <Link href={`/?area=${area.key}`} className="tag tag--area">
               {area.label}
             </Link>
           )}

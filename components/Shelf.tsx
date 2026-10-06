@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AREAS } from "@/lib/areas";
+import { venueLabel } from "@/lib/orgs";
 import type { Score } from "@/lib/types";
 import { Gauge, tierOf } from "./Score";
 
@@ -26,6 +27,7 @@ export function MiniCard({ s }: { s: Score }) {
       <span className="mini-title">{s.title}</span>
       {s.tldr && <span className="mini-tldr">{s.tldr}</span>}
       <span className="mini-meta">
+        {s.venue && !/arxiv/i.test(s.venue) && <span className="mini-venue">{venueLabel(s.venue, s.year)}</span>}
         {t?.label}
         {s.hf_upvotes ? ` · ▲ ${s.hf_upvotes} on HF` : ""}
         {s.comments ? ` · ${s.comments} comments` : ""}

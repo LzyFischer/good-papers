@@ -27,10 +27,10 @@ export default async function AskPage({ searchParams }: Props) {
             Reading this as <b>{INTENTS[a.intent].label}</b>
             {a.area && (
               <>
-                {" "}in {a.area.group ? <b>{a.area.label}</b> : <Link href={`/area/${a.area.key}`}>{a.area.label}</Link>}
+                {" "}in {a.area.group ? <b>{a.area.label}</b> : <Link href={`/?area=${a.area.key}`}>{a.area.label}</Link>}
               </>
             )}
-            , <b>{a.windowLabel}</b>. Answers come from ratings and discussions on Rotten Paper.
+            , <b>{a.windowLabel}</b>. Answers come from ratings and discussions on Good Papers.
           </p>
           {a.intent === "who" && (a.people.length > 0 || a.orgs.length > 0) && (
             <div className="who">
@@ -49,7 +49,7 @@ export default async function AskPage({ searchParams }: Props) {
                 <ol>
                   {a.orgs.map((o) => (
                     <li key={o.name}>
-                      <Link href={`/org/${encodeURIComponent(o.name)}`}>{o.name}</Link> <span>{o.papers} paper{o.papers === 1 ? "" : "s"}</span>
+                      <Link href={`/?org=${encodeURIComponent(o.name)}`}>{o.name}</Link> <span>{o.papers} paper{o.papers === 1 ? "" : "s"}</span>
                     </li>
                   ))}
                 </ol>
@@ -65,7 +65,7 @@ export default async function AskPage({ searchParams }: Props) {
           ) : (
             <p className="empty">
               No rated papers match yet.{" "}
-              {a.area && !a.area.group && <Link href={`/area/${a.area.key}`}>See recent {a.area.label} papers on OpenAlex</Link>}
+              {a.area && !a.area.group && <Link href={`/?area=${a.area.key}`}>See all rated {a.area.label} papers</Link>}
             </p>
           )}
         </>

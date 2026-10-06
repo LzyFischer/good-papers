@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
@@ -29,7 +30,7 @@ TLDR_SYSTEM = (
 )
 
 CONSENSUS_SYSTEM = (
-    "You write the one-line consensus for a paper on Rotten Paper, like a film site's critics consensus: "
+    "You write the one-line consensus for a paper on Good Papers, like a film site's critics consensus: "
     "one sentence, at most 30 words, that captures where the discussion landed, its main praise and its "
     "main reservation. Write it as a verdict, not a summary of who said what; no names or handles, no "
     "'commenters' or 'reviewers', no em dashes. Be fair, quotable, and specific to this paper. The tone is "
@@ -82,14 +83,93 @@ def hf_info(aid: str) -> dict:
             "github_stars": d.get("githubStars")}
 
 
+# Venue detection: arXiv comments ("Accepted to NeurIPS 2025"), journal_ref, and the
+# published versions OpenAlex knows. Order matters: NAACL/EACL before ACL.
+VENUES = [
+    (r"neurips|nips\b|neural information processing systems", "NeurIPS"), (r"\bicml\b|international conference on machine learning", "ICML"),
+    (r"\biclr\b|learning representations", "ICLR"), (r"\bcvpr\b|computer vision and pattern recognition", "CVPR"),
+    (r"\biccv\b", "ICCV"), (r"\beccv\b", "ECCV"), (r"\bnaacl\b", "NAACL"), (r"\beacl\b", "EACL"),
+    (r"\bemnlp\b|empirical methods in natural language", "EMNLP"), (r"\bcoling\b", "COLING"), (r"\bcolm\b", "COLM"),
+    (r"\bacl\b|association for computational linguistics", "ACL"), (r"\baaai\b", "AAAI"), (r"\bijcai\b", "IJCAI"),
+    (r"\bkdd\b|knowledge discovery and data mining", "KDD"), (r"\bwww\b|the web conference", "WWW"), (r"\bsigir\b", "SIGIR"),
+    (r"\bcikm\b", "CIKM"), (r"\bwsdm\b", "WSDM"), (r"\baistats\b", "AISTATS"), (r"\buai\b", "UAI"), (r"\bcorl\b", "CoRL"),
+    (r"\bicra\b", "ICRA"), (r"\biros\b", "IROS"), (r"\brss\b|robotics: science and systems", "RSS"),
+    (r"\bmiccai\b", "MICCAI"), (r"\bisbi\b", "ISBI"), (r"\bicassp\b", "ICASSP"), (r"\binterspeech\b", "Interspeech"),
+    (r"\btmlr\b|transactions on machine learning research", "TMLR"), (r"\bjmlr\b|journal of machine learning research", "JMLR"),
+    (r"\btpami\b|pattern analysis and machine intelligence", "TPAMI"), (r"\blog\b.*graphs", "LoG"),
+]
+VENUE_TAGS = [(r"\boral\b", "Oral"), (r"\bspotlight\b", "Spotlight"), (r"\bfindings\b", "Findings"), (r"\bworkshop\b", "Workshop")]
+
+
+def detect_venue(texts: list[str], fallback_year: int | None) -> tuple[str | None, list[str]]:
+    for text in texts:
+        low = (text or "").lower()
+        if not low or "arxiv" in low and len(low) < 30:
+            continue
+        for pattern, short in VENUES:
+            if re.search(pattern, low):
+                year = re.search(r"\b(20[12]\d)\b", low)
+                y = year.group(1) if year else (str(fallback_year) if fallback_year else "")
+                tags = [t for p, t in VENUE_TAGS if re.search(p, low)]
+                return f"{short} {y}".strip(), tags
+    return None, []
+
+
+def arxiv_meta(ids: list[str]) -> dict[str, list[str]]:
+    """comment and journal_ref for each arXiv id (100 per request)."""
+    out: dict[str, list[str]] = {}
+    for i in range(0, len(ids), 100):
+        batch = ids[i:i + 100]
+        try:
+            r = httpx.get("https://export.arxiv.org/api/query",
+                          params={"id_list": ",".join(batch), "max_results": str(len(batch))}, timeout=30)
+        except httpx.HTTPError:
+            continue
+        for entry in r.text.split("<entry>")[1:]:
+            m = re.search(r"<id>https?://arxiv\.org/abs/([^<]+?)(?:v\d+)?</id>", entry)
+            if not m:
+                continue
+            texts = [re.sub(r"\s+", " ", x) for x in re.findall(r"<arxiv:(?:comment|journal_ref)[^>]*>([\s\S]*?)</arxiv:", entry)]
+            out[m.group(1)] = texts
+        time.sleep(3)  # arXiv asks for one request every three seconds
+    return out
+
+
+def openalex_venues(ids: list[str]) -> dict[str, list[str]]:
+    """Names of non-arXiv sources where OpenAlex lists a version of each work."""
+    out: dict[str, list[str]] = {}
+    works = [i for i in ids if re.fullmatch(r"W\d+", i)]
+    for i in range(0, len(works), 50):
+        try:
+            r = httpx.get("https://api.openalex.org/works", timeout=30, params={
+                "filter": "openalex_id:" + "|".join(works[i:i + 50]), "per_page": "50", "select": "id,locations"})
+            r.raise_for_status()
+        except httpx.HTTPError:
+            continue
+        for w in r.json().get("results", []):
+            names = [((l.get("source") or {}).get("display_name") or "") for l in w.get("locations") or []]
+            out[w["id"].rsplit("/", 1)[-1]] = [n for n in names if n and "arxiv" not in n.lower()]
+    return out
+
+
 def refresh_links(db, limit: int, dry: bool) -> int:
     cutoff = (datetime.now(timezone.utc) - RECHECK).isoformat()
-    rows = db.get("papers", select="id,url,thumbnail", order="extras_checked_at.asc.nullsfirst",
+    rows = db.get("papers", select="id,url,thumbnail,venue,tags,year", order="extras_checked_at.asc.nullsfirst",
                   **{"or": f"(extras_checked_at.is.null,extras_checked_at.lt.{cutoff})"}, limit=str(limit))
 
+    aids = {p["id"]: arxiv_id(p.get("url")) for p in rows}
+    ax = arxiv_meta([a for a in aids.values() if a])
+    oa = openalex_venues([p["id"] for p in rows])
+
     def one(p: dict) -> None:
-        aid = arxiv_id(p.get("url"))
+        aid = aids[p["id"]]
         values = {"extras_checked_at": datetime.now(timezone.utc).isoformat()}
+        venue, tags = detect_venue([*ax.get(aid or "", []), *oa.get(p["id"], []), p.get("venue") or ""], p.get("year"))
+        if venue and venue != p.get("venue"):
+            values["venue"] = venue
+        new_tags = [t for t in tags if t not in (p.get("tags") or [])]
+        if new_tags:
+            values["tags"] = (p.get("tags") or []) + new_tags
         if aid:
             values.update(hf_info(aid))
             if not p.get("thumbnail"):
@@ -152,10 +232,10 @@ def write_consensus(db, writer, limit: int, dry: bool, tier_of) -> int:
 
 def tier_label(score: float) -> str:
     """Mirror of TIERS in lib/types.ts."""
-    for minimum, label in ((0.8, "Must read"), (0.65, "Highly rated"), (0.5, "Worth a look"), (0.35, "Mixed reviews")):
+    for minimum, label in ((0.8, "Must read"), (0.65, "Highly rated"), (0.5, "Worth a look"), (0.35, "Niche pick")):
         if score >= minimum:
             return label
-    return "For specialists"
+    return "Specialist read"
 
 
 def run(db, writer, dry: bool, links: int = 200, tldr: int = 100, consensus: int = 60) -> str:

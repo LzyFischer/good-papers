@@ -72,8 +72,8 @@ export const TIERS = [
   { min: 0.8, label: "Must read", tone: 5 },
   { min: 0.65, label: "Highly rated", tone: 4 },
   { min: 0.5, label: "Worth a look", tone: 3 },
-  { min: 0.35, label: "Mixed reviews", tone: 2 },
-  { min: 0, label: "For specialists", tone: 1 },
+  { min: 0.35, label: "Niche pick", tone: 2 },
+  { min: 0, label: "Specialist read", tone: 1 },
 ] as const;
 
 // Below this many counted readers the headline is marked as an early (mostly AI) read.

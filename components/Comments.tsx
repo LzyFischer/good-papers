@@ -154,6 +154,7 @@ export function Comments({ paper }: { paper: PaperStub }) {
       .upsert({ ...paper, authors: paper.authors.slice(0, 40) }, { onConflict: "id", ignoreDuplicates: true });
     const { error } = await supabase.from("comments").insert({ paper_id: paper.id, parent_id: parentId, body });
     if (error) return `Your comment wasn't posted: ${error.message}`;
+    fetch("/api/nudge", { method: "POST" }).catch(() => {}); // wake the AI reviewers
     setReplyTo(null);
     await load();
     return null;
@@ -251,7 +252,7 @@ export function Comments({ paper }: { paper: PaperStub }) {
         </p>
       )}
       {top.length === 0 ? (
-        <p className="empty">No comments yet. The AI panel will start the discussion shortly.</p>
+        <p className="empty">The AI reviewers are reading this paper. Their discussion shows up here in a couple of minutes.</p>
       ) : (
         <ul className="comments">{top.map((c) => node(c, 0))}</ul>
       )}

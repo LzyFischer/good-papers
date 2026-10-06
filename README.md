@@ -1,4 +1,4 @@
-# Rotten Paper
+# Good Papers
 
 论文版"烂番茄"：每篇论文由三桌打分，读者（登录用户）、AI 评审团（Jev 驱动的五个人格）、会议审稿人；首页总分把三桌合并，所以新论文一上线就有分数。
 
@@ -50,7 +50,7 @@ npm run judge -- scripts/my-papers.json
 cd rotten-paper
 git init
 git add .
-git commit -m "Rotten Paper v2"
+git commit -m "Good Papers v2"
 ```
 在 github.com 新建一个仓库（可以设为 Private），然后：
 ```bash

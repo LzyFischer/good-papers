@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AREAS } from "@/lib/areas";
 import { arxivIdOf } from "@/lib/arxiv";
-import { orgKind, shortOrg } from "@/lib/orgs";
+import { orgKind, shortOrg, venueLabel } from "@/lib/orgs";
 import { PERSONA_IDS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
 import { AiDots, AuthorLinks, formatPublished } from "./PaperCard";
@@ -22,7 +22,6 @@ export function PaperHero({ paper, score, verdicts }: { paper: Paper; score: Sco
 
   const facts = [
     published && `Published ${published}`,
-    paper.venue && !/arxiv/i.test(paper.venue) && paper.venue,
     citations ? `${citations.toLocaleString("en-US")} citation${citations === 1 ? "" : "s"}` : null, // 0 just means "new"
   ].filter(Boolean) as string[];
 
@@ -31,10 +30,11 @@ export function PaperHero({ paper, score, verdicts }: { paper: Paper; score: Sco
       <div className="ph-top">
         <div className="ph-main">
           <div className="ph-tags">
-            {area && <Link href={`/area/${area.key}`} className="tag tag--area">{area.label}</Link>}
+            {paper.venue && !/arxiv/i.test(paper.venue) && <span className="tag venue">{venueLabel(paper.venue, paper.year)}</span>}
+            {area && <Link href={`/?area=${area.key}`} className="tag tag--area">{area.label}</Link>}
             {paper.tags.map((x) => <span key={x} className={`tag ${x === "Oral" ? "oral" : ""}`}>{x}</span>)}
             {paper.orgs.slice(0, 6).map((o) => (
-              <Link key={o} href={`/org/${encodeURIComponent(o)}`} className={`tag ${orgKind(o) ? `org-${orgKind(o)}` : ""}`} title={o}>
+              <Link key={o} href={`/?org=${encodeURIComponent(o)}`} className={`tag ${orgKind(o) ? `org-${orgKind(o)}` : ""}`} title={o}>
                 {shortOrg(o)}
               </Link>
             ))}

@@ -1,4 +1,4 @@
-// Original Rotten Paper icon set, rendered once as an SVG sprite in the layout.
+// Original Good Papers icon set, rendered once as an SVG sprite in the layout.
 export type IconName = "fresh" | "rotten" | "pending" | "readers" | "ai" | "reviewer" | "brand" | "up" | "down";
 
 export function Icon({ name, className }: { name: IconName; className?: string }) {
@@ -63,13 +63,13 @@ export function IconSprite() {
           <circle cx="24" cy="24" r="3" fill="var(--ink)" />
         </symbol>
         {/* Brand: half fresh, half rotten page */}
+        {/* Brand: a clean page with a lime check, "a good paper" */}
         <symbol id="ic-brand" viewBox="0 0 48 48">
-          <path d="M10 6h18l10 10v26a2 2 0 0 1-2 2H10z" fill="#f2f4f6" />
-          <path d="M24 6h4l10 10v26a2 2 0 0 1-2 2H24z" fill="#e2c98a" />
-          <circle cx="31" cy="31" r="3.5" fill="#7c8a3a" />
-          <circle cx="34" cy="24" r="1.8" fill="#7c8a3a" />
-          <path d="M17 34v-8" stroke="#2f8a3e" strokeWidth="2.5" strokeLinecap="round" />
-          <path d="M17 28c0-4-3-6-7-6 0 4 3 6 7 6z" fill="#2f8a3e" />
+          <path d="M11 5h17l10 10v27a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" fill="#f4f1ea" />
+          <path d="M28 5v10h10" fill="#d9d3c4" />
+          <path d="M15 17h9M15 22h14" stroke="#c9c2b1" strokeWidth="2.2" strokeLinecap="round" />
+          <circle cx="31" cy="33" r="9" fill="#d2f54a" />
+          <path d="M26.8 33.2l3 3 5.6-6" fill="none" stroke="#14161a" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
         </symbol>
       </defs>
     </svg>

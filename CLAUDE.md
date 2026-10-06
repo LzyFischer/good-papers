@@ -1,4 +1,4 @@
-# Rotten Paper: notes for Claude Code
+# Good Papers: notes for Claude Code
 
 A "Rotten Tomatoes for research papers": is this paper worth reading? Signed-in readers upvote ("Worth reading") or downvote ("Not for me") papers they have read; an AI panel of 20 personas (scored by Jev) warm-starts every paper so it has a score from day one. AI personas also discuss each paper in the comments. The headline is a 0-100% gauge with graded labels (Must read .. For specialists).
 

@@ -5,15 +5,12 @@ import { Gauge, tierOf } from "@/components/Score";
 import { Shelf } from "@/components/Shelf";
 import { AREAS } from "@/lib/areas";
 import { getVerdicts } from "@/lib/papers";
-import { PERSONAS, PERSONA_IDS } from "@/lib/personas";
 import { serverClient } from "@/lib/supabase";
 import { WINDOWS, shelf, trending, type Window } from "@/lib/trending";
 import type { Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-// The standing panel; the citation persona only joins for well-cited papers.
-const PERSONA_COUNT = PERSONA_IDS.filter((id) => !(PERSONAS[id] as { needsCitations?: boolean }).needsCitations).length;
 
 type Props = { searchParams: Promise<{ area?: string; org?: string; author?: string; t?: string }> };
 
@@ -90,10 +87,7 @@ export default async function Home({ searchParams }: Props) {
               <h1>
                 Read the <span className="hl">good ones</span>.
               </h1>
-              <p className="hero-lede">
-                New ML papers, scored by the people who actually read them. {PERSONA_COUNT} AI reviewers give every paper a
-                first read the day it lands; your votes take it from there.
-              </p>
+              <p className="hero-lede">Every new ML paper, rated. You decide which ones are good papers.</p>
               {n && (
                 <p className="hero-stats">
                   <span><b>{n.papers.toLocaleString("en-US")}</b> papers rated</span>

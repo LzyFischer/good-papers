@@ -15,7 +15,7 @@ const MAX_PDF_BYTES = 25_000_000;
 
 function contact() {
   const mail = process.env.OPENALEX_MAILTO;
-  return `RottenPaper/0.2${mail ? ` (mailto:${mail})` : ""}`;
+  return `GoodPapers/0.2${mail ? ` (mailto:${mail})` : ""}`;
 }
 
 async function get(url: string, ms: number): Promise<Response | null> {

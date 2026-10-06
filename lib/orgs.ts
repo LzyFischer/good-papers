@@ -25,3 +25,10 @@ export function shortOrg(org: string): string {
     .replace(/\s*\(.*\)$/, "")
     .slice(0, 32);
 }
+
+// "arXiv (Cornell University)" → "arXiv"; venues the worker detected already carry their year.
+export function venueLabel(venue: string | null | undefined, year: number | null | undefined): string | null {
+  if (!venue) return year ? String(year) : null;
+  const v = /arxiv/i.test(venue) ? "arXiv" : venue;
+  return /\b(19|20)\d{2}\b/.test(v) || !year ? v : `${v} ${year}`;
+}

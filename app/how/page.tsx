@@ -10,7 +10,7 @@ export default function How() {
     <main className="wrap page prose">
       <h1 className="page-title">How scores work</h1>
       <p>
-        Upvote sites measure attention: who has the biggest network. Rotten Paper tries to measure something else,
+        Upvote sites measure attention: who has the biggest network. Good Papers tries to measure something else,
         whether a paper is worth your reading time, and is built so that friends voting for friends doesn&apos;t move
         the needle.
       </p>

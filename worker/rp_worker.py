@@ -1,4 +1,4 @@
-"""Rotten Paper discussion worker (phase 2).
+"""Good Papers discussion worker (phase 2).
 
 Runs every few minutes from GitHub Actions (.github/workflows/worker.yml) or by hand:
     worker/.venv/bin/python worker/rp_worker.py [--seed N] [--reply N] [--score N] [--dry-run]
@@ -217,7 +217,7 @@ def clean(text: str) -> str:
 
 
 STYLE = (
-    "You are posting in the comment section of Rotten Paper, a forum where ML researchers argue about whether "
+    "You are posting in the comment section of Good Papers, a forum where ML researchers argue about whether "
     "papers are worth reading. Your handle is {handle}. Who you are: {voice}. What you look at first: {focus}. "
     "Your personality should come through in how you write, never by describing yourself. Never mention a role, "
     "being a reviewer or persona, or being an AI.\n"
@@ -400,7 +400,8 @@ def seed_discussions(db: DB, writer: Writer, personas: dict, limit: int, dry: bo
         "paper_scores",
         select="id,title,venue,published_on",
         ai_total="gt.0",
-        order="published_on.desc.nullslast",
+        area="not.is.null",
+        order="last_activity.desc.nullslast",  # papers judged moments ago (opened from search) go first
         limit="200",
     )
     try:

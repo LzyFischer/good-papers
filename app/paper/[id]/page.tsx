@@ -6,6 +6,7 @@ import { PaperHero } from "@/components/PaperHero";
 import { jevConfigured } from "@/lib/jev";
 import { judgePaper } from "@/lib/judge";
 import { getPaperAnywhere, getScores, getVerdicts, storeJudgement } from "@/lib/papers";
+import { nudgeWorker } from "@/lib/dispatch";
 import { serverClient } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +43,7 @@ export default async function PaperPage({ params }: Props) {
     try {
       await storeJudgement(paper, await judgePaper(paper, { withTakes: false }));
       verdicts = (await getVerdicts([id])).get(id) ?? [];
+      await nudgeWorker(); // AI discussion, TL;DR and consensus follow in a couple of minutes
     } catch (e) {
       console.warn("Inline judging failed:", e);
     }

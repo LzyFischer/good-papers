@@ -1,4 +1,4 @@
-/* Rotten Paper. Scores run through five tones, green to slate: a low score reads as niche, not as a failure. */
+/* Good Papers. Scores run through five tones, green to slate: a low score reads as niche, not as a failure. */
 :root {
   --bg: #f4f1ea; --surface: #ffffff; --ink: #14161a; --muted: #5e636b; --line: #e1dbcf;
   --night: #111316; --night-2: #1b1e23; --night-ink: #f4f1ea; --night-muted: #a3a7ae; --lime: #d2f54a; --lime-ink: #14161a;
@@ -330,8 +330,12 @@ button { font: inherit; }
 /* Paper page */
 .paper-page { max-width: 64rem; }
 .ph { margin-bottom: 1.5rem; }
-.ph-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2rem; align-items: start; }
-@media (max-width: 48rem) { .ph-top { grid-template-columns: minmax(0, 1fr); } }
+.ph-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 20rem); gap: 2rem; align-items: start; }
+.ph-top > :only-child { grid-column: 1 / -1; }
+@media (max-width: 56rem) {
+  .ph-top { grid-template-columns: minmax(0, 1fr); }
+  .ph-img { order: -1; max-height: 14rem; }
+}
 .ph-tags { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .9rem; }
 .ph-tags a.tag { text-decoration: none; }
 .ph-title { font: 800 clamp(1.8rem, 4vw, 2.7rem)/1.08 var(--display); letter-spacing: -.03em; margin: 0 0 .8rem; }
@@ -342,7 +346,7 @@ button { font: inherit; }
 .ph-facts { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; }
 .ph-facts > * { font-size: .82rem; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: .25rem .65rem; text-decoration: none; }
 .ph-facts a:hover { color: var(--ink); border-color: var(--ink); }
-.ph-img { width: min(22rem, 100%); aspect-ratio: 4 / 3; object-fit: contain; background: #fff; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(20, 22, 26, .1); }
+.ph-img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: #fff; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(20, 22, 26, .1); }
 .scorecard { display: grid; grid-template-columns: minmax(12rem, .8fr) minmax(0, 1.2fr) minmax(0, 1fr); gap: 1rem; margin: 1.75rem 0 1.25rem; }
 @media (max-width: 56rem) { .scorecard { grid-template-columns: minmax(0, 1fr); } }
 .sc { background: var(--surface); border-radius: 16px; padding: 1.1rem 1.2rem; box-shadow: 0 0 0 1px var(--line); display: grid; align-content: start; gap: .3rem; }
@@ -372,6 +376,7 @@ button { font: inherit; }
 .discussion-head h2 { font: 800 1.6rem var(--display); letter-spacing: -.02em; margin: 0; }
 .discussion-meta { color: var(--muted); font-size: .9rem; }
 .composer-actions { display: flex; gap: .9rem; align-items: center; }
+.comment-main .composer { margin-top: .7rem; }
 .link-button--strong { color: var(--ink); text-decoration: underline; }
 .comments { gap: 1rem; }
 .comment { background: var(--surface); border: 0; box-shadow: 0 0 0 1px var(--line); border-radius: 14px; padding: .85rem 1rem; }
@@ -389,3 +394,7 @@ button { font: inherit; }
 /* My papers: let the vote chip size itself instead of overflowing a fixed column */
 .paper-row { grid-template-columns: max-content minmax(0, 1fr); }
 .paper-row .chip { white-space: nowrap; }
+
+/* Venue tags: conferences stand out, preprints stay quiet */
+.tag.venue--preprint { background: var(--bg); color: var(--muted); border-color: var(--line); }
+.mini-venue { display: inline-block; margin-right: .4rem; padding: .05rem .35rem; border-radius: 4px; background: var(--ink); color: var(--bg); font-size: .7rem; }

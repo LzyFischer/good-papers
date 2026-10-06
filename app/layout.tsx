@@ -6,7 +6,7 @@ import { SearchForm } from "@/components/SearchForm";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Rotten Paper: read the good ones", template: "%s | Rotten Paper" },
+  title: { default: "Good Papers: read the good ones", template: "%s | Good Papers" },
   description: "New ML papers, scored by the people who read them, with a 20-reviewer AI panel from day one.",
 };
 
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="top-in">
             <Link href="/" className="brand">
               <Icon name="brand" />
-              Rotten Paper
+              Good Papers
             </Link>
             <nav className="nav" aria-label="Sections">
               <Link href="/#trending">Trending</Link>
