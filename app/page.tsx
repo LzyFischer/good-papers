@@ -75,6 +75,7 @@ export default async function Home({ searchParams }: Props) {
     .from("paper_scores")
     .select("*")
     .not("score", "is", null)
+    .not("area", "is", null) // in-scope (ML) papers only; others can come in from author/institution pages
     .order("published_on", { ascending: false, nullsFirst: false })
     .order("last_activity", { ascending: false })
     .limit(30);

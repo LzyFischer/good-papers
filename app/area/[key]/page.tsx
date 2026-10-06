@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ key: string }>; searchParams: Promise<{ page?: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  return { title: AREAS[(await params).key]?.label ?? "Area" };
+  return { robots: { index: false, follow: false }, title: AREAS[(await params).key]?.label ?? "Area" };
 }
 
 export default async function AreaPage({ params, searchParams }: Props) {

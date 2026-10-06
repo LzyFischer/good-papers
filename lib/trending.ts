@@ -28,13 +28,14 @@ export async function trending(window: Window, n = 12): Promise<Score[]> {
   for (const r of fresh.data ?? []) add(r.id, (r.hf_upvotes ?? 0) / 10);
   const ids = [...heat.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([id]) => id);
   if (ids.length === 0) return [];
-  const { data } = await db.from("paper_scores").select("*").in("id", ids).not("score", "is", null);
+  const { data } = await db.from("paper_scores").select("*").in("id", ids).not("score", "is", null).not("area", "is", null);
   const byId = new Map(((data ?? []) as Score[]).map((s) => [s.id, s]));
   return ids.map((id) => byId.get(id)).filter((s): s is Score => Boolean(s));
 }
 
 export async function shelf(kind: "must" | "debated" | "new", n = 12): Promise<Score[]> {
-  let q = serverClient().from("paper_scores").select("*").not("score", "is", null);
+  // Papers opened from author or institution pages can be outside ML; shelves show ML areas only.
+  let q = serverClient().from("paper_scores").select("*").not("score", "is", null).not("area", "is", null);
   if (kind === "must") q = q.gte("score", 0.8).order("score", { ascending: false });
   if (kind === "debated") q = q.gt("comments", 0).order("comments", { ascending: false });
   if (kind === "new") q = q.order("published_on", { ascending: false, nullsFirst: false });

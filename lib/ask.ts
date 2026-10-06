@@ -78,7 +78,7 @@ export async function ask(question: string): Promise<Answer> {
     const w = days && days <= 1 ? "day" : days && days <= 7 ? "week" : "month";
     papers = (await trending(w, 60)).filter((s) => !areaKeys || (s.area && areaKeys.includes(s.area)));
   } else {
-    let q = serverClient().from("paper_scores").select("*").not("score", "is", null);
+    let q = serverClient().from("paper_scores").select("*").not("score", "is", null).not("area", "is", null);
     if (areaKeys) q = q.in("area", areaKeys);
     if (days) q = q.gte("published_on", new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10));
     if (intent === "debated") q = q.order("comments", { ascending: false });

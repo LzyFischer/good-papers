@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ name: string }>; searchParams: Promise<{ page?: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  return { title: decodeURIComponent((await params).name) };
+  return { robots: { index: false, follow: false }, title: decodeURIComponent((await params).name) };
 }
 
 export default async function OrgPage({ params, searchParams }: Props) {
