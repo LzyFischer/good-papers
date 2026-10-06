@@ -17,18 +17,6 @@ type Props = { searchParams: Promise<{ area?: string; org?: string; author?: str
 // PostgREST array "contains" with a quoted element, so names with commas or spaces work.
 const arrayHas = (v: string) => `{"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"}`;
 
-async function stats() {
-  const db = serverClient();
-  const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
-  // (Reader votes aren't countable here: ratings are private under row-level security.)
-  const [papers, comments, week] = await Promise.all([
-    db.from("paper_scores").select("id", { count: "exact", head: true }).not("score", "is", null).not("area", "is", null),
-    db.from("comments").select("id", { count: "exact", head: true }),
-    db.from("paper_scores").select("id", { count: "exact", head: true }).not("area", "is", null).gte("published_on", weekAgo),
-  ]);
-  return { papers: papers.count ?? 0, comments: comments.count ?? 0, week: week.count ?? 0 };
-}
-
 // The paper at the top of the page: the hottest one this week that has a picture and a consensus line.
 function Spotlight({ s }: { s: Score }) {
   const t = tierOf(s);
@@ -73,9 +61,9 @@ export default async function Home({ searchParams }: Props) {
   const verdicts = await getVerdicts(papers.map((p) => p.id));
 
   const browsing = !filtered;
-  const [hotNow, must, debated, fresh, n] = browsing
-    ? await Promise.all([trending(window), shelf("must"), shelf("debated"), shelf("new"), stats()])
-    : [[], [], [], [], null];
+  const [hotNow, must, debated, fresh] = browsing
+    ? await Promise.all([trending(window), shelf("must"), shelf("debated"), shelf("new")])
+    : [[], [], [], []];
   const spot = [...hotNow, ...must].find((s) => s.thumbnail && s.panel_consensus) ?? hotNow[0] ?? must[0];
 
   return (
@@ -87,14 +75,7 @@ export default async function Home({ searchParams }: Props) {
               <h1>
                 Read the <span className="hl">good ones</span>.
               </h1>
-              <p className="hero-lede">Every new ML paper, rated. You decide which ones are good papers.</p>
-              {n && (
-                <p className="hero-stats">
-                  <span><b>{n.papers.toLocaleString("en-US")}</b> papers rated</span>
-                  <span><b>{n.comments.toLocaleString("en-US")}</b> comments</span>
-                  <span><b>{n.week.toLocaleString("en-US")}</b> new this week</span>
-                </p>
-              )}
+              <p className="hero-lede">You decide which ones are good research papers.</p>
               <AskBox dark />
             </div>
             {spot && <Spotlight s={spot} />}
