@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { AskBox } from "@/components/AskBox";
 import { Icon } from "@/components/Icons";
+import { Shelf } from "@/components/Shelf";
 import { PaperCard } from "@/components/PaperCard";
 import { AREAS } from "@/lib/areas";
 import { getVerdicts } from "@/lib/papers";
 import { PERSONAS, PERSONA_IDS } from "@/lib/personas";
 import { serverClient } from "@/lib/supabase";
+import { WINDOWS, shelf, trending, type Window } from "@/lib/trending";
 import { SCORING, TIERS, type Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -58,13 +61,14 @@ function firstSentence(text: string, max = 180) {
   return s.length > max ? s.slice(0, max).replace(/\s+\S*$/, "") + "…" : s;
 }
 
-type Props = { searchParams: Promise<{ area?: string; org?: string; author?: string }> };
+type Props = { searchParams: Promise<{ area?: string; org?: string; author?: string; t?: string }> };
 
 // PostgREST array "contains" with a quoted element, so names with commas or spaces work.
 const arrayHas = (v: string) => `{"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"}`;
 
 export default async function Home({ searchParams }: Props) {
-  const { area, org, author } = await searchParams;
+  const { area, org, author, t } = await searchParams;
+  const window: Window = t && t in WINDOWS ? (t as Window) : "week";
   const activeArea = area && AREAS[area] ? area : null;
 
   let q = serverClient()
@@ -83,6 +87,10 @@ export default async function Home({ searchParams }: Props) {
   const verdicts = await getVerdicts(papers.map((p) => p.id));
 
   const hot = await hotQuotes();
+  const browsing = !area && !org && !author;
+  const [hotNow, must, debated, fresh] = browsing
+    ? await Promise.all([trending(window), shelf("must"), shelf("debated"), shelf("new")])
+    : [[], [], [], []];
 
   return (
     <main className="wrap">
@@ -94,6 +102,26 @@ export default async function Home({ searchParams }: Props) {
           paper is worth your time. <Link href="/how">How scores work</Link>
         </p>
       </section>
+
+      <AskBox />
+
+      {browsing && (
+        <>
+          <Shelf title="Trending" papers={hotNow}>
+            <nav className="seg" aria-label="Trending window">
+              {(Object.keys(WINDOWS) as Window[]).map((w) => (
+                <Link key={w} href={w === "week" ? "/" : `/?t=${w}`} aria-current={w === window ? "page" : undefined} scroll={false}>
+                  {w === "day" ? "Daily" : w === "week" ? "Weekly" : "Monthly"}
+                </Link>
+              ))}
+            </nav>
+          </Shelf>
+          <Shelf title="Must read" papers={must} />
+          <Shelf title="Most debated" papers={debated} />
+          <Shelf title="New today" papers={fresh} />
+          <h2 className="section-title">All papers</h2>
+        </>
+      )}
 
       <div className="layout">
         <section aria-label="Papers">

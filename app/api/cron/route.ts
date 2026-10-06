@@ -4,6 +4,7 @@
 // Vercel Cron sends "Authorization: Bearer $CRON_SECRET" automatically.
 import { NextResponse } from "next/server";
 import { arxivCategories, arxivIdOf, isML } from "@/lib/arxiv";
+import { getHfTrendingPapers } from "@/lib/huggingface";
 import { judgePaper, mapLimit } from "@/lib/judge";
 import { getNewestPapers } from "@/lib/openalex";
 import { fillMissingTakes, isAuthorized, refreshCitations, storeJudgement } from "@/lib/papers";
@@ -16,7 +17,13 @@ export async function GET(req: Request) {
   if (!isAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const max = Number(process.env.CRON_MAX_PAPERS ?? 50);
-  const fetched = await getNewestPapers(3, 100);
+  // Hugging Face trending first (what people are upvoting), then OpenAlex's newest.
+  const hf = await getHfTrendingPapers(30).catch((e) => {
+    console.warn("Hugging Face trending failed:", e);
+    return [];
+  });
+  const seen = new Set(hf.map((p) => p.id));
+  const fetched = [...hf, ...(await getNewestPapers(3, 100)).filter((p) => !seen.has(p.id))];
   // OpenAlex's AI topic tag lets physics and math in; keep papers arXiv files under ML.
   let newest = fetched;
   try {
@@ -50,6 +57,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     judged: results.filter((r) => r.ok).length,
     skippedNotML: fetched.length - newest.length,
+    fromHuggingFace: hf.length,
     results,
     takesFilled,
     citationsRefreshed,

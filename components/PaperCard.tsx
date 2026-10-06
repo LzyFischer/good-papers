@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AREAS } from "@/lib/areas";
+import { arxivIdOf } from "@/lib/arxiv";
 import { orgKind, shortOrg } from "@/lib/orgs";
 import { PERSONAS, PERSONA_IDS, TIERS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
@@ -76,6 +77,7 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
   const ordered = PERSONA_IDS.map((id) => verdicts.find((x) => x.persona === id)).filter(Boolean) as AiVerdict[];
   const published = formatPublished(paper.publishedOn ?? score?.published_on, paper.year);
   const citations = paper.citedByCount ?? score?.cited_by_count ?? null;
+  const arxivId = arxivIdOf(paper.url);
 
   const title = linkTitle ? (
     <Link href={`/paper/${paper.id}`}>{paper.title}</Link>
@@ -116,15 +118,40 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
             </Link>
           )}
         </div>
+        {score?.thumbnail && (
+          // Hotlinked arXiv figure; plain img keeps it out of Next's image proxy.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="thumb" src={score.thumbnail} alt="" loading="lazy" />
+        )}
         <h2 className="title">{title}</h2>
+        {score?.tldr && <p className="tldr">{score.tldr}</p>}
         <p className="authors">
           <AuthorLinks authors={paper.authors} max={linkTitle ? 4 : 60} paperId={paper.id} />
         </p>
-        {(published || citations !== null) && (
+        {(published || citations !== null || score?.hf_upvotes || score?.github_url) && (
           <p className="pubinfo">
-            {published && <>Published {published}</>}
-            {published && citations !== null && " · "}
-            {citations !== null && `${citations.toLocaleString("en-US")} citation${citations === 1 ? "" : "s"}`}
+            {[
+              published && <span key="p">Published {published}</span>,
+              citations !== null && <span key="c">{`${citations.toLocaleString("en-US")} citation${citations === 1 ? "" : "s"}`}</span>,
+              score?.hf_upvotes && arxivId ? (
+                <a key="hf" href={`https://huggingface.co/papers/${arxivId}`} target="_blank" rel="noopener noreferrer">
+                  ▲ {score.hf_upvotes} on Hugging Face
+                </a>
+              ) : null,
+              score?.github_url ? (
+                <a key="gh" href={score.github_url} target="_blank" rel="noopener noreferrer">
+                  Code{score.github_stars ? ` ★ ${score.github_stars.toLocaleString("en-US")}` : ""}
+                </a>
+              ) : null,
+            ]
+              .filter(Boolean)
+              .flatMap((x, i) => (i ? [" · ", x] : [x]))}
+          </p>
+        )}
+        {!linkTitle && score?.panel_consensus && (
+          <p className="consensus">
+            <b>Panel consensus</b>
+            {score.panel_consensus}
           </p>
         )}
 

@@ -29,6 +29,7 @@ from pathlib import Path
 
 import httpx
 
+import extras
 import reputation
 from voices import LENGTH_WORDS, VOICES
 
@@ -439,13 +440,14 @@ def main() -> None:
     ap.add_argument("--reply", type=int, default=30, help="reader comments to answer")
     ap.add_argument("--score", type=int, default=100, help="comments to label with Jev")
     ap.add_argument("--no-reputation", action="store_true", help="skip reader weights and consensus")
+    ap.add_argument("--no-extras", action="store_true", help="skip TL;DRs, consensus lines, thumbnails, HF upvotes")
     ap.add_argument("--dry-run", action="store_true", help="print, write nothing")
     args = ap.parse_args()
 
     load_env()
     personas = load_personas()
     db = DB()
-    writer = Writer() if (args.reply or args.seed) else None
+    writer = Writer() if (args.reply or args.seed or not args.no_extras) else None
 
     if not args.no_reputation:
         try:
@@ -458,6 +460,11 @@ def main() -> None:
     # Score what this run just wrote, so new comments reach the hot-quotes board right away.
     if not args.dry_run and (r or s) and args.score:
         n += score_comments(db, args.score, False)
+    if not args.no_extras:
+        try:
+            print(extras.run(db, writer, args.dry_run), flush=True)
+        except Exception as e:
+            print(f"extras FAILED: {e}", flush=True)
     print(f"done: scored {n}, replied {r}, seeded {s}{' (dry run)' if args.dry_run else ''}")
 
 

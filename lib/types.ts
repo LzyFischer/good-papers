@@ -37,6 +37,14 @@ export type Score = {
   reader_coi: number; // votes from authors, co-authors or colleagues, not counted
   reader_weight: number; // sum of counted readers' reputation weights
   consensus: boolean | null; // true when the cross-camp consensus sets the readers' share
+  // Extras filled by the worker (worker/extras.py); null until it has run.
+  tldr: string | null;
+  panel_consensus: string | null;
+  thumbnail: string | null;
+  hf_upvotes: number | null;
+  github_url: string | null;
+  github_stars: number | null;
+  comments: number;
 };
 
 export type AiVerdict = {

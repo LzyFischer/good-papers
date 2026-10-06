@@ -220,3 +220,15 @@ export async function searchTopicWorks(label: string, page = 1) {
   return works(`from_publication_date:${since}`, page, { search: label });
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
+
+// OpenAlex works for arXiv ids, via their arXiv DOIs (50 per request).
+export async function getPapersByArxivIds(ids: string[]): Promise<Paper[]> {
+  const out: Paper[] = [];
+  for (let i = 0; i < ids.length; i += 50) {
+    const dois = ids.slice(i, i + 50).map((id) => `10.48550/arxiv.${id}`).join("|");
+    const res = await fetch(`${BASE}/works?${params({ filter: `doi:${dois}`, per_page: "50" })}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`OpenAlex arXiv lookup failed (${res.status})`);
+    out.push(...((await res.json()).results ?? []).map(toPaper));
+  }
+  return out;
+}

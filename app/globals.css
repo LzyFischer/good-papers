@@ -226,3 +226,50 @@ button { font: inherit; }
 
 .page-sub { margin: -1rem 0 1.5rem; color: var(--muted); }
 .pager { display: flex; gap: 1rem; align-items: center; justify-content: center; margin: 1.5rem 0; color: var(--muted); font-size: .9rem; }
+
+/* Ask box */
+.ask { margin: 0 0 2rem; }
+.ask-form { display: flex; gap: .5rem; }
+.ask-form input { flex: 1; min-width: 0; font: inherit; font-size: 1.05rem; color: var(--ink); padding: .8rem 1rem; background: var(--surface); border: 2px solid var(--line); border-radius: 12px; }
+.ask-form input:focus { border-color: var(--ai); outline: none; }
+.ask-form button { font: 700 1rem var(--display); padding: 0 1.3rem; border: 0; border-radius: 12px; background: var(--ai); color: #fff; cursor: pointer; }
+.ask-chips { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
+.ask-chip { font-size: .82rem; text-decoration: none; color: var(--ai); background: var(--ai-soft); border-radius: 999px; padding: .3rem .7rem; }
+.ask-chip:hover { text-decoration: underline; }
+.ask-read { color: var(--muted); margin: 0 0 1.25rem; }
+.grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 1rem; }
+.who { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem 2rem; margin-bottom: 1.5rem; }
+.who h2 { font: 700 1rem var(--display); margin: 0 0 .4rem; }
+.who ol { margin: 0; padding-left: 1.2rem; display: grid; gap: .25rem; }
+.who span { color: var(--muted); font-size: .85rem; }
+
+/* Shelves */
+.shelf { margin: 0 0 2rem; }
+.shelf-head { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; margin-bottom: .75rem; }
+.shelf-head h2, .section-title { font: 800 1.35rem var(--display); letter-spacing: -.01em; margin: 0; }
+.section-title { margin: 0 0 1rem; }
+.shelf-more { margin-left: auto; font-size: .88rem; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg a { font: 600 .82rem var(--body); padding: .3rem .8rem; text-decoration: none; color: var(--muted); }
+.seg a[aria-current="page"] { background: var(--ink); color: var(--bg); }
+.shelf-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(13.5rem, 15rem); gap: 1rem; overflow-x: auto; padding-bottom: .6rem; scroll-snap-type: x proximity; }
+.mini { scroll-snap-align: start; display: grid; align-content: start; gap: .35rem; text-decoration: none; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: .6rem; }
+.mini:hover { border-color: var(--ink); }
+.mini-thumb { position: relative; display: block; aspect-ratio: 16 / 10; border-radius: 8px; overflow: hidden; background: #fff; border: 1px solid var(--line); }
+.mini-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.mini-thumb-empty { display: grid; place-items: center; height: 100%; padding: .5rem; text-align: center; font: 700 .9rem var(--display); color: var(--ai); background: var(--ai-soft); }
+.mini-score { position: absolute; left: .35rem; bottom: .35rem; }
+.gauge--sm { width: 2.6rem; height: 2.6rem; background: radial-gradient(closest-side, var(--surface) 74%, transparent 76% 100%), conic-gradient(var(--tone, var(--muted)) calc(var(--p) * 1%), var(--line) 0); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+.gauge--sm b { font: 800 .72rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.mini-title { font: 700 .95rem/1.3 var(--display); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.mini-tldr { font-size: .82rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.mini-meta { font-size: .75rem; color: var(--muted); font-weight: 600; }
+
+/* Card extras */
+.card .thumb { float: right; width: 9.5rem; max-height: 7rem; object-fit: contain; margin: 0 0 .5rem .9rem; border-radius: 8px; background: #fff; border: 1px solid var(--line); }
+@media (max-width: 36rem) { .card .thumb { width: 6.5rem; max-height: 5rem; } }
+.tldr { margin: -.1rem 0 .5rem; font-size: .98rem; }
+.pubinfo a { color: inherit; }
+.consensus { clear: both; margin: 0 0 1rem; padding: .7rem .9rem; border-left: 3px solid var(--tone, var(--t3)); background: var(--surface); border-radius: 0 8px 8px 0; font-size: .98rem; }
+.consensus b { display: block; font: 700 .72rem var(--body); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: .15rem; }
+.tables { clear: both; }
