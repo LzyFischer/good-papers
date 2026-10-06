@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PaperRow } from "@/components/PaperRow";
-import { searchPapers } from "@/lib/openalex";
+import { dedupeByTitle, searchPapers } from "@/lib/openalex";
 import { getScores } from "@/lib/papers";
 import type { Paper } from "@/lib/types";
 
@@ -27,6 +27,21 @@ export default async function SearchPage({ searchParams }: Props) {
     }
   }
   const scores = await getScores(results.map((r) => r.id));
+  // Rated papers first, most votes first (readers, then the AI panel); the rest keep OpenAlex's relevance order.
+  const votes = (id: string) => {
+    const s = scores.get(id);
+    return s && s.score !== null ? [s.reader_total, s.ai_total] : null;
+  };
+  results = results
+    .map((p, i) => ({ p, i, v: votes(p.id) }))
+    .sort((a, b) => {
+      if (a.v && !b.v) return -1;
+      if (!a.v && b.v) return 1;
+      if (a.v && b.v) return b.v[0] - a.v[0] || b.v[1] - a.v[1] || a.i - b.i;
+      return a.i - b.i;
+    })
+    .map((x) => x.p);
+  results = dedupeByTitle(results, (p) => p.title); // rated versions sort first, so they're the ones kept
 
   return (
     <main className="wrap page">

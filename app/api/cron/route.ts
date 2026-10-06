@@ -3,6 +3,7 @@
 // refresh stored citation counts.
 // Vercel Cron sends "Authorization: Bearer $CRON_SECRET" automatically.
 import { NextResponse } from "next/server";
+import { arxivCategories, arxivIdOf, isML } from "@/lib/arxiv";
 import { judgePaper, mapLimit } from "@/lib/judge";
 import { getNewestPapers } from "@/lib/openalex";
 import { fillMissingTakes, isAuthorized, refreshCitations, storeJudgement } from "@/lib/papers";
@@ -15,7 +16,18 @@ export async function GET(req: Request) {
   if (!isAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const max = Number(process.env.CRON_MAX_PAPERS ?? 50);
-  const newest = await getNewestPapers(3, 100);
+  const fetched = await getNewestPapers(3, 100);
+  // OpenAlex's AI topic tag lets physics and math in; keep papers arXiv files under ML.
+  let newest = fetched;
+  try {
+    const cats = await arxivCategories(fetched.map((p) => arxivIdOf(p.url)).filter((x): x is string => Boolean(x)));
+    newest = fetched.filter((p) => {
+      const id = arxivIdOf(p.url);
+      return !id || !cats.has(id) || isML(cats.get(id));
+    });
+  } catch (e) {
+    console.warn("arXiv category check failed, keeping all:", e);
+  }
   const { data: existing } = await serverClient()
     .from("ai_verdicts")
     .select("paper_id")
@@ -35,5 +47,11 @@ export async function GET(req: Request) {
   const takesFilled = await fillMissingTakes(5);
   const citationsRefreshed = await refreshCitations().catch((e) => String(e));
 
-  return NextResponse.json({ judged: results.filter((r) => r.ok).length, results, takesFilled, citationsRefreshed });
+  return NextResponse.json({
+    judged: results.filter((r) => r.ok).length,
+    skippedNotML: fetched.length - newest.length,
+    results,
+    takesFilled,
+    citationsRefreshed,
+  });
 }
