@@ -38,7 +38,8 @@ export async function shelf(kind: "must" | "debated" | "new", n = 12): Promise<S
   let q = serverClient().from("paper_scores").select("*").not("score", "is", null).not("area", "is", null);
   if (kind === "must") q = q.gte("score", 0.8).order("score", { ascending: false });
   if (kind === "debated") q = q.gt("comments", 0).order("comments", { ascending: false });
-  if (kind === "new") q = q.order("published_on", { ascending: false, nullsFirst: false });
+  // New today is the arXiv feed, which the cron checks against arXiv's ML categories.
+  if (kind === "new") q = q.ilike("url", "%arxiv%").order("published_on", { ascending: false, nullsFirst: false });
   const { data } = await q.limit(n);
   return (data ?? []) as Score[];
 }
