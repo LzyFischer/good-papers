@@ -34,6 +34,9 @@ export type Score = {
   ai_total: number;
   score: number | null; // 0..1, see SCORING below; null when nothing has judged it
   cited_by_count: number | null;
+  reader_coi: number; // votes from authors, co-authors or colleagues, not counted
+  reader_weight: number; // sum of counted readers' reputation weights
+  consensus: boolean | null; // true when the cross-camp consensus sets the readers' share
 };
 
 export type AiVerdict = {
@@ -45,13 +48,25 @@ export type AiVerdict = {
 };
 
 // How the headline score is computed (in SQL, the paper_scores view). Keep in sync.
-//   ai     = share of the AI panel saying fresh (0.5 if the panel has not run)
-//   reader = (reader_fresh + PRIOR_VOTES * ai) / (reader_total + PRIOR_VOTES)
+//   ai     = 0.2 + 0.6 * share of the AI panel upvoting (0.5 if the panel has not run):
+//            the AI alone never claims 0% or 100%, only readers can push a score there
+//   share  = readers' upvote share: reputation-weighted, without conflict-of-interest
+//            votes, or the cross-camp consensus once 8+ readers voted (worker/reputation.py)
+//   reader = (share * W + PRIOR_VOTES * ai) / (W + PRIOR_VOTES), W = summed reader weights
 //   score  = AI_WEIGHT * ai + (1 - AI_WEIGHT) * reader
 // The AI share acts as PRIOR_VOTES pseudo-votes, so a paper with no readers is
 // scored by the AI alone (warm start) and one or two votes cannot swing it to
 // 0% or 100%; with many readers their share dominates.
 export const SCORING = { AI_WEIGHT: 0.1, PRIOR_VOTES: 5 };
 
-// Headline score needed for the "Fresh" label.
-export const FRESH_THRESHOLD = 0.5;
+// Headline labels, graded so a low score reads as "niche", never as a failure.
+export const TIERS = [
+  { min: 0.8, label: "Must read", tone: 5 },
+  { min: 0.65, label: "Highly rated", tone: 4 },
+  { min: 0.5, label: "Worth a look", tone: 3 },
+  { min: 0.35, label: "Mixed reviews", tone: 2 },
+  { min: 0, label: "For specialists", tone: 1 },
+] as const;
+
+// Below this many counted readers the headline is marked as an early (mostly AI) read.
+export const EARLY_READERS = 5;

@@ -55,9 +55,9 @@ export default function MyPapers() {
                 {r.worth_reading === null ? (
                   <span className="chip chip--pending">Read</span>
                 ) : (
-                  <span className={`chip ${r.worth_reading ? "chip--fresh" : "chip--stale"}`}>
-                    <Icon name={r.worth_reading ? "fresh" : "rotten"} />
-                    {r.worth_reading ? "Fresh" : "Rotten"}
+                  <span className={`chip ${r.worth_reading ? "tone-5" : "tone-1"}`}>
+                    <Icon name={r.worth_reading ? "up" : "down"} />
+                    {r.worth_reading ? "Upvoted" : "Downvoted"}
                   </span>
                 )}
                 <div>

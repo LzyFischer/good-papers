@@ -4,7 +4,7 @@ Runs every few minutes from GitHub Actions (.github/workflows/worker.yml) or by 
     worker/.venv/bin/python worker/rp_worker.py [--seed N] [--reply N] [--score N] [--dry-run]
 
 Each run, in order:
-  1. score: Jev labels new comments with a stance (fresh/rotten/neutral) and how
+  1. score: Jev labels new comments with a graded stance (love .. critical) and how
      quotable they are; the quote score feeds the hot-quotes board.
   2. reply: every reader comment waiting for an answer gets one from an AI persona.
   3. seed:  papers judged by the AI panel but with no discussion get a short
@@ -29,6 +29,7 @@ from pathlib import Path
 
 import httpx
 
+import reputation
 from voices import LENGTH_WORDS, VOICES
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -101,6 +102,16 @@ class DB:
         r.raise_for_status()
         return r.json()
 
+    def upsert(self, table: str, rows: list[dict]) -> None:
+        r = self.http.post(f"/{table}", json=rows, headers={"Prefer": "resolution=merge-duplicates"})
+        r.raise_for_status()
+
+    def delete(self, table: str) -> None:
+        """Delete every row (PostgREST requires a filter; created rows always have one of these)."""
+        col = {"vote_coi": "user_id", "paper_consensus": "paper_id"}[table]
+        r = self.http.delete(f"/{table}", params={col: "not.is.null"})
+        r.raise_for_status()
+
     def update(self, table: str, match: dict, values: dict) -> None:
         r = self.http.patch(f"/{table}", params={k: f"eq.{v}" for k, v in match.items()}, json=values)
         r.raise_for_status()
@@ -129,11 +140,13 @@ def jev(state: dict, questions: dict) -> dict:
 COMMENT_QUESTIONS = {
     "stance": {
         "type": "choice",
-        "instructions": "What does `comment` say about whether the paper in `paper_title` is worth reading?",
+        "instructions": "How does `comment` feel about whether the paper in `paper_title` is worth reading?",
         "criteria": {
-            "fresh": "Mostly positive: praises the paper or argues it is worth reading",
-            "rotten": "Mostly negative: criticizes the paper or argues it is not worth reading",
-            "neutral": "Neither: a question, a summary, or an evenly balanced view",
+            "love": "Enthusiastic: clearly recommends it, a must-read",
+            "like": "Positive overall, with at most minor reservations",
+            "mixed": "Balanced, undecided, or mainly a question or summary",
+            "doubt": "Skeptical: leans toward not worth reading, but not dismissive",
+            "critical": "Clearly argues it is not worth reading",
         },
     },
     "quotable": {
@@ -275,7 +288,8 @@ def debate(writer: Writer, personas: dict, paper: dict, pro: str, con: str) -> l
             convo = "\n".join(f"{personas[q]['handle']}: {t}" for q, t in thread)
             a = jev({"paper_title": paper["title"], "discussion": convo or "(none)", "comment": text},
                     {"stance": COMMENT_QUESTIONS["stance"], "new_point": NEW_POINT})
-            if a.get("stance", {}).get("choice") == side or attempt == 1:
+            want = {"love", "like"} if side == "fresh" else {"doubt", "critical"}
+            if a.get("stance", {}).get("choice") in want or attempt == 1:
                 break
         if turn >= 2 and a.get("new_point", {}).get("noul", 1.0) < 0.5:
             break  # nothing new: the debate has run its course
@@ -296,7 +310,7 @@ def score_comments(db: DB, limit: int, dry: bool) -> int:
     for c in rows:
         a = jev({"paper_title": (c.get("papers") or {}).get("title", ""), "comment": c["body"],
                  "first_sentence": first_sentence(c["body"])}, COMMENT_QUESTIONS)
-        stance = a.get("stance", {}).get("choice", "neutral")
+        stance = a.get("stance", {}).get("choice", "mixed")
         quote = a.get("quotable", {}).get("noul", 0.0)
         if not dry:
             db.update("comments", {"id": c["id"]}, {"stance": stance, "quote_score": quote})
@@ -328,7 +342,7 @@ def reply_to_readers(db: DB, writer: Writer, personas: dict, limit: int, dry: bo
         voice = next((t["persona"] for t in reversed(thread) if t["author_kind"] == "ai" and t["persona"]), None)
         if voice not in personas:
             verdicts = db.get("ai_verdicts", select="persona,fresh,probability", paper_id=f"eq.{paper['id']}")
-            want_fresh = c.get("stance") == "rotten"
+            want_fresh = c.get("stance") in ("doubt", "critical")
             pool = [v for v in verdicts if v["persona"] in personas and v["fresh"] == want_fresh] or [
                 v for v in verdicts if v["persona"] in personas
             ]
@@ -424,6 +438,7 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=50, help="papers to open a discussion on")
     ap.add_argument("--reply", type=int, default=30, help="reader comments to answer")
     ap.add_argument("--score", type=int, default=100, help="comments to label with Jev")
+    ap.add_argument("--no-reputation", action="store_true", help="skip reader weights and consensus")
     ap.add_argument("--dry-run", action="store_true", help="print, write nothing")
     args = ap.parse_args()
 
@@ -432,6 +447,11 @@ def main() -> None:
     db = DB()
     writer = Writer() if (args.reply or args.seed) else None
 
+    if not args.no_reputation:
+        try:
+            print(reputation.run(db, args.dry_run), flush=True)
+        except Exception as e:  # scores still work with last run's weights
+            print(f"reputation FAILED: {e}", flush=True)
     n = score_comments(db, args.score, args.dry_run) if args.score else 0
     r = reply_to_readers(db, writer, personas, args.reply, args.dry_run) if args.reply else 0
     s = seed_discussions(db, writer, personas, args.seed, args.dry_run) if args.seed else 0

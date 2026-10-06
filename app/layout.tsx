@@ -6,7 +6,7 @@ import { SearchForm } from "@/components/SearchForm";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Rotten Paper: fresh or rotten?", template: "%s | Rotten Paper" },
+  title: { default: "Rotten Paper: is it worth reading?", template: "%s | Rotten Paper" },
   description: "Is this paper worth reading? Verdicts from readers, warm-started by an AI panel.",
 };
 

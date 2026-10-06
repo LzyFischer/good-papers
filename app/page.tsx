@@ -3,13 +3,14 @@ import { Icon } from "@/components/Icons";
 import { PaperCard } from "@/components/PaperCard";
 import { AREAS } from "@/lib/areas";
 import { getVerdicts } from "@/lib/papers";
-import { PERSONA_IDS } from "@/lib/personas";
+import { PERSONAS, PERSONA_IDS } from "@/lib/personas";
 import { serverClient } from "@/lib/supabase";
-import { FRESH_THRESHOLD, SCORING, type Score } from "@/lib/types";
+import { SCORING, TIERS, type Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-const PERSONA_COUNT = PERSONA_IDS.length;
+// The standing panel; the citation persona only joins for well-cited papers.
+const PERSONA_COUNT = PERSONA_IDS.filter((id) => !(PERSONAS[id] as { needsCitations?: boolean }).needsCitations).length;
 
 // Hot quotes: the sharpest recent comments, from readers and the AI panel alike.
 // hot = Jev quote score × (1 + likes + replies / 2), decaying over about a week.
@@ -80,10 +81,11 @@ export default async function Home({ searchParams }: Props) {
   return (
     <main className="wrap">
       <section className="intro">
-        <h1>Fresh or rotten? The newest papers, judged.</h1>
+        <h1>Is it worth reading? The newest papers, rated.</h1>
         <p>
-          Every paper is scored by readers like you, with an AI panel of {PERSONA_COUNT} reviewer personas to get it
-          started. Vote on the ones you&apos;ve read.
+          Every paper is rated by readers like you, with an AI panel of {PERSONA_COUNT} reviewer personas to get it
+          started. Upvote or downvote the ones you&apos;ve read. Upvotes measure attention; we measure whether a
+          paper is worth your time. <Link href="/how">How scores work</Link>
         </p>
       </section>
 
@@ -134,15 +136,26 @@ export default async function Home({ searchParams }: Props) {
           <div className="box">
             <h2>How to read a score</h2>
             <ul className="legend">
-              <li><Icon name="fresh" />Fresh: score of {Math.round(FRESH_THRESHOLD * 100)}% or more</li>
-              <li><Icon name="rotten" />Rotten: under {Math.round(FRESH_THRESHOLD * 100)}%</li>
-              <li><Icon name="readers" />Readers: signed-in people who read the paper. They decide the score once enough have voted.</li>
+              {TIERS.map((t) => (
+                <li key={t.label}>
+                  <span className={`chip-dot tone-${t.tone}`} />
+                  {t.label}: {Math.round(t.min * 100)}%{t.min > 0 ? " and up" : " and up, read by a narrower audience"}
+                </li>
+              ))}
+              <li>
+                <Icon name="readers" />
+                Readers who read the paper. Their votes are weighted by track record; votes from a paper&apos;s authors
+                or their colleagues don&apos;t count.
+              </li>
               <li>
                 <Icon name="ai" />
-                AI panel: {PERSONA_COUNT} reviewer personas, from lenient to strict. They count for {Math.round(SCORING.AI_WEIGHT * 100)}% and
+                AI panel: {PERSONA_COUNT} reviewer personas. They count for {Math.round(SCORING.AI_WEIGHT * 100)}% and
                 stand in for readers until there are enough votes.
               </li>
             </ul>
+            <p className="hint">
+              <Link href="/how">How scores work</Link>
+            </p>
           </div>
         </aside>
       </div>

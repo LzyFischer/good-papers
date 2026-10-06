@@ -31,3 +31,5 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TINKER_API_KEY: ${{ secrets.TINKER_API_KEY }}
           TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # higher rate limit for public GitHub profiles
+          OPENALEX_MAILTO: ${{ secrets.OPENALEX_MAILTO }}

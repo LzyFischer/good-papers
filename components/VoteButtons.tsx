@@ -68,17 +68,13 @@ export function VoteButtons({ paper }: { paper: PaperStub }) {
   return (
     <div className="vote-wrap">
       <div className="vote">
-        <button className="vbtn f" aria-pressed={vote === true} disabled={busy} onClick={() => cast(true)}>
-          <Icon name="fresh" />
-          <span>
-            Fresh<small>Worth reading</small>
-          </span>
+        <button className="vbtn f" aria-pressed={vote === true} aria-label="Upvote: worth reading" disabled={busy} onClick={() => cast(true)}>
+          <Icon name="up" />
+          <span>Worth reading</span>
         </button>
-        <button className="vbtn r" aria-pressed={vote === false} disabled={busy} onClick={() => cast(false)}>
-          <Icon name="rotten" />
-          <span>
-            Rotten<small>Not worth reading</small>
-          </span>
+        <button className="vbtn r" aria-pressed={vote === false} aria-label="Downvote: not for me" disabled={busy} onClick={() => cast(false)}>
+          <Icon name="down" />
+          <span>Not for me</span>
         </button>
       </div>
       <p className="hint">

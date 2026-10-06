@@ -4,7 +4,7 @@ import { orgKind, shortOrg } from "@/lib/orgs";
 import { PERSONAS, PERSONA_IDS, TIERS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
 import { Icon, type IconName } from "./Icons";
-import { basisOf, verdictOf } from "./Score";
+import { Gauge, basisOf, tierOf } from "./Score";
 import { VoteButtons } from "./VoteButtons";
 
 export function formatAuthors(authors: string[], max = 4) {
@@ -28,7 +28,8 @@ export function formatPublished(date: string | null | undefined, year: number | 
 function Table({ icon, label, fresh, total, note, ai }: {
   icon: IconName; label: string; fresh: number; total: number; note?: string; ai?: boolean;
 }) {
-  const pct = total ? `${Math.round((fresh / total) * 100)}%` : "–";
+  // The AI panel shows a count, not a percentage: "3 of 20" reads fairer than "15%".
+  const pct = !total ? "–" : ai ? `${fresh}/${total}` : `${Math.round((fresh / total) * 100)}%`;
   return (
     <div className={ai ? "tbl tbl--ai" : "tbl"}>
       <Icon name={icon} />
@@ -36,8 +37,8 @@ function Table({ icon, label, fresh, total, note, ai }: {
         {pct} <span className="l">{label}</span>
       </span>
       <span className="l">
-        {total ? `${fresh}/${total} fresh` : "No votes yet"}
-        {note ? `, ${note}` : ""}
+        {total ? (ai ? "reviewers recommend it" : `${fresh} of ${total} upvoted`) : "No votes yet"}
+        {note ? `. ${note}` : ""}
       </span>
     </div>
   );
@@ -53,7 +54,7 @@ type Props = {
 };
 
 export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel = false }: Props) {
-  const v = verdictOf(score);
+  const v = tierOf(score);
   const area = score?.area && AREAS[score.area] ? { key: score.area, label: AREAS[score.area].label } : null;
   const type = score?.paper_type ? PAPER_TYPES[score.paper_type]?.label : null;
   const ordered = PERSONA_IDS.map((id) => verdicts.find((x) => x.persona === id)).filter(Boolean) as AiVerdict[];
@@ -72,10 +73,10 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
 
   return (
     <article className="card">
-      <div className={`score ${v ? (v.fresh ? "fresh" : "rotten") : "pending"}`}>
-        <Icon name={v ? (v.fresh ? "fresh" : "rotten") : "pending"} />
-        <b>{v ? `${v.pct}%` : "?"}</b>
-        <span className="word">{v ? (v.fresh ? "Fresh" : "Rotten") : "Not judged"}</span>
+      <div className={`score ${v ? `tone-${v.tone}` : "pending"}`}>
+        {v ? <Gauge pct={v.pct} tone={v.tone} /> : <span className="gauge gauge--lg gauge--empty"><b>?</b></span>}
+        <span className="word">{v ? v.label : "Not rated yet"}</span>
+        {v?.early && <span className="early">Early read</span>}
         {v && score && <small>{basisOf(score)}</small>}
       </div>
 
@@ -113,7 +114,16 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
         )}
 
         <div className="tables">
-          <Table icon="readers" label="Readers" fresh={score?.reader_fresh ?? 0} total={score?.reader_total ?? 0} />
+          <Table
+            icon="readers"
+            label="Readers"
+            fresh={score?.reader_fresh ?? 0}
+            total={score?.reader_total ?? 0}
+            note={[
+              score?.consensus ? "Cross-camp consensus" : null,
+              score?.reader_coi ? `${score.reader_coi} from authors or colleagues not counted` : null,
+            ].filter(Boolean).join(". ") || undefined}
+          />
           <Table icon="ai" label="AI panel" fresh={score?.ai_fresh ?? 0} total={score?.ai_total ?? 0} ai />
         </div>
 
@@ -124,7 +134,7 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
         {ordered.length > 0 && (
           <details className="panel" open={openPanel}>
             <summary>
-              AI panel: {ordered.filter((x) => x.fresh).length} of {ordered.length} reviewers say fresh
+              AI panel: {ordered.filter((x) => x.fresh).length} of {ordered.length} reviewers recommend it
             </summary>
             <div className="dots-wrap">
               {TIERS.map((tier) => {
@@ -140,8 +150,8 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
                         <span
                           key={x.persona}
                           role="listitem"
-                          className={`dot ${x.fresh ? "dot--fresh" : "dot--rotten"}`}
-                          title={`${PERSONAS[x.persona].name} (${PERSONAS[x.persona].focus}): ${Math.round(x.probability * 100)}% worth reading`}
+                          className={`dot ${x.fresh ? "dot--up" : "dot--down"}`}
+                          title={`${PERSONAS[x.persona].focus}: ${Math.round(x.probability * 100)}% worth reading`}
                         />
                       ))}
                     </span>

@@ -1,11 +1,11 @@
-import { FRESH_THRESHOLD, type Score } from "@/lib/types";
-import { Icon } from "./Icons";
+import { EARLY_READERS, TIERS, type Score } from "@/lib/types";
 
 type Counts = Pick<Score, "score" | "reader_total" | "ai_total">;
 
-export function verdictOf(s: Counts | null | undefined) {
+export function tierOf(s: Counts | null | undefined) {
   if (!s || s.score === null || s.score === undefined) return null;
-  return { pct: Math.round(s.score * 100), fresh: s.score >= FRESH_THRESHOLD };
+  const tier = TIERS.find((t) => s.score! >= t.min) ?? TIERS[TIERS.length - 1];
+  return { pct: Math.round(s.score * 100), label: tier.label, tone: tier.tone, early: s.reader_total < EARLY_READERS };
 }
 
 // What the headline rests on, in words.
@@ -14,13 +14,22 @@ export function basisOf(s: Counts) {
   return s.ai_total > 0 ? `${readers}, AI panel included` : readers;
 }
 
-export function ScoreChip({ score }: { score: Counts | null | undefined }) {
-  const v = verdictOf(score);
-  if (!v) return <span className="chip chip--pending">Unrated</span>;
+// Ring gauge filled to the score, colored by tier.
+export function Gauge({ pct, tone, size = "lg" }: { pct: number; tone: number; size?: "lg" | "sm" }) {
   return (
-    <span className={`chip ${v.fresh ? "chip--fresh" : "chip--stale"}`} title={basisOf(score!)}>
-      <Icon name={v.fresh ? "fresh" : "rotten"} />
-      {v.pct}%
+    <span className={`gauge gauge--${size} tone-${tone}`} style={{ ["--p" as string]: pct }}>
+      <b>{pct}%</b>
+    </span>
+  );
+}
+
+export function ScoreChip({ score }: { score: Counts | null | undefined }) {
+  const t = tierOf(score);
+  if (!t) return <span className="chip chip--pending">Unrated</span>;
+  return (
+    <span className={`chip tone-${t.tone}`} title={`${t.label}. ${basisOf(score!)}`}>
+      <span className="chip-dot" />
+      {t.pct}%
     </span>
   );
 }

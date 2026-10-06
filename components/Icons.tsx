@@ -1,5 +1,5 @@
 // Original Rotten Paper icon set, rendered once as an SVG sprite in the layout.
-export type IconName = "fresh" | "rotten" | "pending" | "readers" | "ai" | "reviewer" | "brand";
+export type IconName = "fresh" | "rotten" | "pending" | "readers" | "ai" | "reviewer" | "brand" | "up" | "down";
 
 export function Icon({ name, className }: { name: IconName; className?: string }) {
   return (
@@ -30,6 +30,13 @@ export function IconSprite() {
           <circle cx="17" cy="24" r="2.5" fill="var(--mold)" opacity=".85" />
         </symbol>
         {/* Pending: blank dashed page */}
+        {/* Upvote / downvote: plain chevrons, colored by the button */}
+        <symbol id="ic-up" viewBox="0 0 48 48">
+          <path d="M12 30 24 17l12 13" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+        </symbol>
+        <symbol id="ic-down" viewBox="0 0 48 48">
+          <path d="M12 18 24 31l12-13" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+        </symbol>
         <symbol id="ic-pending" viewBox="0 0 48 48">
           <path d="M12 6h17l9 9v27a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" fill="none" stroke="var(--muted)" strokeWidth="2.5" strokeDasharray="4 3" strokeLinejoin="round" />
           <path d="M20 22a4 4 0 1 1 6 3.5c-1.3.8-2 1.6-2 3M24 33v.5" fill="none" stroke="var(--muted)" strokeWidth="2.5" strokeLinecap="round" />

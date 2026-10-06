@@ -14,11 +14,20 @@ type Comment = {
   user_id: string | null;
   author_name: string | null;
   body: string;
-  stance: "fresh" | "rotten" | "neutral" | null;
+  stance: keyof typeof STANCE | null;
   created_at: string;
   likes: number;
   replies: number;
 };
+
+// Jev's graded read of each comment, worded so the low end stays polite.
+const STANCE = {
+  love: { label: "Big fan", tone: 5 },
+  like: { label: "Positive", tone: 4 },
+  mixed: { label: "Mixed", tone: 3 },
+  doubt: { label: "Skeptical", tone: 2 },
+  critical: { label: "Not convinced", tone: 1 },
+} as const;
 
 function ago(iso: string) {
   const m = Math.round((Date.now() - Date.parse(iso)) / 60000);
@@ -131,7 +140,9 @@ export function Comments({ paper }: { paper: PaperStub }) {
       <div className="comment-head">
         <b>{c.author_name ?? "reader"}</b>
         {c.author_kind === "ai" && <span className="ai-badge">AI</span>}
-        {c.stance && c.stance !== "neutral" && <span className={`stance stance--${c.stance}`}>{c.stance}</span>}
+        {c.stance && STANCE[c.stance] && (
+          <span className={`stance tone-${STANCE[c.stance].tone}`}>{STANCE[c.stance].label}</span>
+        )}
         <span className="comment-time">{ago(c.created_at)}</span>
       </div>
       <p className="comment-body">{c.body}</p>
