@@ -26,7 +26,7 @@ export function formatPublished(date: string | null | undefined, year: number | 
 }
 
 // Each author links to all their papers on the site.
-function AuthorLinks({ authors, max }: { authors: string[]; max: number }) {
+function AuthorLinks({ authors, max, paperId }: { authors: string[]; max: number; paperId: string }) {
   if (authors.length === 0) return <>Unknown authors</>;
   const shown = authors.slice(0, max);
   return (
@@ -34,7 +34,7 @@ function AuthorLinks({ authors, max }: { authors: string[]; max: number }) {
       {shown.map((a, i) => (
         <span key={`${a}-${i}`}>
           {i > 0 && ", "}
-          <Link href={`/?author=${encodeURIComponent(a)}`}>{a}</Link>
+          <Link href={`/author/${encodeURIComponent(a)}${/^W\d+$/.test(paperId) ? `?from=${paperId}` : ""}`}>{a}</Link>
         </span>
       ))}
       {authors.length > max && ` and ${authors.length - max} more`}
@@ -105,20 +105,20 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
           {paper.orgs.slice(0, 5).map((o) => {
             const kind = orgKind(o);
             return (
-              <Link key={o} href={`/?org=${encodeURIComponent(o)}`} className={`tag ${kind ? `org-${kind}` : ""}`} title={`All papers from ${o}`}>
+              <Link key={o} href={`/org/${encodeURIComponent(o)}`} className={`tag ${kind ? `org-${kind}` : ""}`} title={`All papers from ${o}`}>
                 {shortOrg(o)}
               </Link>
             );
           })}
           {area && (
-            <Link href={`/?area=${area.key}`} className="tag tag--area">
+            <Link href={`/area/${area.key}`} className="tag tag--area">
               {area.label}
             </Link>
           )}
         </div>
         <h2 className="title">{title}</h2>
         <p className="authors">
-          <AuthorLinks authors={paper.authors} max={linkTitle ? 4 : 60} />
+          <AuthorLinks authors={paper.authors} max={linkTitle ? 4 : 60} paperId={paper.id} />
         </p>
         {(published || citations !== null) && (
           <p className="pubinfo">

@@ -223,3 +223,6 @@ button { font: inherit; }
 .meta a.tag:hover { border-color: currentColor; }
 .authors a { text-decoration: none; }
 .authors a:hover { text-decoration: underline; color: var(--ink); }
+
+.page-sub { margin: -1rem 0 1.5rem; color: var(--muted); }
+.pager { display: flex; gap: 1rem; align-items: center; justify-content: center; margin: 1.5rem 0; color: var(--muted); font-size: .9rem; }
