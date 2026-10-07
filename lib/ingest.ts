@@ -20,11 +20,12 @@ export async function topUpTrending(): Promise<number> {
   return n;
 }
 
-// Rate up to `max` of these arXiv papers that we don't have yet (ML categories only).
-export async function ingestArxivIds(ids: string[], max: number): Promise<number> {
+// Rate up to `max` of these arXiv papers that we don't have yet (ML categories only),
+// inside the hourly inline-judging budget unless the owner runs a backfill by hand.
+export async function ingestArxivIds(ids: string[], max: number, { budget = true } = {}): Promise<number> {
   const stored = await storedIdsByArxiv(ids);
   const missing = ids.filter((a) => !stored.has(a));
-  if (!missing.length || !(await underInlineBudget(Math.min(max, missing.length)))) return 0;
+  if (!missing.length || (budget && !(await underInlineBudget(Math.min(max, missing.length))))) return 0;
   const cats = await arxivCategories(missing).catch(() => new Map<string, string[]>());
   const todo = missing.filter((a) => !cats.has(a) || isML(cats.get(a))).slice(0, max);
   const papers = (await getPapersForArxivIds(todo)).filter((p) => p.abstract);
