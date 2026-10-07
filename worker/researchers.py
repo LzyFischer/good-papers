@@ -90,9 +90,19 @@ def fill_authorships(db, limit: int, dry: bool) -> int:
     return len(found)
 
 
+def get_all(db, table: str, select: str, page: int = 1000) -> list[dict]:
+    """Every row: PostgREST caps a response at 1000 rows."""
+    out: list[dict] = []
+    while True:
+        rows = db.get(table, select=select, order=select, limit=str(page), offset=str(len(out)))  # unique order
+        out += rows
+        if len(rows) < page:
+            return out
+
+
 def refresh_stats(db, limit: int, dry: bool) -> int:
-    links = db.get("paper_authors", select="author_id", limit="100000")
-    have = {r["id"]: r["updated_at"] for r in db.get("researchers", select="id,updated_at", limit="100000")}
+    links = get_all(db, "paper_authors", "author_id,paper_id")
+    have = {r["id"]: r["updated_at"] for r in get_all(db, "researchers", "id,updated_at")}
     cutoff = (datetime.now(timezone.utc) - STATS_EVERY).isoformat()
     todo = [a for a in dict.fromkeys(r["author_id"] for r in links) if a not in have or have[a] < cutoff][:limit]
     rows = []

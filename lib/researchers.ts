@@ -35,8 +35,19 @@ type Stats = { id: string; name: string; institution: string | null; h_index: nu
 
 export async function rankResearchers(group: string | null, n = 50): Promise<Researcher[]> {
   const db = serverClient();
-  const { data } = await db.from("researcher_papers").select("author_id, n_authors, institution, paper_id, title, area, score, published_on").limit(50000);
-  const rows = ((data ?? []) as Row[]).filter((r) => !group || AREAS[r.area]?.group === group);
+  // PostgREST caps a response at 1000 rows: page through.
+  const all: Row[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data } = await db
+      .from("researcher_papers")
+      .select("author_id, n_authors, institution, paper_id, title, area, score, published_on")
+      .order("author_id")
+      .order("paper_id")
+      .range(from, from + 999);
+    all.push(...((data ?? []) as Row[]));
+    if (!data || data.length < 1000) break;
+  }
+  const rows = all.filter((r) => !group || AREAS[r.area]?.group === group);
 
   const by = new Map<string, Row[]>();
   for (const r of rows) by.set(r.author_id, [...(by.get(r.author_id) ?? []), r]);
