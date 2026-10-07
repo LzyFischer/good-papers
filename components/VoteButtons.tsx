@@ -78,7 +78,7 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
       <div className="vote vote--compact" title={error ?? "Only vote on papers you've read"}>
         <button className="vbtn f" aria-pressed={vote === true} aria-label="Upvote: worth reading" disabled={busy} onClick={() => cast(true)}>
           <Icon name="up" />
-          <span>Worth reading</span>
+          <span>Worth it</span>
         </button>
         <button className="vbtn r" aria-pressed={vote === false} aria-label="Downvote: not for me" disabled={busy} onClick={() => cast(false)}>
           <Icon name="down" />

@@ -143,7 +143,8 @@ def main() -> None:
 
     # arXiv for the rest, one request every 3 seconds.
     import time
-    rest = [f for f in titles if not (data.get(f) or {}).get("abstract")]
+    # SKIP_ARXIV=1 when arXiv is rate-limiting us (429): OpenAlex only this time.
+    rest = [] if os.environ.get("SKIP_ARXIV") else [f for f in titles if not (data.get(f) or {}).get("abstract")]
     print(f"arXiv: looking up {len(rest)}", flush=True)
     with httpx.Client(timeout=30, headers={"User-Agent": "GoodPapers/0.2 (mailto:" + env().get("OPENALEX_MAILTO", "") + ")"}) as client:
         hits = 0

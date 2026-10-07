@@ -451,6 +451,16 @@ button { font: inherit; }
 
 /* Shelf cards: link area plus quick vote buttons */
 .mini-link { display: grid; align-content: start; gap: .35rem; text-decoration: none; color: inherit; }
-.vote--compact { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; margin-top: .35rem; }
-.vote--compact .vbtn { padding: .35rem .4rem; font-size: .76rem; gap: .25rem; min-height: 0; border-radius: 8px; }
-.vote--compact .vbtn .icon { width: 14px; height: 14px; }
+/* One segmented pill: two equal halves, same height, never wrapping */
+.vote--compact { display: grid; grid-template-columns: 1fr 1fr; margin-top: .45rem; border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden; }
+.vote--compact .vbtn { justify-content: center; gap: .25rem; padding: .42rem .3rem; border: 0; border-radius: 0; background: transparent; font: 700 .8rem/1 var(--display); white-space: nowrap; }
+.vote--compact .vbtn + .vbtn { border-left: 1.5px solid var(--line); }
+.vote--compact .vbtn .icon { width: 14px; height: 14px; flex: none; }
+.vote--compact .vbtn:hover { background: var(--bg); }
+.vote--compact .vbtn.f[aria-pressed="true"] { background: var(--t5); color: var(--surface); }
+.vote--compact .vbtn.r[aria-pressed="true"] { background: var(--t1); color: var(--surface); }
+/* Phones: header search takes its own row; the NeurIPS chip wraps */
+.top .search { min-width: 0; }
+@media (max-width: 36rem) { .top .search { flex-basis: 100%; max-width: none; } }
+.ask-chip--featured { flex-wrap: wrap; max-width: 100%; row-gap: .25rem; }
+.ask-chip--featured { border-radius: 14px; }
