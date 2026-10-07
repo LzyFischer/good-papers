@@ -9,7 +9,7 @@ import { topUpTrending } from "@/lib/ingest";
 import { NEURIPS, neuripsTrending } from "@/lib/neurips";
 import { getVerdicts } from "@/lib/papers";
 import { serverClient } from "@/lib/supabase";
-import { WINDOWS, WINDOW_LABELS, shelf, trending, type Window } from "@/lib/trending";
+import { WINDOWS, WINDOW_LABELS, openSplitIds, shelf, trending, type Window } from "@/lib/trending";
 import type { Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -72,7 +72,7 @@ export default async function Home({ searchParams }: Props) {
     p.set("n", String(shown + PAGE));
     return `/?${p}#p${shown}`; // land on the first new paper
   })();
-  const verdicts = await getVerdicts(papers.map((p) => p.id));
+  const [verdicts, openIds] = await Promise.all([getVerdicts(papers.map((p) => p.id)), openSplitIds().catch(() => [] as string[])]);
 
   const browsing = !filtered;
   if (browsing) after(() => topUpTrending().catch((e) => console.warn("Trending top-up failed:", e)));
@@ -104,7 +104,7 @@ export default async function Home({ searchParams }: Props) {
       <div className="wrap home-body">
         {browsing && (
           <>
-            <Shelf id="trending" title="Trending" note="What readers here and on Hugging Face are upvoting" papers={hotNow} more={{ href: `/shelf/trending?t=${window}`, label: "See all" }}>
+            <Shelf id="trending" title="Trending" note="What readers here and on Hugging Face are upvoting" papers={hotNow} openIds={openIds} more={{ href: `/shelf/trending?t=${window}`, label: "See all" }}>
               <nav className="seg" aria-label="Trending window">
                 {(Object.keys(WINDOWS) as Window[]).map((w) => (
                   <Link key={w} href={w === "week" ? "/#trending" : `/?t=${w}#trending`} aria-current={w === window ? "page" : undefined} scroll={false}>
@@ -134,7 +134,7 @@ export default async function Home({ searchParams }: Props) {
           ) : (
             papers.map((s, i) => (
               <div key={s.id} id={`p${i}`} className="card-anchor">
-                <PaperCard paper={s} score={s} verdicts={verdicts.get(s.id) ?? []} />
+                <PaperCard paper={s} score={s} verdicts={verdicts.get(s.id) ?? []} splitOpen={openIds.includes(s.id)} />
               </div>
             ))
           )}

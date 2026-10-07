@@ -17,7 +17,7 @@ export type PaperStub = {
 };
 
 // What readers and the AI panel said, revealed once you've voted ("you vs everyone").
-export type Reveal = { readerFresh: number; readerTotal: number; aiYes: number; aiTotal: number; coi: number };
+export type Reveal = { readerFresh: number; readerTotal: number; aiYes: number; aiTotal: number; coi: number; open?: boolean };
 
 export function VoteButtons({ paper, reveal }: { paper: PaperStub; reveal?: Reveal }) {
   const router = useRouter();
@@ -69,20 +69,21 @@ export function VoteButtons({ paper, reveal }: { paper: PaperStub; reveal?: Reve
   }
 
   const voted = vote !== undefined;
+  const shown = voted || Boolean(reveal?.open); // the Trending teaser shows the split to everyone
   const pct = reveal?.readerTotal ? Math.round((reveal.readerFresh / reveal.readerTotal) * 100) : null;
 
   return (
     <div className="vote-wrap">
       {reveal && (
         <>
-          <span className="sc-num">{pct === null ? "–" : !voted ? "?" : `${pct}%`}</span>
+          <span className="sc-num">{pct === null ? "–" : !shown ? "?" : `${pct}%`}</span>
           <span className="sc-sub">
-            {!voted
+            {!shown
               ? reveal.readerTotal
                 ? `${reveal.readerTotal} reader${reveal.readerTotal === 1 ? "" : "s"} voted. Vote to see how they split.`
                 : "No votes yet. Read it? Be the first."
               : `${reveal.readerFresh} of ${reveal.readerTotal} upvoted`}
-            {voted && reveal.coi ? ` · ${reveal.coi} from authors or colleagues not counted` : ""}
+            {shown && reveal.coi ? ` · ${reveal.coi} from authors or colleagues not counted` : ""}
           </span>
           {voted && vote !== null && <YouVsEveryone vote={vote} reveal={reveal} />}
         </>

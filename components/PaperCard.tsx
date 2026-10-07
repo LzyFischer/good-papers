@@ -73,12 +73,12 @@ export function AiDots({ ordered }: { ordered: AiVerdict[] }) {
   );
 }
 
-function Table({ icon, label, fresh, total, note, ai }: {
-  icon: IconName; label: string; fresh: number; total: number; note?: string; ai?: boolean;
+function Table({ icon, label, fresh, total, note, ai, open }: {
+  icon: IconName; label: string; fresh: number; total: number; note?: string; ai?: boolean; open?: boolean;
 }) {
   // The AI panel shows a count, not a percentage: "3 of 20" reads fairer than "15%".
-  // Readers' split is revealed on the paper page after you vote; cards show how many voted.
-  const pct = !total ? "–" : ai ? `${fresh}/${total}` : String(total);
+  // Readers' split is revealed on the paper page after you vote (open: the Trending teaser).
+  const pct = !total ? "–" : ai ? `${fresh}/${total}` : open ? `${Math.round((fresh / total) * 100)}%` : String(total);
   return (
     <div className={ai ? "tbl tbl--ai" : "tbl"}>
       <Icon name={icon} />
@@ -86,7 +86,7 @@ function Table({ icon, label, fresh, total, note, ai }: {
         {pct} <span className="l">{label}</span>
       </span>
       <span className="l">
-        {total ? (ai ? "reviewers recommend it" : `voted. Vote to see how they split`) : "No votes yet"}
+        {total ? (ai ? "reviewers recommend it" : open ? `${fresh} of ${total} upvoted` : "voted. Vote to see how they split") : "No votes yet"}
         {note ? `. ${note}` : ""}
       </span>
     </div>
@@ -100,9 +100,10 @@ type Props = {
   verdicts: AiVerdict[];
   linkTitle?: boolean; // link the title to our paper page (lists) or to the source (paper page)
   openPanel?: boolean;
+  splitOpen?: boolean; // show how readers split without voting (the Trending teaser)
 };
 
-export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel = false }: Props) {
+export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel = false, splitOpen = false }: Props) {
   const v = tierOf(score);
   const area = score?.area && AREAS[score.area] ? { key: score.area, label: AREAS[score.area].label } : null;
   const ordered = PERSONA_IDS.map((id) => verdicts.find((x) => x.persona === id)).filter(Boolean) as AiVerdict[];
@@ -198,6 +199,7 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
             label="Readers"
             fresh={score?.reader_fresh ?? 0}
             total={score?.reader_total ?? 0}
+            open={splitOpen}
             note={[
               score?.consensus ? "Cross-camp consensus" : null,
               score?.reader_coi ? `${score.reader_coi} from authors or colleagues not counted` : null,

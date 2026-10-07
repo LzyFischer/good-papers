@@ -614,7 +614,12 @@ with r as (
          coalesce(a.fresh, 0) as ai_fresh, coalesce(a.total, 0) as ai_total,
          -- AI-only scores are graded on a curve: rank 0..1 maps to 45..92%, so roughly the top quarter reads
          -- "Must read" and the bottom tenth "Niche pick". Readers move it from there.
-         case when a.total > 0 then 0.45 + 0.47 * a.pr else 0.5 end as prior,
+         case when a.total > 0 then 0.45 + 0.47 * a.pr
+              -- Conference papers the panel can't read yet (no abstract): a starting point from the track.
+              when p.conf_track = 'oral' then 0.75
+              when p.conf_track = 'spotlight' then 0.68
+              when p.conf_track = 'poster' then 0.6
+              else 0.5 end as prior,
          coalesce(r.total_w, 0)::float8 as total_w,
          coalesce(r.fresh_w, 0)::float8 as fresh_w,
          coalesce(r.coi, 0) as reader_coi,
@@ -634,7 +639,7 @@ with r as (
 select
   id, title, authors, year, venue, url, orgs, tags, area, paper_type, published_on,
   reader_fresh, reader_total, reader_abstain, ai_fresh, ai_total,
-  case when reader_total = 0 and ai_total = 0 then null
+  case when reader_total = 0 and ai_total = 0 and conf_track is null then null
        else 0.1 * prior + 0.9 * (reader_share * total_w + 5 * prior) / (total_w + 5)
   end as score,
   last_activity,

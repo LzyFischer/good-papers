@@ -35,7 +35,8 @@ export default function How() {
         <li>
           <b>Stay hidden until you vote.</b> Everyone sees the overall score, but how readers split on a paper is
           shown only after you&apos;ve voted on it, so your vote is your own and not a follow-the-crowd click. Then
-          you see how many readers and AI reviewers agree with you.
+          you see how many readers and AI reviewers agree with you. The top half of this week&apos;s Trending shelf
+          shows its split to everyone, as a preview.
         </li>
         <li>
           <b>Don&apos;t count when there is a conflict of interest.</b> Votes on your own papers, your recent

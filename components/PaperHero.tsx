@@ -11,7 +11,7 @@ import { ShareButton } from "./ShareButton";
 import { VoteButtons } from "./VoteButtons";
 
 // The top of a paper page: header, scorecard (overall, readers, AI panel) and the panel consensus.
-export function PaperHero({ paper, score, verdicts }: { paper: Paper; score: Score | null; verdicts: AiVerdict[] }) {
+export function PaperHero({ paper, score, verdicts, splitOpen = false }: { paper: Paper; score: Score | null; verdicts: AiVerdict[]; splitOpen?: boolean }) {
   const t = tierOf(score);
   const area = score?.area && AREAS[score.area] ? { key: score.area, label: AREAS[score.area].label } : null;
   const ordered = PERSONA_IDS.map((id) => verdicts.find((x) => x.persona === id)).filter(Boolean) as AiVerdict[];
@@ -73,13 +73,16 @@ export function PaperHero({ paper, score, verdicts }: { paper: Paper; score: Sco
           <div>
             <span className="sc-label">Overall</span>
             <span className="sc-tier">{t ? t.label : "Not rated yet"}</span>
+            {t && !score?.ai_total && !score?.reader_total && score?.conf_track && (
+              <span className="sc-note">Starting score from its {score.venue} track. The AI panel reads it once the abstract is public.</span>
+            )}
           </div>
         </div>
         <div className="sc">
           <span className="sc-label">Readers</span>
           <VoteButtons
             paper={{ id: paper.id, title: paper.title, authors: paper.authors, year: paper.year, venue: paper.venue, url: paper.url }}
-            reveal={{ readerFresh: score?.reader_fresh ?? 0, readerTotal: readers, aiYes, aiTotal: ordered.length, coi: score?.reader_coi ?? 0 }}
+            reveal={{ readerFresh: score?.reader_fresh ?? 0, readerTotal: readers, aiYes, aiTotal: ordered.length, coi: score?.reader_coi ?? 0, open: splitOpen }}
           />
         </div>
         <div className="sc sc--ai">

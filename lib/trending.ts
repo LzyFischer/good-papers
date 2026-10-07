@@ -1,6 +1,7 @@
 // Home page shelves. Trending ranks recent activity on our site plus Hugging Face
 // upvotes; quality (the score) is a separate shelf, so popularity never stands in
 // for "worth reading".
+import { unstable_cache } from "next/cache";
 import { getHfList } from "./huggingface";
 import { storedIdsByArxiv } from "./papers";
 import { serverClient } from "./supabase";
@@ -57,3 +58,11 @@ export async function shelf(kind: "must" | "debated", n = 12): Promise<Score[]> 
   const { data } = await q.limit(n);
   return (data ?? []) as Score[];
 }
+
+// "You vs everyone": how readers split is hidden until you vote, except on the top half of
+// this week's Trending shelf, which shows it as a teaser. Cached for ten minutes.
+export const openSplitIds = unstable_cache(
+  async () => (await trending("week", 24)).slice(0, 12).map((s) => s.id),
+  ["open-split-ids"],
+  { revalidate: 600 },
+);

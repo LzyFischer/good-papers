@@ -38,13 +38,27 @@ def abstract(inv: dict | None) -> str | None:
     return " ".join(words).strip() or None
 
 
+def env() -> dict[str, str]:
+    out = {}
+    for line in (ROOT / ".env.local").read_text().splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            k, v = line.split("=", 1)
+            out[k.strip()] = v.strip().strip('"').strip("'")
+    return out
+
+
+# OpenAlex's anonymous budget is shared by everyone and runs out; use our key.
+AUTH = {k: v for k, v in {"api_key": env().get("OPENALEX_API_KEY"), "mailto": env().get("OPENALEX_MAILTO")}.items() if v}
+
+
 def lookup(client: httpx.Client, title: str) -> str | None:
     q = re.sub(r'[,:|()"!]', " ", title)
-    for attempt in range(3):
+    for attempt in range(4):
         try:
             r = client.get("https://api.openalex.org/works", params={
-                "filter": f"title.search:{q}", "per_page": "5", "select": "display_name,abstract_inverted_index"})
+                "filter": f"title.search:{q}", "per_page": "5", "select": "display_name,abstract_inverted_index", **AUTH})
             if r.status_code == 429:
+                print("rate limited, backing off", flush=True)
                 raise httpx.HTTPError("rate limited")
             r.raise_for_status()
             for w in r.json().get("results", []):
@@ -68,6 +82,7 @@ def main() -> None:
             titles[m.group(1)] = e["name"]
     data = json.loads(OUT.read_text()) if OUT.exists() else {}
     todo = [f for f in titles if not (data.get(f) or {}).get("abstract")]
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     print(f"{len(titles)} papers, {len(titles) - len(todo)} already have an abstract, looking up {len(todo)}", flush=True)
 
     with httpx.Client(timeout=30, headers={"User-Agent": "GoodPapers/0.2"}) as client:
@@ -80,9 +95,9 @@ def main() -> None:
                 if a:
                     found += 1
                     data[forum] = {**(data.get(forum) or {}), "title": titles[forum], "abstract": a}
-                if i % 500 == 0:
+                if i % 250 == 0:
                     print(f"{i}/{len(todo)} looked up, {found} found", flush=True)
-    OUT.parent.mkdir(parents=True, exist_ok=True)
+                    OUT.write_text(json.dumps(data, ensure_ascii=False))  # progress survives an interrupt
     OUT.write_text(json.dumps(data, ensure_ascii=False))
     total = sum(1 for f in titles if (data.get(f) or {}).get("abstract"))
     print(f"done: {found} new abstracts; {total}/{len(titles)} papers have one")

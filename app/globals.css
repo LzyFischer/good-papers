@@ -438,3 +438,4 @@ button { font: inherit; }
 .bell-empty { padding: .7rem; color: var(--muted); font-size: .88rem; }
 .vote-wrap { display: grid; gap: .3rem; }
 .vote-wrap .sc-num, .vote-wrap .sc-sub { display: block; }
+.sc-note { display: block; font-size: .78rem; opacity: .8; margin-top: .3rem; max-width: 16rem; }
