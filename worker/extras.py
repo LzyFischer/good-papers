@@ -3,7 +3,7 @@
   links:     Hugging Face upvotes, GitHub repo and stars (HF papers API), and a
              thumbnail: the first real figure on the arXiv HTML page.
   tldr:      one sentence on what the paper does (Inkling-Small), shown on cards.
-  consensus: one sentence summing up the discussion, Rotten Tomatoes' "critics
+  consensus: one sentence summing up the discussion, a "critics
              consensus" style, shown under the score; rewritten once a paper has
              gained CONSENSUS_EVERY more comments.
 """

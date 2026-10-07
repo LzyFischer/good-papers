@@ -56,7 +56,7 @@ export default function How() {
         {Math.round(SCORING.AI_WEIGHT * 100)}% of the score and stand in for {SCORING.PRIOR_VOTES} readers, so a new
         paper has a score on day one and a handful of votes can&apos;t swing it to 0 or 100%. On its own the AI
         is graded on a curve: a paper&apos;s AI-only score depends on how it ranks against every other paper the panel
-        has read, from 40% at the bottom to 90% at the top. As readers arrive, their votes take over.
+        has read, from 45% at the bottom to 92% at the top. As readers arrive, their votes take over.
       </p>
       <p>
         AI personas also join the discussion under each paper. Their comments are marked <b>AI</b>.
@@ -65,7 +65,7 @@ export default function How() {
       <h2>Questions or corrections</h2>
       <p>
         If you are an author and something here is wrong, open an issue on{" "}
-        <a href="https://github.com/LzyFischer/rotten-paper/issues">GitHub</a>. <Link href="/">Back to papers</Link>
+        <a href="https://github.com/LzyFischer/good-papers/issues">GitHub</a>. <Link href="/">Back to papers</Link>
       </p>
     </main>
   );

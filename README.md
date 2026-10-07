@@ -3,7 +3,7 @@
 论文版"烂番茄"：每篇论文由三桌打分，读者（登录用户）、AI 评审团（Jev 驱动的五个人格）、会议审稿人；首页总分把三桌合并，所以新论文一上线就有分数。
 
 ## 第一阶段已实现
-- 二元打分（Fresh / Rotten），醒目的大按钮，点击即投票，再点一次撤销
+- 二元打分（Worth reading / Not for me），醒目的大按钮，点击即投票，再点一次撤销
 - 三桌分开显示 + 合并总分
 - AI warm start：每天自动抓取最新 AI 论文并由 Jev 打分；有人打开一篇没评过的论文时也会当场打分
 - 按板块筛选（Jev 自动分类研究领域和论文类型）
@@ -47,24 +47,24 @@ npm run judge -- scripts/my-papers.json
 
 ### 1. 把代码推到 GitHub
 ```bash
-cd rotten-paper
+cd good-papers
 git init
 git add .
 git commit -m "Good Papers v2"
 ```
 在 github.com 新建一个仓库（可以设为 Private），然后：
 ```bash
-git remote add origin https://github.com/<你的用户名>/rotten-paper.git
+git remote add origin https://github.com/<你的用户名>/good-papers.git
 git branch -M main
 git push -u origin main
 ```
 `.env.local` 已在 `.gitignore` 里，不会被上传。推送前用 `git status` 确认它不在列表中。
 
 ### 2. 在 Vercel 导入
-1. 用 GitHub 账号登录 vercel.com → **Add New → Project** → 选择 `rotten-paper` 仓库 → Import。
+1. 用 GitHub 账号登录 vercel.com → **Add New → Project** → 选择 `good-papers` 仓库 → Import。
 2. Framework 会自动识别为 Next.js，其他保持默认。
 3. 展开 **Environment Variables**，把 `.env.local` 里的变量逐个填进去。
-4. 点 **Deploy**，一两分钟后得到 `https://rotten-paper-xxx.vercel.app`。
+4. 点 **Deploy**，一两分钟后得到 `https://good-papers-xxx.vercel.app`。
 
 ### 3. 更新登录回调
 - Supabase → **Authentication → URL Configuration**：Site URL 改为 Vercel 地址，Redirect URLs 加上 `https://你的地址.vercel.app/**`。
@@ -72,7 +72,7 @@ git push -u origin main
 
 ### 4. 验证
 - 搜索一篇论文并点开，几秒内应出现 AI 面板。
-- 登录后点 Fresh / Rotten，分数应变化。
+- 登录后点 ▲ / ▼，分数应变化。
 - 手动触发一次每日任务：
   ```bash
   curl https://你的地址.vercel.app/api/cron -H "Authorization: Bearer 你的CRON_SECRET"

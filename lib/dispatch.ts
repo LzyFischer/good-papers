@@ -2,7 +2,7 @@
 // waiting for GitHub's unreliable schedule. GitHub keeps at most one run going and
 // one queued per concurrency group, so extra nudges collapse into one.
 // Needs GH_WORKFLOW_TOKEN: a fine-grained token for this repo with Actions: write.
-const REPO = process.env.GH_WORKFLOW_REPO ?? "LzyFischer/rotten-paper";
+const REPO = process.env.GH_WORKFLOW_REPO ?? "LzyFischer/good-papers";
 
 export async function nudgeWorker(): Promise<boolean> {
   const token = process.env.GH_WORKFLOW_TOKEN;

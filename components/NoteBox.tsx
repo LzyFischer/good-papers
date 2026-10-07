@@ -25,7 +25,7 @@ export function NoteBox({ paperId }: { paperId: string }) {
   }, [session, paperId]);
 
   if (!session || voted === null) return null;
-  if (!voted) return <p className="hint">Vote fresh or rotten to add a private note to your reading log.</p>;
+  if (!voted) return <p className="hint">Vote up or down to add a private note to your reading log.</p>;
 
   async function save() {
     const { error } = await browserClient()

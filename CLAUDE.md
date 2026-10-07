@@ -1,11 +1,11 @@
 # Good Papers: notes for Claude Code
 
-A "Rotten Tomatoes for research papers": is this paper worth reading? Signed-in readers upvote ("Worth reading") or downvote ("Not for me") papers they have read; an AI panel of 20 personas (scored by Jev) warm-starts every paper so it has a score from day one. AI personas also discuss each paper in the comments. The headline is a 0-100% gauge with graded labels (Must read .. For specialists).
+A "Rotten Tomatoes for research papers" (the site was called Rotten Paper until Oct 2026): is this paper worth reading? Signed-in readers upvote ("Worth reading") or downvote ("Not for me") papers they have read; an AI panel of 20 personas (scored by Jev) warm-starts every paper so it has a score from day one. AI personas also discuss each paper in the comments. The headline is a 0-100% gauge with graded labels (Must read .. For specialists).
 
 The owner is a PhD student building this as a side project and wants to demo it at NeurIPS. Talk to him in Chinese; code, comments and UI copy stay in English.
 
 ## Stack
-- Next.js 15 (App Router, TypeScript), deployed on Vercel at https://rotten-paper.vercel.app (auto-deploys on push to `main` of github.com/LzyFischer/rotten-paper, public)
+- Next.js 15 (App Router, TypeScript), deployed on Vercel at https://good-papers.vercel.app (auto-deploys on push to `main` of github.com/LzyFischer/good-papers, public)
 - Supabase (project `ijcgvfgdmwzbnajvhymf`): Postgres + GitHub OAuth
 - OpenAlex for search, citations, institutions and the daily "newest papers" feed
 - Jev (TypeSafe AI) for the AI panel and for labeling comments: `POST {JEV_BASE_URL}/v1/systemone` with `{ model, state, questions }`. Jev returns typed answers with probabilities and cannot write text.

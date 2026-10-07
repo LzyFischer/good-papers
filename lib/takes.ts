@@ -24,7 +24,7 @@ export async function writeTakes(
     )
     .join("\n");
 
-  const prompt = `You write one-line verdicts for Good Papers, a site where readers rate research papers fresh or rotten.
+  const prompt = `You write one-line verdicts for Good Papers, a site where readers upvote or downvote research papers.
 
 Paper title: ${paper.title}
 Venue: ${paper.venue ?? "unknown"}
