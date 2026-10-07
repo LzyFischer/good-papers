@@ -75,7 +75,7 @@ export function VoteButtons({ paper, reveal }: { paper: PaperStub; reveal?: Reve
     <div className="vote-wrap">
       {reveal && (
         <>
-          <span className="sc-num">{!voted ? "?" : pct === null ? "–" : `${pct}%`}</span>
+          <span className="sc-num">{pct === null ? "–" : !voted ? "?" : `${pct}%`}</span>
           <span className="sc-sub">
             {!voted
               ? reveal.readerTotal

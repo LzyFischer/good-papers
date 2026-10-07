@@ -436,3 +436,5 @@ button { font: inherit; }
 .bell-item i { font-style: normal; font-weight: 600; }
 .bell-body { display: block; color: var(--muted); margin-top: .2rem; }
 .bell-empty { padding: .7rem; color: var(--muted); font-size: .88rem; }
+.vote-wrap { display: grid; gap: .3rem; }
+.vote-wrap .sc-num, .vote-wrap .sc-sub { display: block; }
