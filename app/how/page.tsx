@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PERSONAS, PERSONA_IDS } from "@/lib/personas";
+import { RESEARCHER } from "@/lib/researchers";
 import { SCORING, TIERS } from "@/lib/types";
 
 export const metadata: Metadata = { title: "How scores work" };
@@ -60,6 +61,17 @@ export default function How() {
       </p>
       <p>
         AI personas also join the discussion under each paper. Their comments are marked <b>AI</b>.
+      </p>
+
+      <h2 id="researchers">Good researchers</h2>
+      <p>
+        Researchers are ranked by the scores of their papers on this site, the same scores you see on each card.
+        Their recent citations (OpenAlex&apos;s average citations for their last two years of papers) are the
+        starting point and count as {RESEARCHER.PRIOR_PAPERS} papers, so someone with two rated papers leans on their
+        record and someone with twenty is judged on the papers. Like CSRankings, the list is per area and shows an
+        adjusted paper count (each paper counts 1 / number of authors); unlike it, quality comes from readers and the
+        AI panel rather than from where a paper was published. Papers with more than {RESEARCHER.FULL_CREDIT_AUTHORS}{" "}
+        authors count for less, and only researchers with {RESEARCHER.MIN_PAPERS} or more rated papers are listed.
       </p>
 
       <h2>Questions or corrections</h2>

@@ -31,6 +31,7 @@ import httpx
 
 import extras
 import reputation
+import researchers
 from voices import LENGTH_WORDS, VOICES
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -492,6 +493,10 @@ def main() -> None:
             print(extras.run(db, writer, args.dry_run), flush=True)
         except Exception as e:
             print(f"extras FAILED: {e}", flush=True)
+    try:
+        print(researchers.run(db, args.dry_run), flush=True)
+    except Exception as e:
+        print(f"researchers FAILED: {e}", flush=True)
     print(f"done: scored {n}, replied {r}, seeded {s}{' (dry run)' if args.dry_run else ''}")
 
 
