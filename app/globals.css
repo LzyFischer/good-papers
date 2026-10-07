@@ -451,16 +451,18 @@ button { font: inherit; }
 
 /* Shelf cards: link area plus quick vote buttons */
 .mini-link { display: grid; align-content: start; gap: .35rem; text-decoration: none; color: inherit; }
-/* One segmented pill: two equal halves, same height, never wrapping */
-.vote--compact { display: grid; grid-template-columns: 1fr 1fr; margin-top: .45rem; border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden; }
-.vote--compact .vbtn { justify-content: center; gap: .25rem; padding: .42rem .3rem; border: 0; border-radius: 0; background: transparent; font: 700 .8rem/1 var(--display); white-space: nowrap; }
-.vote--compact .vbtn + .vbtn { border-left: 1.5px solid var(--line); }
-.vote--compact .vbtn .icon { width: 14px; height: 14px; flex: none; }
-.vote--compact .vbtn:hover { background: var(--bg); }
-.vote--compact .vbtn.f[aria-pressed="true"] { background: var(--t5); color: var(--surface); }
-.vote--compact .vbtn.r[aria-pressed="true"] { background: var(--t1); color: var(--surface); }
+/* Two soft tinted buttons of equal size: quiet until you hover or vote */
+.vote--compact { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; margin-top: .5rem; }
+.vote--compact .vbtn { height: 2.1rem; justify-content: center; gap: .3rem; padding: 0 .4rem; border: 0; border-radius: 10px; font: 700 .8rem/1 var(--display); white-space: nowrap; transition: background .15s ease, color .15s ease; }
+.vote--compact .vbtn .icon { width: 15px; height: 15px; flex: none; }
+.vote--compact .vbtn.f { background: var(--t5-soft); color: var(--t5); }
+.vote--compact .vbtn.r { background: var(--t1-soft); color: var(--t1); }
+.vote--compact .vbtn.f:hover, .vote--compact .vbtn.f[aria-pressed="true"] { background: var(--t5); color: var(--surface); }
+.vote--compact .vbtn.r:hover, .vote--compact .vbtn.r[aria-pressed="true"] { background: var(--t1); color: var(--surface); }
 /* Phones: header search takes its own row; the NeurIPS chip wraps */
 .top .search { min-width: 0; }
 @media (max-width: 36rem) { .top .search { flex-basis: 100%; max-width: none; } }
 .ask-chip--featured { flex-wrap: wrap; max-width: 100%; row-gap: .25rem; }
 .ask-chip--featured { border-radius: 14px; }
+.seg a { white-space: nowrap; }
+@media (max-width: 36rem) { .seg { max-width: 100%; overflow-x: auto; } .seg a { padding: .3rem .6rem; } }
