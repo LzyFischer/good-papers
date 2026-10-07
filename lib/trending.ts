@@ -59,11 +59,21 @@ export async function shelf(kind: "must" | "debated", n = 12): Promise<Score[]> 
   return (data ?? []) as Score[];
 }
 
-// Scores are hidden until you vote, except on the top 3 of this week's Trending, which
-// show theirs to everyone as a preview. Cached for ten minutes.
+// Paper of the day: the highest-scored paper trending this week, one with a picture if possible.
+export function pickPaperOfTheDay(week: Score[]): Score | undefined {
+  const best = (l: Score[]) => [...l].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
+  return best(week.filter((s) => s.thumbnail)) ?? best(week);
+}
+
+// Scores are hidden until you vote, except on the top 3 of this week's Trending and the
+// paper of the day, which show theirs to everyone as a preview. Cached for ten minutes.
 export const OPEN_SCORES = 3;
 export const openScoreIds = unstable_cache(
-  async () => (await trending("week", OPEN_SCORES)).map((s) => s.id),
-  ["open-score-ids"],
+  async () => {
+    const week = await trending("week");
+    const spot = pickPaperOfTheDay(week);
+    return [...new Set([...week.slice(0, OPEN_SCORES).map((s) => s.id), ...(spot ? [spot.id] : [])])];
+  },
+  ["open-score-ids-v2"],
   { revalidate: 600 },
 );

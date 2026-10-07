@@ -35,8 +35,8 @@ export default function How() {
         <li>
           <b>Come before the score.</b> Everyone sees a paper&apos;s label (Must read, Highly rated, ...), but its exact
           score, how readers split and what the AI panel said are shown after you&apos;ve voted on it, so your vote is your own call and not a follow-the-crowd click. Then you see
-          how many readers and AI reviewers agree with you. The top 3 papers on this week&apos;s Trending shelf show
-          their scores to everyone, as a preview.
+          how many readers and AI reviewers agree with you. The top 3 papers on this week&apos;s Trending shelf and the
+          paper of the day show their scores to everyone, as a preview.
         </li>
         <li>
           <b>Don&apos;t count when there is a conflict of interest.</b> Votes on your own papers, your recent

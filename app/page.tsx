@@ -10,7 +10,7 @@ import { topUpTrending } from "@/lib/ingest";
 import { NEURIPS, neuripsTrending } from "@/lib/neurips";
 import { getVerdicts } from "@/lib/papers";
 import { serverClient } from "@/lib/supabase";
-import { WINDOWS, WINDOW_LABELS, openScoreIds, shelf, trending, type Window } from "@/lib/trending";
+import { WINDOWS, WINDOW_LABELS, openScoreIds, pickPaperOfTheDay, shelf, trending, type Window } from "@/lib/trending";
 import type { Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -87,10 +87,8 @@ export default async function Home({ searchParams }: Props) {
   const [hotNow, must, debated, nips] = browsing
     ? await Promise.all([trending(window, 24), shelf("must", 24), shelf("debated", 24), neuripsTrending(24)])
     : [[], [], [], []];
-  // Paper of the day: the highest-scored paper trending this week, one with a picture if possible.
   const week = browsing ? (window === "week" ? hotNow : await trending("week")) : [];
-  const best = (l: Score[]) => [...l].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
-  const spot = best(week.filter((s) => s.thumbnail)) ?? best(week) ?? must[0];
+  const spot = pickPaperOfTheDay(week) ?? must[0];
 
   return (
     <main>
@@ -104,7 +102,7 @@ export default async function Home({ searchParams }: Props) {
               <p className="hero-lede">You decide which ones are good research papers.</p>
               <AskBox dark />
             </div>
-            {spot && <Spotlight s={spot} open={openIds.includes(spot.id)} />}
+            {spot && <Spotlight s={spot} open />}
           </div>
         </section>
       )}
