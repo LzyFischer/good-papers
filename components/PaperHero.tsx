@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AREAS } from "@/lib/areas";
 import { arxivIdOf } from "@/lib/arxiv";
-import { orgKind, shortOrg, venueLabel } from "@/lib/orgs";
+import { isPreprint, orgKind, shortOrg, venueLabel } from "@/lib/orgs";
 import { PERSONA_IDS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
 import { AiDots, AuthorLinks, formatPublished } from "./PaperCard";
@@ -30,7 +30,7 @@ export function PaperHero({ paper, score, verdicts }: { paper: Paper; score: Sco
       <div className="ph-top">
         <div className="ph-main">
           <div className="ph-tags">
-            {paper.venue && !/arxiv/i.test(paper.venue) && <span className="tag venue">{venueLabel(paper.venue, paper.year)}</span>}
+            {!isPreprint(paper.venue) && <span className="tag venue">{venueLabel(paper.venue, paper.year)}</span>}
             {area && <Link href={`/?area=${area.key}`} className="tag tag--area">{area.label}</Link>}
             {paper.tags.map((x) => <span key={x} className={`tag ${x === "Oral" ? "oral" : ""}`}>{x}</span>)}
             {paper.orgs.slice(0, 6).map((o) => (

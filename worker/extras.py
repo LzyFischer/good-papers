@@ -63,11 +63,12 @@ def first_figure(aid: str) -> str | None:
         return None
     if r.status_code != 200:
         return None
-    for m in re.finditer(r'<img[^>]*class="ltx_graphics[^"]*"[^>]*>', r.text):
+    # Figures are <img> (PNG/JPG) or, for vector plots, <object type="image/svg+xml">.
+    for m in re.finditer(r'<(?:img|object)[^>]*class="ltx_graphics[^"]*"[^>]*>', r.text):
         tag = m.group(0)
-        src = re.search(r'src="([^"]+)"', tag)
+        src = re.search(r'(?:src|data)="([^"]+)"', tag)
         width = re.search(r'width="(\d+)"', tag)
-        if src and (not width or int(width.group(1)) >= 180) and not src.group(1).endswith(".svg"):
+        if src and (not width or int(width.group(1)) >= 180):
             s = src.group(1)
             return s if s.startswith("http") else f"https://arxiv.org/html/{s.lstrip('/')}"
     return None

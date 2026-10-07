@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AREAS } from "@/lib/areas";
 import { arxivIdOf } from "@/lib/arxiv";
-import { orgKind, shortOrg, venueLabel } from "@/lib/orgs";
+import { isPreprint, orgKind, shortOrg, venueLabel } from "@/lib/orgs";
 import { PERSONAS, PERSONA_IDS, TIERS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
 import { Icon, type IconName } from "./Icons";
@@ -127,7 +127,7 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
 
       <div className="card-body">
         <div className="meta">
-          {paper.venue && <span className={`tag venue ${/arxiv/i.test(paper.venue) ? "venue--preprint" : ""}`}>{venueLabel(paper.venue, paper.year)}</span>}
+          {paper.venue && <span className={`tag venue ${isPreprint(paper.venue) ? "venue--preprint" : ""}`}>{venueLabel(paper.venue, paper.year)}</span>}
           {paper.tags.map((t) => (
             <span key={t} className={`tag ${t === "Oral" ? "oral" : ""}`}>
               {t}

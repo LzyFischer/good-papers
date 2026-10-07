@@ -35,9 +35,14 @@ const SHORT_VENUES = new Set([
   "ISBI", "ICASSP", "Interspeech", "TMLR", "JMLR", "TPAMI", "LoG",
 ]);
 
+// Repositories and indexes OpenAlex sometimes lists as a paper's source: not a venue.
+const PREPRINT_SOURCES = /arxiv|repec|ssrn|zenodo|research ?square|biorxiv|medrxiv|chemrxiv|techrxiv|preprints\.org|figshare|europe pmc|pubmed|\bhal\b|datacite/i;
+export const isPreprint = (venue: string | null | undefined) => !venue || PREPRINT_SOURCES.test(venue);
+
 // "arXiv (Cornell University)" → "arXiv"; venues the worker detected already carry their year.
 export function venueLabel(venue: string | null | undefined, year: number | null | undefined): string | null {
   if (!venue) return year ? String(year) : null;
-  const v = /arxiv/i.test(venue) ? "arXiv" : venue;
+  if (isPreprint(venue)) return /arxiv/i.test(venue) ? "arXiv" : "Preprint";
+  const v = venue;
   return /\b(19|20)\d{2}\b/.test(v) || !year || SHORT_VENUES.has(v) ? v : `${v} ${year}`;
 }
