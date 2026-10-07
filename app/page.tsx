@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { after } from "next/server";
 import { AskBox } from "@/components/AskBox";
+import { AutoMore } from "@/components/AutoMore";
 import { PaperCard } from "@/components/PaperCard";
 import { Gate } from "@/components/Gate";
 import { Gauge, tierOf } from "@/components/Score";
@@ -19,7 +20,7 @@ export const maxDuration = 60; // room for the trending top-up after the page is
 
 type Props = { searchParams: Promise<{ area?: string; org?: string; author?: string; t?: string; n?: string }> };
 
-const PAGE = 40; // "Show more" adds this many papers to the list
+const PAGE = 20; // papers per page; more load as you scroll (AutoMore)
 
 // PostgREST array "contains" with a quoted element, so names with commas or spaces work.
 const arrayHas = (v: string) => `{"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"}`;
@@ -144,9 +145,7 @@ export default async function Home({ searchParams }: Props) {
           )}
         </section>
         {hasMore && (
-          <Link href={moreHref} className="load-more" scroll={false}>
-            Show {PAGE} more papers
-          </Link>
+          <AutoMore href={moreHref} label={`Show ${PAGE} more papers`} />
         )}
       </div>
     </main>
