@@ -471,3 +471,13 @@ button { font: inherit; }
 .seg a { white-space: nowrap; }
 @media (max-width: 36rem) { .seg { max-width: 100%; overflow-x: auto; } .seg a { padding: .3rem .6rem; } }
 .sc--main .vote-to-see { color: var(--lime); }
+
+/* Shelf and Ask cards line up: same height in a row, title and TL;DR take fixed space,
+   the meta line and vote buttons sit on the bottom edge */
+.mini { display: flex; flex-direction: column; height: 100%; }
+.mini-link { flex: 1; display: flex; flex-direction: column; gap: .35rem; }
+.mini-title { line-height: 1.3; min-height: calc(3 * 1.3em); }
+.mini-tldr { line-height: 1.45; min-height: calc(3 * 1.45em); }
+.mini-meta { margin-top: auto; padding-top: .2rem; line-height: 1.45; min-height: calc(2 * 1.45em); }
+.card-anchor { display: flex; flex-direction: column; }
+.card-anchor > .mini { flex: 1; }
