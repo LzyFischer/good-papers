@@ -47,6 +47,17 @@ async function storedTitles(): Promise<Map<string, string>> {
   }
 }
 
+// Judged from the title only: stored without an abstract.
+async function titleOnlyIds(ids: string[]): Promise<Set<string>> {
+  const db = adminClient();
+  const out = new Set<string>();
+  for (let i = 0; i < ids.length; i += 300) {
+    const { data } = await db.from("papers").select("id").in("id", ids.slice(i, i + 300)).is("abstract", null);
+    for (const r of data ?? []) out.add(r.id);
+  }
+  return out;
+}
+
 async function judgedIds(ids: string[]): Promise<Set<string>> {
   const db = adminClient();
   const out = new Set<string>();
@@ -111,26 +122,19 @@ async function judgedIds(ids: string[]): Promise<Set<string>> {
 
   const fresh = rows.filter((r) => !r.existing);
   const judged = await judgedIds(fresh.map((r) => r.paper.id));
-  const todo = fresh.filter((r) => !judged.has(r.paper.id)).slice(0, max);
+  // Read from the title only earlier and now with an abstract: judge again.
+  const titleOnly = await titleOnlyIds([...judged]);
+  const todo = fresh.filter((r) => !judged.has(r.paper.id) || (titleOnly.has(r.paper.id) && r.paper.abstract)).slice(0, max);
   const noAbstract = todo.filter((r) => !r.paper.abstract);
-  console.log(`${fresh.length} new, ${judged.size} already judged, ${todo.length} to go (${noAbstract.length} without an abstract)`);
-
-  // Without an abstract the panel can't judge: store the paper so it's listed, unrated.
-  for (let i = 0; i < noAbstract.length; i += 200) {
-    const batch = noAbstract.slice(i, i + 200).map(({ paper, conf }) => ({
-      id: paper.id, title: paper.title, authors: paper.authors.slice(0, 40), year: paper.year, venue: paper.venue,
-      url: paper.url, orgs: paper.orgs, tags: paper.tags, discuss_on_demand: true, ...conf,
-    }));
-    const { error } = await db.from("papers").upsert(batch, { onConflict: "id" });
-    if (error) throw error;
-  }
+  console.log(`${fresh.length} new, ${judged.size} already judged, ${todo.length} to go (${noAbstract.length} from the title only)`);
 
   let done = 0;
   let failed = 0;
   const started = Date.now();
-  await mapLimit(todo.filter((r) => r.paper.abstract), CONCURRENCY, async ({ paper, conf }) => {
+  await mapLimit(todo, CONCURRENCY, async ({ paper, conf }) => {
     try {
-      await storeJudgement(paper, await judgePaper(paper, { withTakes: false }));
+      // No abstract yet: the panel reads the title and venue (a rough first read).
+      await storeJudgement(paper, await judgePaper(paper, { withTakes: false, titleOnly: !paper.abstract }));
       await db.from("papers").update({ ...conf, discuss_on_demand: true }).eq("id", paper.id);
       done++;
     } catch (e) {

@@ -351,9 +351,12 @@ button { font: inherit; }
 .ph-authors { color: var(--muted); margin: 0 0 .6rem; }
 .ph-authors a { text-decoration: none; }
 .ph-authors a:hover { text-decoration: underline; color: var(--ink); }
-.ph-facts { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; }
-.ph-facts > * { font-size: .82rem; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: .25rem .65rem; text-decoration: none; }
-.ph-facts a:hover { color: var(--ink); border-color: var(--ink); }
+/* Facts: one quiet line of text separated by dots, Share as the one real button */
+.ph-facts { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.15rem; margin: .2rem 0 0; font-size: .9rem; line-height: 1.4; color: var(--muted); }
+.ph-facts > :not(.share) { display: inline-flex; align-items: center; }
+.ph-facts a { color: var(--ink); font-weight: 600; text-decoration: none; }
+.ph-facts a:hover { text-decoration: underline; text-underline-offset: .2em; }
+.ph-facts .share { margin-left: .2rem; }
 .ph-img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: #fff; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(20, 22, 26, .1); }
 .scorecard { display: grid; grid-template-columns: minmax(12rem, .8fr) minmax(0, 1.2fr) minmax(0, 1fr); gap: 1rem; margin: 1.75rem 0 1.25rem; }
 @media (max-width: 56rem) { .scorecard { grid-template-columns: minmax(0, 1fr); } }
@@ -415,8 +418,9 @@ button { font: inherit; }
 
 /* Share */
 .share { position: relative; display: inline-flex; }
-.share-btn { font: 600 .85rem var(--body); padding: .25rem .8rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
-.share-btn:hover { border-color: var(--ink); }
+.share-btn { display: inline-flex; align-items: center; gap: .4rem; font: 600 .85rem/1 var(--body); padding: .5rem .95rem; border-radius: 999px; border: 0; background: var(--ink); color: var(--bg); cursor: pointer; }
+.share-btn:hover { opacity: .88; }
+.share-btn svg { width: 15px; height: 15px; }
 .share-menu { position: absolute; top: calc(100% + .35rem); left: 0; z-index: 20; display: flex; flex-direction: column; min-width: 10rem; padding: .3rem; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
 .share-menu button, .share-menu a { font: 500 .88rem var(--body); text-align: left; padding: .45rem .6rem; border: 0; border-radius: 6px; background: none; color: var(--ink); text-decoration: none; cursor: pointer; }
 .share-menu button:hover, .share-menu a:hover { background: var(--bg); }
@@ -466,3 +470,4 @@ button { font: inherit; }
 .ask-chip--featured { border-radius: 14px; }
 .seg a { white-space: nowrap; }
 @media (max-width: 36rem) { .seg { max-width: 100%; overflow-x: auto; } .seg a { padding: .3rem .6rem; } }
+.sc--main .vote-to-see { color: var(--lime); }

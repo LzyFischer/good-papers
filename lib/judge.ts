@@ -44,9 +44,11 @@ export function citationRecord(paper: Pick<Paper, "citedByCount" | "publishedOn"
 
 export async function judgePaper(
   paper: Paper,
-  opts: { withTakes?: boolean; fullText?: boolean } = {},
+  // titleOnly: a conference paper whose abstract isn't public yet; the panel reads the title
+  // and venue only (a rough first read, redone once the abstract turns up).
+  opts: { withTakes?: boolean; fullText?: boolean; titleOnly?: boolean } = {},
 ): Promise<Judgement> {
-  if (!paper.abstract) throw new Error(`No abstract for ${paper.id}; the AI panel needs one`);
+  if (!paper.abstract && !opts.titleOnly) throw new Error(`No abstract for ${paper.id}; the AI panel needs one`);
 
   const citations = citationRecord(paper);
   // Full text is off unless FULL_TEXT=1: it costs ~5x the Jev tokens.
@@ -54,7 +56,7 @@ export async function judgePaper(
   const full = wantFull ? await getFullText(paper).catch(() => null) : null;
   const state = {
     title: paper.title,
-    abstract: paper.abstract,
+    abstract: paper.abstract ?? "(Not public yet. Only the title and venue are known.)",
     ...(full ? { introduction: full.introduction, conclusion: full.conclusion ?? "(not found)" } : {}),
     venue: paper.venue ?? "unknown",
     ...(citations ? { citations } : {}),

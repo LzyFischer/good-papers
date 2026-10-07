@@ -127,15 +127,11 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
 }
 
 function YouVsEveryone({ vote, reveal }: { vote: boolean; reveal: Reveal }) {
-  const same = vote ? reveal.readerFresh : reveal.readerTotal - reveal.readerFresh;
-  const others = reveal.readerTotal - 1; // your own vote is in the count
+  // Everyone else who weighed in: other readers plus the AI panel.
+  const others = Math.max(0, reveal.readerTotal - 1); // your own vote is in the count
+  const readersSame = Math.max(0, (vote ? reveal.readerFresh : reveal.readerTotal - reveal.readerFresh) - 1);
   const aiSame = vote ? reveal.aiYes : reveal.aiTotal - reveal.aiYes;
-  return (
-    (others > 0 || reveal.aiTotal > 0) && (
-      <p className="reveal">
-        {others > 0 && `${Math.round(((same - 1) / others) * 100)}% of other readers agree with you. `}
-        {reveal.aiTotal > 0 && `${aiSame} of ${reveal.aiTotal} AI reviewers ${others > 0 ? "do too" : "agree with you"}.`}
-      </p>
-    )
-  );
+  const total = others + reveal.aiTotal;
+  if (!total) return null;
+  return <p className="reveal">{readersSame + aiSame} of {total} votes agree with you</p>;
 }

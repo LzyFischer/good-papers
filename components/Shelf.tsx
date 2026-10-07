@@ -70,8 +70,9 @@ export function Shelf({ id, title, note, papers, children, more, openIds }: {
         <p className="hint">Nothing here yet.</p>
       ) : (
         <div className="shelf-row">
-          {papers.map((s) => (
-            <MiniCard key={s.id} s={s} scoreOpen={openIds?.includes(s.id)} />
+          {papers.map((s, i) => (
+            // The first half of every shelf shows its scores; the rest after you vote.
+            <MiniCard key={s.id} s={s} scoreOpen={i < Math.ceil(papers.length / 2) || openIds?.includes(s.id)} />
           ))}
         </div>
       )}

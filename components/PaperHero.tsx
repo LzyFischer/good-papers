@@ -82,7 +82,7 @@ export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper
                 <span className="sc-label">Overall</span>
                 <span className="sc-tier">{t?.label}</span>
                 <span className="vote-to-see">Vote to see the score</span>
-                <span className="sc-note">The exact score shows once you&apos;ve voted, so every vote is your own call. This week&apos;s top 3 trending papers and the paper of the day show theirs.</span>
+                <span className="sc-note">The exact score shows once you&apos;ve voted, so every vote is your own call. The first half of each home page shelf shows its scores.</span>
               </div>
             </div>
           }
@@ -92,8 +92,11 @@ export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper
             <div>
               <span className="sc-label">Overall</span>
               <span className="sc-tier">{t ? t.label : "Not rated yet"}</span>
-              {t && !score?.ai_total && !score?.reader_total && score?.conf_track && (
-                <span className="sc-note">Starting score from its {score.venue} track. The AI panel reads it once the abstract is public.</span>
+              {t && !paper.abstract && score?.conf_track && (
+                <span className="sc-note">
+                  {score.ai_total ? "First read from the title only." : `Starting score from its ${score.venue} track.`} The AI panel
+                  reads it properly once the abstract is public.
+                </span>
               )}
             </div>
           </div>

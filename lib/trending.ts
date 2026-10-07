@@ -3,6 +3,7 @@
 // for "worth reading".
 import { unstable_cache } from "next/cache";
 import { getHfList } from "./huggingface";
+import { neuripsTrending } from "./neurips";
 import { storedIdsByArxiv } from "./papers";
 import { serverClient } from "./supabase";
 import type { Score } from "./types";
@@ -65,15 +66,19 @@ export function pickPaperOfTheDay(week: Score[]): Score | undefined {
   return best(week.filter((s) => s.thumbnail)) ?? best(week);
 }
 
-// Scores are hidden until you vote, except on the top 3 of this week's Trending and the
-// paper of the day, which show theirs to everyone as a preview. Cached for ten minutes.
-export const OPEN_SCORES = 3;
+// Scores are hidden until you vote, except on the first half of each home page shelf
+// (Trending this week, Trending at NeurIPS, Must read, Most debated) and the paper of the
+// day, which show theirs to everyone as a preview. Cached for ten minutes.
+export const SHELF_SIZE = 24;
 export const openScoreIds = unstable_cache(
   async () => {
-    const week = await trending("week");
+    const [week, nips, must, debated] = await Promise.all([
+      trending("week", SHELF_SIZE), neuripsTrending(SHELF_SIZE), shelf("must", SHELF_SIZE), shelf("debated", SHELF_SIZE),
+    ]);
+    const half = (l: Score[]) => l.slice(0, Math.ceil(l.length / 2)).map((s) => s.id);
     const spot = pickPaperOfTheDay(week);
-    return [...new Set([...week.slice(0, OPEN_SCORES).map((s) => s.id), ...(spot ? [spot.id] : [])])];
+    return [...new Set([...half(week), ...half(nips), ...half(must), ...half(debated), ...(spot ? [spot.id] : [])])];
   },
-  ["open-score-ids-v2"],
+  ["open-score-ids-v3"],
   { revalidate: 600 },
 );
