@@ -50,8 +50,9 @@ async function storedTitles(): Promise<Map<string, string>> {
 async function judgedIds(ids: string[]): Promise<Set<string>> {
   const db = adminClient();
   const out = new Set<string>();
-  for (let i = 0; i < ids.length; i += 300) {
-    const { data } = await db.from("ai_verdicts").select("paper_id").in("paper_id", ids.slice(i, i + 300)).limit(10000);
+  // ~21 verdict rows per paper and PostgREST returns at most 1000 rows: 40 papers per request.
+  for (let i = 0; i < ids.length; i += 40) {
+    const { data } = await db.from("ai_verdicts").select("paper_id").in("paper_id", ids.slice(i, i + 40));
     for (const r of data ?? []) out.add(r.paper_id);
   }
   return out;
