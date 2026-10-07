@@ -1,9 +1,9 @@
-// Trending top-up: papers climbing Hugging Face's trending list get rated within
+// Trending top-up: papers on Hugging Face's daily and weekly lists get rated within
 // minutes instead of waiting for the daily cron. Runs after the home page has been
 // sent (next/server `after`), a few papers at a time, inside the inline-judging budget.
 import { arxivCategories, isML } from "./arxiv";
 import { nudgeWorker } from "./dispatch";
-import { getHfTrending, getPapersForArxivIds } from "./huggingface";
+import { getHfList, getPapersForArxivIds } from "./huggingface";
 import { jevConfigured } from "./jev";
 import { judgePaper, mapLimit } from "./judge";
 import { storeJudgement, storedIdsByArxiv, underInlineBudget } from "./papers";
@@ -15,7 +15,8 @@ let lastRun = 0; // per server instance; the budget check is the site-wide guard
 export async function topUpTrending(): Promise<number> {
   if (Date.now() - lastRun < EVERY_MS || !jevConfigured() || !process.env.SUPABASE_SERVICE_ROLE_KEY) return 0;
   lastRun = Date.now();
-  const ids = (await getHfTrending(30)).map((t) => t.arxivId);
+  // Today's and this week's lists: what the Trending shelf shows by default.
+  const ids = [...new Set([...(await getHfList("day", 15)), ...(await getHfList("week", 30))].map((t) => t.arxivId))];
   const stored = await storedIdsByArxiv(ids);
   const missing = ids.filter((a) => !stored.has(a));
   if (!missing.length || !(await underInlineBudget(Math.min(PER_RUN, missing.length)))) return 0;

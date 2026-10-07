@@ -1,7 +1,7 @@
 // Home page shelves. Trending ranks recent activity on our site plus Hugging Face
 // upvotes; quality (the score) is a separate shelf, so popularity never stands in
 // for "worth reading".
-import { getHfTrending } from "./huggingface";
+import { getHfList } from "./huggingface";
 import { storedIdsByArxiv } from "./papers";
 import { serverClient } from "./supabase";
 import type { Score } from "./types";
@@ -13,12 +13,12 @@ const since = (days: number) => new Date(Date.now() - days * 86400_000).toISOStr
 
 // trending = 3 x reader votes + 2 x reader comments + likes (all within the window)
 //          + HF upvotes / 10 for papers published within the window
-//          + a bonus for being on Hugging Face's trending list right now (30 for #1 .. 1 for #30;
-//            halved for "this month"), whatever the paper's age
+//          + a bonus for the paper's place on Hugging Face's list for the same window
+//            (daily / weekly / monthly; 30 for #1 .. 1 for #30)
 export async function trending(window: Window, n = 12): Promise<Score[]> {
   const db = serverClient();
   const from = since(WINDOWS[window]);
-  const hfNow = getHfTrending(30).catch(() => []);
+  const hfNow = getHfList(window, 30).catch(() => []);
   const [votes, comments, likes, fresh] = await Promise.all([
     db.from("ratings").select("paper_id").gte("updated_at", from).not("worth_reading", "is", null).limit(5000),
     db.from("comments").select("paper_id").eq("author_kind", "user").gte("created_at", from).limit(5000),
@@ -33,7 +33,7 @@ export async function trending(window: Window, n = 12): Promise<Score[]> {
   for (const r of fresh.data ?? []) add(r.id, (r.hf_upvotes ?? 0) / 10);
   const hf = await hfNow;
   const stored = await storedIdsByArxiv(hf.map((t) => t.arxivId)).catch(() => new Map<string, string>());
-  hf.forEach((t, rank) => add(stored.get(t.arxivId), (hf.length - rank) * (window === "month" ? 0.5 : 1)));
+  hf.forEach((t, rank) => add(stored.get(t.arxivId), hf.length - rank));
   const ids = [...heat.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([id]) => id);
   if (ids.length === 0) return [];
   const { data } = await db.from("paper_scores").select("*").in("id", ids).not("score", "is", null).not("area", "is", null);
