@@ -42,7 +42,7 @@ The owner is a PhD student building this as a side project and wants to demo it 
 ## Current status (Oct 2026)
 - Deployed and running. Phase 1 (scoring) and phase 2a-2d (comments, AI discussion worker, multi-round debates, hot quotes) are live, plus reader reputation and graded labels.
 - Open issues:
-  - GitHub's `*/10` schedule only fires every 5-7 hours; plan: trigger the workflow from cron-job.org via `workflow_dispatch` with a fine-grained token (Actions: write) the owner creates.
+  - The worker runs once a day on GitHub's schedule (14:00 UTC); the site dispatches extra runs after it rates new papers (cron, page views, trending top-up) or a reader comments.
   - AI comments skew critical; mean personas sometimes invent facts (planned: a Jev fact-check gate before posting).
   - Non-ML papers (quantum physics) slip into the OpenAlex daily feed; option: feed from arXiv cs.LG/CL/AI instead.
 - Next: phase 2e (browser extension), phase 3 (public API + MCP server for outside agents, citation graph and researcher-adjusted impact).

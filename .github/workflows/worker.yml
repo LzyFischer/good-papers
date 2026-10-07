@@ -6,7 +6,9 @@ name: worker
 
 on:
   schedule:
-    - cron: "*/10 * * * *" # GitHub may delay scheduled runs by several minutes
+    # Daily sweep an hour after the Vercel cron (13:00 UTC). The site also dispatches a run
+    # right after it rates new papers or a reader comments (lib/dispatch.ts).
+    - cron: "0 14 * * *"
   workflow_dispatch:
 
 concurrency:
