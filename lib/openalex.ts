@@ -16,6 +16,14 @@ function params(extra: Record<string, string>) {
   return p;
 }
 
+// With our key, OpenAlex bills each request against a daily budget; when that's spent
+// (429), retry once without the key, on the shared anonymous budget.
+async function oaFetch(url: string, init?: RequestInit & { next?: { revalidate?: number } }): Promise<Response> {
+  const res = await fetch(url, init);
+  if (res.status !== 429 || !url.includes("api_key=")) return res;
+  return fetch(url.replace(/([?&])api_key=[^&]*&?/, "$1").replace(/[?&]$/, ""), init);
+}
+
 // OpenAlex stores abstracts as { word: [positions] }; rebuild the text.
 function rebuildAbstract(inv?: Record<string, number[]> | null): string | null {
   if (!inv) return null;
@@ -49,7 +57,7 @@ function toPaper(w: any): Paper {
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 export async function searchPapers(query: string): Promise<Paper[]> {
-  const res = await fetch(`${BASE}/works?${params({ search: query, per_page: "20" })}`, {
+  const res = await oaFetch(`${BASE}/works?${params({ search: query, per_page: "20" })}`, {
     next: { revalidate: 3600 },
   });
   if (!res.ok) throw new Error(`OpenAlex search failed (${res.status})`);
@@ -59,7 +67,7 @@ export async function searchPapers(query: string): Promise<Paper[]> {
 
 export async function getPaper(id: string): Promise<Paper | null> {
   if (!/^W\d+$/.test(id)) return null;
-  const res = await fetch(`${BASE}/works/${id}?${params({})}`, { next: { revalidate: 86400 } });
+  const res = await oaFetch(`${BASE}/works/${id}?${params({})}`, { next: { revalidate: 86400 } });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`OpenAlex lookup failed (${res.status})`);
   return toPaper(await res.json());
@@ -68,7 +76,7 @@ export async function getPaper(id: string): Promise<Paper | null> {
 export async function getNewestPapers(days = 3, limit = 25): Promise<Paper[]> {
   const since = new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10);
   const filter = `${NEWEST_FILTER},from_publication_date:${since},has_abstract:true`;
-  const res = await fetch(
+  const res = await oaFetch(
     `${BASE}/works?${params({ filter, sort: "publication_date:desc", per_page: String(limit) })}`,
     { cache: "no-store" },
   );
@@ -85,7 +93,7 @@ export async function getCitationCounts(ids: string[]): Promise<Map<string, numb
     const batch = works.slice(i, i + 50);
     const p = params({ filter: `openalex_id:${batch.join("|")}`, per_page: "50" });
     p.set("select", "id,cited_by_count");
-    const res = await fetch(`${BASE}/works?${p}`, { cache: "no-store" });
+    const res = await oaFetch(`${BASE}/works?${p}`, { cache: "no-store" });
     if (!res.ok) throw new Error(`OpenAlex citations failed (${res.status})`);
     const data = await res.json();
     for (const w of data.results ?? []) out.set(String(w.id).replace("https://openalex.org/", ""), w.cited_by_count ?? 0);
@@ -106,7 +114,7 @@ const shortId = (id: string) => String(id).replace("https://openalex.org/", "");
 async function oa(path: string, extra: Record<string, string>, select?: string): Promise<any> {
   const p = params(extra);
   if (select) p.set("select", select);
-  const res = await fetch(`${BASE}${path}?${p}`, { next: { revalidate: 3600 } });
+  const res = await oaFetch(`${BASE}${path}?${p}`, { next: { revalidate: 3600 } });
   if (!res.ok) throw new Error(`OpenAlex ${path} failed (${res.status})`);
   return res.json();
 }
@@ -227,7 +235,7 @@ export async function getPapersByArxivIds(ids: string[]): Promise<Paper[]> {
   const out: Paper[] = [];
   for (let i = 0; i < ids.length; i += 50) {
     const dois = ids.slice(i, i + 50).map((id) => `10.48550/arxiv.${id}`).join("|");
-    const res = await fetch(`${BASE}/works?${params({ filter: `doi:${dois}`, per_page: "50" })}`, { cache: "no-store" });
+    const res = await oaFetch(`${BASE}/works?${params({ filter: `doi:${dois}`, per_page: "50" })}`, { cache: "no-store" });
     if (!res.ok) throw new Error(`OpenAlex arXiv lookup failed (${res.status})`);
     out.push(...((await res.json()).results ?? []).map(toPaper));
   }

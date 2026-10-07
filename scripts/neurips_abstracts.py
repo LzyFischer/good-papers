@@ -119,7 +119,9 @@ def main() -> None:
         if m:
             titles[m.group(1)] = e["name"]
     data = json.loads(OUT.read_text()) if OUT.exists() else {}
-    todo = [f for f in titles if not (data.get(f) or {}).get("abstract")]
+    # SKIP_OPENALEX=1 when today's OpenAlex budget is spent: go straight to arXiv.
+    import os
+    todo = [] if os.environ.get("SKIP_OPENALEX") else [f for f in titles if not (data.get(f) or {}).get("abstract")]
     OUT.parent.mkdir(parents=True, exist_ok=True)
     print(f"{len(titles)} papers, {len(titles) - len(todo)} already have an abstract, looking up {len(todo)}", flush=True)
 
