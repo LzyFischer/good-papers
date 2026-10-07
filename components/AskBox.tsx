@@ -16,6 +16,9 @@ export function AskBox({ value = "", dark = false }: { value?: string; dark?: bo
         <button type="submit">Ask</button>
       </form>
       <div className="ask-chips">
+        <Link href="/neurips" className="ask-chip ask-chip--featured">
+          <span className="ask-chip-badge">New</span> NeurIPS 2026: the best posters in every session
+        </Link>
         {SUGGESTIONS.map((s) => (
           <Link key={s} href={`/ask?q=${encodeURIComponent(s)}`} className="ask-chip">
             {s}

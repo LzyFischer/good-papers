@@ -299,6 +299,11 @@ button { font: inherit; }
 .ask--dark .ask-form button { background: var(--lime); color: var(--lime-ink); }
 .ask--dark .ask-chip { background: transparent; color: var(--night-muted); border: 1px solid #30343b; }
 .ask--dark .ask-chip:hover { color: var(--lime); border-color: var(--lime); text-decoration: none; }
+/* The NeurIPS guide gets the first, highlighted chip */
+.ask-chip--featured { flex-basis: 100%; max-width: max-content; font-weight: 600; display: inline-flex; align-items: center; gap: .45rem; }
+.ask-chip-badge { font: 700 .66rem/1 var(--body); text-transform: uppercase; letter-spacing: .05em; padding: .2rem .4rem; border-radius: 4px; background: var(--ai); color: #fff; }
+.ask--dark .ask-chip--featured { color: var(--lime); border-color: var(--lime); background: rgba(220, 242, 106, .08); }
+.ask--dark .ask-chip--featured .ask-chip-badge { background: var(--lime); color: var(--lime-ink); }
 
 /* Spotlight */
 .spot { display: grid; gap: .8rem; text-decoration: none; color: var(--ink); background: var(--surface); border-radius: 18px; padding: 1rem; box-shadow: 0 20px 60px rgba(0, 0, 0, .35); transform: rotate(.6deg); transition: transform .2s ease; }
