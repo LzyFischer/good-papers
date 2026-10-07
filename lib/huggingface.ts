@@ -84,8 +84,15 @@ export async function getHfPastYear(limit = 60, perMonth = 8): Promise<HfItem[]>
 // Every list the Trending shelf shows (today, this week, this month, the past year),
 // for the daily cron, so the shelf is complete even when nobody visits the home page.
 export async function getHfTrendingPapers(): Promise<Paper[]> {
-  const lists = await Promise.all([getHfList("day", 15), getHfList("week", 30), getHfList("month", 30), getHfList("year", 60)]);
-  return getPapersForArxivIds([...new Set(lists.flat().map((t) => t.arxivId))]);
+  return getPapersForArxivIds(await hfShelfIds());
+}
+
+// arXiv ids on every list the Trending shelf can show, today's first: the whole daily
+// and weekly lists (up to 100 each, like huggingface.co/papers), the month's and the
+// past year's top 60.
+export async function hfShelfIds(): Promise<string[]> {
+  const lists = await Promise.all([getHfList("day", 100), getHfList("week", 100), getHfList("month", 60), getHfList("year", 60)]);
+  return [...new Set(lists.flat().map((t) => t.arxivId))];
 }
 
 // OpenAlex's version where it has one (institutions), arXiv's otherwise.

@@ -33,7 +33,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav className="nav" aria-label="Sections">
               <Link href="/#trending">Trending</Link>
               <Link href="/#must-read">Must read</Link>
-              <Link href="/researchers">Researchers</Link>
               <Link href="/ask">Ask</Link>
               <Link href="/how">How it works</Link>
             </nav>

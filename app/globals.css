@@ -398,26 +398,3 @@ button { font: inherit; }
 /* Venue tags: conferences stand out, preprints stay quiet */
 .tag.venue--preprint { background: var(--bg); color: var(--muted); border-color: var(--line); }
 .mini-venue { display: inline-block; margin-right: .4rem; padding: .05rem .35rem; border-radius: 4px; background: var(--ink); color: var(--bg); font-size: .7rem; }
-
-/* Good researchers */
-.area-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 1.5rem; }
-.area-chips a { font: 600 .8rem var(--body); padding: .32rem .7rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); text-decoration: none; }
-.area-chips a[aria-current="page"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
-.researchers { list-style: none; margin: 0; padding: 0; max-width: 62rem; }
-.researcher { display: grid; grid-template-columns: 2rem auto minmax(0, 1fr) auto; gap: 1rem; align-items: start; padding: 1rem 0; border-top: 1px solid var(--line); }
-.researcher-rank { font: 800 1.1rem/2.6rem var(--display); color: var(--muted); text-align: right; }
-.researcher-main { min-width: 0; }
-.researcher-name { font: 700 1.08rem var(--display); color: var(--ink); text-decoration: none; }
-.researcher-name:hover { text-decoration: underline; }
-.researcher-org { display: block; color: var(--muted); font-size: .88rem; margin-top: .1rem; }
-.researcher-papers { list-style: none; margin: .5rem 0 0; padding: 0; font-size: .88rem; }
-.researcher-papers li { margin: .2rem 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.researcher-papers a { color: var(--ink); }
-.researcher-pct { color: var(--muted); font-weight: 600; }
-.researcher-stats { display: grid; grid-template-columns: repeat(5, auto); gap: .2rem 1rem; margin: 0; text-align: right; }
-.researcher-stats dt { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-.researcher-stats dd { margin: 0; font: 700 1rem var(--display); }
-@media (max-width: 52rem) {
-  .researcher { grid-template-columns: 1.5rem auto minmax(0, 1fr); }
-  .researcher-stats { grid-column: 3; grid-template-columns: repeat(3, auto); justify-content: start; text-align: left; }
-}

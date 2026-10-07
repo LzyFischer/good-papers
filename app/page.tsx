@@ -8,7 +8,7 @@ import { AREAS } from "@/lib/areas";
 import { topUpTrending } from "@/lib/ingest";
 import { getVerdicts } from "@/lib/papers";
 import { serverClient } from "@/lib/supabase";
-import { WINDOWS, shelf, trending, type Window } from "@/lib/trending";
+import { WINDOWS, WINDOW_LABELS, shelf, trending, type Window } from "@/lib/trending";
 import type { Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -64,9 +64,9 @@ export default async function Home({ searchParams }: Props) {
 
   const browsing = !filtered;
   if (browsing) after(() => topUpTrending().catch((e) => console.warn("Trending top-up failed:", e)));
-  const [hotNow, must, debated, fresh] = browsing
-    ? await Promise.all([trending(window), shelf("must"), shelf("debated"), shelf("new")])
-    : [[], [], [], []];
+  const [hotNow, must, debated] = browsing
+    ? await Promise.all([trending(window, 24), shelf("must", 24), shelf("debated", 24)])
+    : [[], [], []];
   // Paper of the day: the highest-scored paper trending this week, one with a picture if possible.
   const week = browsing ? (window === "week" ? hotNow : await trending("week")) : [];
   const best = (l: Score[]) => [...l].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
@@ -92,18 +92,17 @@ export default async function Home({ searchParams }: Props) {
       <div className="wrap home-body">
         {browsing && (
           <>
-            <Shelf id="trending" title="Trending" note="What readers here and on Hugging Face are upvoting" papers={hotNow}>
+            <Shelf id="trending" title="Trending" note="What readers here and on Hugging Face are upvoting" papers={hotNow} more={{ href: `/shelf/trending?t=${window}`, label: "See all" }}>
               <nav className="seg" aria-label="Trending window">
                 {(Object.keys(WINDOWS) as Window[]).map((w) => (
                   <Link key={w} href={w === "week" ? "/#trending" : `/?t=${w}#trending`} aria-current={w === window ? "page" : undefined} scroll={false}>
-                    {{ day: "Today", week: "This week", month: "This month", year: "Past year" }[w]}
+                    {WINDOW_LABELS[w]}
                   </Link>
                 ))}
               </nav>
             </Shelf>
-            <Shelf id="must-read" title="Must read" note="This year's highest-rated papers" papers={must} />
-            <Shelf id="debated" title="Most debated" note="Where the reviewers can't agree" papers={debated} />
-            <Shelf id="new" title="New today" note="Fresh off arXiv" papers={fresh} />
+            <Shelf id="must-read" title="Must read" note="This year's highest-rated papers" papers={must} more={{ href: "/shelf/must-read", label: "See all" }} />
+            <Shelf id="debated" title="Most debated" note="Where the reviewers can't agree" papers={debated} more={{ href: "/shelf/debated", label: "See all" }} />
             <div className="section-head">
               <h2 className="section-title">All papers</h2>
               <Link href="/how">How scores work</Link>

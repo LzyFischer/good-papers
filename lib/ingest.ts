@@ -3,7 +3,7 @@
 // sent (next/server `after`), a few papers at a time, inside the inline-judging budget.
 import { arxivCategories, isML } from "./arxiv";
 import { nudgeWorker } from "./dispatch";
-import { getHfList, getPapersForArxivIds } from "./huggingface";
+import { getPapersForArxivIds, hfShelfIds } from "./huggingface";
 import { jevConfigured } from "./jev";
 import { judgePaper, mapLimit } from "./judge";
 import { storeJudgement, storedIdsByArxiv, underInlineBudget } from "./papers";
@@ -15,9 +15,7 @@ let lastRun = 0; // per server instance; the budget check is the site-wide guard
 export async function topUpTrending(): Promise<number> {
   if (Date.now() - lastRun < EVERY_MS || !jevConfigured() || !process.env.SUPABASE_SERVICE_ROLE_KEY) return 0;
   lastRun = Date.now();
-  // Today's and this week's lists first (what the Trending shelf shows by default), then the past year's.
-  const lists = await Promise.all([getHfList("day", 15), getHfList("week", 30), getHfList("year", 60)]);
-  const n = await ingestArxivIds([...new Set(lists.flat().map((t) => t.arxivId))], PER_RUN);
+  const n = await ingestArxivIds(await hfShelfIds(), PER_RUN);
   if (n) await nudgeWorker(); // discussion, TL;DR, thumbnail and HF upvotes follow
   return n;
 }

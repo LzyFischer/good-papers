@@ -17,7 +17,7 @@ export const maxDuration = 300;
 export async function GET(req: Request) {
   if (!isAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const max = Number(process.env.CRON_MAX_PAPERS ?? 50);
+  const max = Number(process.env.CRON_MAX_PAPERS ?? 150); // HF posts ~50-100 papers a day
   // Hugging Face's lists first (today, this week, this month, the past year), then OpenAlex's newest.
   const hf = await getHfTrendingPapers().catch((e) => {
     console.warn("Hugging Face trending failed:", e);
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
   const judged = new Set((existing ?? []).map((r: { paper_id: string }) => r.paper_id));
   const todo = newest.filter((p) => p.abstract && !judged.has(p.id)).slice(0, max);
 
-  const results = await mapLimit(todo, 3, async (paper) => {
+  const results = await mapLimit(todo, 5, async (paper) => {
     try {
       const j = await judgePaper(paper);
       await storeJudgement(paper, j);

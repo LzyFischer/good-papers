@@ -8,6 +8,7 @@ import type { Score } from "./types";
 
 export const WINDOWS = { day: 1, week: 7, month: 30, year: 365 } as const;
 export type Window = keyof typeof WINDOWS;
+export const WINDOW_LABELS: Record<Window, string> = { day: "Today", week: "This week", month: "This month", year: "Past year" };
 
 const since = (days: number) => new Date(Date.now() - days * 86400_000).toISOString();
 
@@ -41,7 +42,7 @@ export async function trending(window: Window, n = 12): Promise<Score[]> {
   return ids.map((id) => byId.get(id)).filter((s): s is Score => Boolean(s));
 }
 
-export async function shelf(kind: "must" | "debated" | "new", n = 12): Promise<Score[]> {
+export async function shelf(kind: "must" | "debated", n = 12): Promise<Score[]> {
   // Papers opened from author or institution pages can be outside ML; shelves show ML areas only.
   let q = serverClient().from("paper_scores").select("*").not("score", "is", null).not("area", "is", null);
   // Must read: this year's papers only (the last 12 months early in the year, when that's thin).
@@ -53,8 +54,6 @@ export async function shelf(kind: "must" | "debated" | "new", n = 12): Promise<S
     q = q.gte("score", 0.8).gte("published_on", since).order("score", { ascending: false });
   }
   if (kind === "debated") q = q.gt("comments", 0).order("comments", { ascending: false });
-  // New today is the arXiv feed, which the cron checks against arXiv's ML categories.
-  if (kind === "new") q = q.ilike("url", "%arxiv%").order("published_on", { ascending: false, nullsFirst: false });
   const { data } = await q.limit(n);
   return (data ?? []) as Score[];
 }
