@@ -20,7 +20,6 @@ type Props = { searchParams: Promise<{ area?: string; org?: string; author?: str
 // PostgREST array "contains" with a quoted element, so names with commas or spaces work.
 const arrayHas = (v: string) => `{"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"}`;
 
-// The paper at the top of the page: the hottest one this week that has a picture and a consensus line.
 function Spotlight({ s }: { s: Score }) {
   const t = tierOf(s);
   return (
@@ -40,6 +39,20 @@ function Spotlight({ s }: { s: Score }) {
       {s.panel_consensus ? <q className="spot-quote">{s.panel_consensus}</q> : s.tldr && <span className="spot-tldr">{s.tldr}</span>}
     </Link>
   );
+}
+
+// The paper at the top of the page: the highest-scored paper from the last month that has a picture.
+async function paperOfTheDay(): Promise<Score | undefined> {
+  const { data } = await serverClient()
+    .from("paper_scores")
+    .select("*")
+    .not("score", "is", null)
+    .not("area", "is", null)
+    .not("thumbnail", "is", null)
+    .gte("published_on", new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10))
+    .order("score", { ascending: false })
+    .limit(1);
+  return (data?.[0] as Score | undefined) ?? undefined;
 }
 
 export default async function Home({ searchParams }: Props) {
@@ -68,7 +81,7 @@ export default async function Home({ searchParams }: Props) {
   const [hotNow, must, debated, fresh] = browsing
     ? await Promise.all([trending(window), shelf("must"), shelf("debated"), shelf("new")])
     : [[], [], [], []];
-  const spot = [...hotNow, ...must].find((s) => s.thumbnail && s.panel_consensus) ?? hotNow[0] ?? must[0];
+  const spot = browsing ? (await paperOfTheDay()) ?? hotNow[0] ?? must[0] : undefined;
 
   return (
     <main>
