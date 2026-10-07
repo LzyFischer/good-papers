@@ -19,7 +19,8 @@ export type PaperStub = {
 // What readers and the AI panel said, revealed once you've voted ("you vs everyone").
 export type Reveal = { readerFresh: number; readerTotal: number; aiYes: number; aiTotal: number; coi: number; open?: boolean };
 
-export function VoteButtons({ paper, reveal }: { paper: PaperStub; reveal?: Reveal }) {
+// compact: just the two buttons, for cards on the home page shelves.
+export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperStub; reveal?: Reveal; compact?: boolean }) {
   const router = useRouter();
   const { session } = useSession();
   // undefined: no vote; true/false: fresh/rotten; null: read it, abstained.
@@ -72,6 +73,21 @@ export function VoteButtons({ paper, reveal }: { paper: PaperStub; reveal?: Reve
   const shown = voted || Boolean(reveal?.open); // the Trending teaser shows the split to everyone
   const pct = reveal?.readerTotal ? Math.round((reveal.readerFresh / reveal.readerTotal) * 100) : null;
 
+  if (compact) {
+    return (
+      <div className="vote vote--compact" title={error ?? "Only vote on papers you've read"}>
+        <button className="vbtn f" aria-pressed={vote === true} aria-label="Upvote: worth reading" disabled={busy} onClick={() => cast(true)}>
+          <Icon name="up" />
+          <span>Worth reading</span>
+        </button>
+        <button className="vbtn r" aria-pressed={vote === false} aria-label="Downvote: not for me" disabled={busy} onClick={() => cast(false)}>
+          <Icon name="down" />
+          <span>Not for me</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="vote-wrap">
       {reveal && (
@@ -115,11 +131,11 @@ function YouVsEveryone({ vote, reveal }: { vote: boolean; reveal: Reveal }) {
   const others = reveal.readerTotal - 1; // your own vote is in the count
   const aiSame = vote ? reveal.aiYes : reveal.aiTotal - reveal.aiYes;
   return (
-    <p className="reveal">
-      {others <= 0
-        ? "You're the first reader to vote."
-        : `${Math.round(((same - 1) / others) * 100)}% of other readers agree with you.`}
-      {reveal.aiTotal > 0 && ` ${aiSame} of ${reveal.aiTotal} AI reviewers do too.`}
-    </p>
+    (others > 0 || reveal.aiTotal > 0) && (
+      <p className="reveal">
+        {others > 0 && `${Math.round(((same - 1) / others) * 100)}% of other readers agree with you. `}
+        {reveal.aiTotal > 0 && `${aiSame} of ${reveal.aiTotal} AI reviewers ${others > 0 ? "do too" : "agree with you"}.`}
+      </p>
+    )
   );
 }

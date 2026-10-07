@@ -448,3 +448,9 @@ button { font: inherit; }
 .vote-to-see { display: block; font: 600 .74rem var(--body); color: var(--ai); margin-top: .15rem; }
 .mini-meta .vote-to-see, .spot-tier .vote-to-see { display: inline; margin: 0; }
 .spot-tier .vote-to-see { color: var(--lime); }
+
+/* Shelf cards: link area plus quick vote buttons */
+.mini-link { display: grid; align-content: start; gap: .35rem; text-decoration: none; color: inherit; }
+.vote--compact { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; margin-top: .35rem; }
+.vote--compact .vbtn { padding: .35rem .4rem; font-size: .76rem; gap: .25rem; min-height: 0; border-radius: 8px; }
+.vote--compact .vbtn .icon { width: 14px; height: 14px; }

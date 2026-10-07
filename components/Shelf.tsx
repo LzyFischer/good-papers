@@ -3,6 +3,7 @@ import { AREAS } from "@/lib/areas";
 import { isPreprint, venueLabel } from "@/lib/orgs";
 import type { Score } from "@/lib/types";
 import { Gate } from "./Gate";
+import { VoteButtons } from "./VoteButtons";
 import { Gauge, tierOf } from "./Score";
 
 // Compact card for horizontal shelves: thumbnail, score, title, TL;DR.
@@ -10,40 +11,43 @@ export function MiniCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: boole
   const t = tierOf(s);
   const area = s.area ? AREAS[s.area]?.label : null;
   return (
-    <Link href={`/paper/${s.id}`} className="mini">
-      <span className="mini-thumb">
-        {s.thumbnail ? (
-          // Figures are hotlinked from arXiv; plain img keeps them out of Next's image proxy.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={s.thumbnail} alt="" loading="lazy" />
-        ) : (
-          <span className="mini-thumb-empty">{area ?? "Paper"}</span>
-        )}
-        {t && (
-          <span className="mini-score">
-            <Gate id={s.id} open={scoreOpen} mask={<span className="gauge gauge--sm gauge--empty"><b>?</b></span>}>
-              <Gauge pct={t.pct} tone={t.tone} size="sm" />
-            </Gate>
-          </span>
-        )}
-      </span>
-      <span className="mini-title">{s.title}</span>
-      {s.tldr && <span className="mini-tldr">{s.tldr}</span>}
-      <span className="mini-meta">
-        {!isPreprint(s.venue) && (
-          <span className="mini-venue">
-            {venueLabel(s.venue, s.year)}
-            {s.conf_track && s.conf_track !== "poster" ? ` ${s.conf_track === "oral" ? "Oral" : "Spotlight"}` : ""}
-          </span>
-        )}
-        {t?.label}
-        <Gate id={s.id} open={scoreOpen || !t} mask={<span className="vote-to-see"> · vote to see score</span>}>
-          {s.reader_total ? ` · ${Math.round((s.reader_fresh / s.reader_total) * 100)}% of ${s.reader_total} readers upvoted` : ""}
-        </Gate>
-        {s.hf_upvotes ? ` · ▲ ${s.hf_upvotes} on HF` : ""}
-        {s.comments ? ` · ${s.comments} comments` : ""}
-      </span>
-    </Link>
+    <div className="mini">
+      <Link href={`/paper/${s.id}`} className="mini-link">
+        <span className="mini-thumb">
+          {s.thumbnail ? (
+            // Figures are hotlinked from arXiv; plain img keeps them out of Next's image proxy.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={s.thumbnail} alt="" loading="lazy" />
+          ) : (
+            <span className="mini-thumb-empty">{area ?? "Paper"}</span>
+          )}
+          {t && (
+            <span className="mini-score">
+              <Gate id={s.id} open={scoreOpen} mask={<span className="gauge gauge--sm gauge--empty"><b>?</b></span>}>
+                <Gauge pct={t.pct} tone={t.tone} size="sm" />
+              </Gate>
+            </span>
+          )}
+        </span>
+        <span className="mini-title">{s.title}</span>
+        {s.tldr && <span className="mini-tldr">{s.tldr}</span>}
+        <span className="mini-meta">
+          {!isPreprint(s.venue) && (
+            <span className="mini-venue">
+              {venueLabel(s.venue, s.year)}
+              {s.conf_track && s.conf_track !== "poster" ? ` ${s.conf_track === "oral" ? "Oral" : "Spotlight"}` : ""}
+            </span>
+          )}
+          {t?.label}
+          <Gate id={s.id} open={scoreOpen || !t} mask={<span className="vote-to-see"> · vote to see score</span>}>
+            {s.reader_total ? ` · ${Math.round((s.reader_fresh / s.reader_total) * 100)}% of ${s.reader_total} readers upvoted` : ""}
+          </Gate>
+          {s.hf_upvotes ? ` · ▲ ${s.hf_upvotes} on HF` : ""}
+          {s.comments ? ` · ${s.comments} comments` : ""}
+        </span>
+      </Link>
+      <VoteButtons paper={{ id: s.id, title: s.title, authors: s.authors ?? [], year: s.year, venue: s.venue, url: s.url }} compact />
+    </div>
   );
 }
 
