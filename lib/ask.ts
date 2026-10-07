@@ -33,9 +33,12 @@ export type Answer = {
   papers: Score[];
   people: { name: string; papers: number }[];
   orgs: { name: string; papers: number }[];
+  venue: string | null; // "NeurIPS 2026" when the question names it
+  track: "oral" | "spotlight" | "poster" | null;
+  more: boolean; // more papers than shown
 };
 
-export async function ask(question: string): Promise<Answer> {
+export async function ask(question: string, limit = 40): Promise<Answer> {
   const groups = Object.fromEntries(
     Object.entries(AREA_GROUPS).filter(([k]) => k !== "other").map(([k, g]) => [k, g.criteria]),
   );
@@ -79,10 +82,10 @@ export async function ask(question: string): Promise<Answer> {
   const days = neurips ? 0 : WINDOWS[window].days;
   let papers: Score[];
   if (neurips && intent === "trending") {
-    papers = (await neuripsTrending(60)).filter((s) => (!areaKeys || (s.area && areaKeys.includes(s.area))) && (!confTrack || s.conf_track === confTrack));
+    papers = (await neuripsTrending(limit + 60)).filter((s) => (!areaKeys || (s.area && areaKeys.includes(s.area))) && (!confTrack || s.conf_track === confTrack));
   } else if (intent === "trending") {
     const w = days && days <= 1 ? "day" : days && days <= 7 ? "week" : days && days <= 30 ? "month" : "year";
-    papers = (await trending(w, 60)).filter((s) => !areaKeys || (s.area && areaKeys.includes(s.area)));
+    papers = (await trending(w, limit + 60)).filter((s) => !areaKeys || (s.area && areaKeys.includes(s.area)));
   } else {
     let q = serverClient().from("paper_scores").select("*").not("score", "is", null).not("area", "is", null);
     if (neurips) q = q.eq("venue", NEURIPS);
@@ -92,7 +95,7 @@ export async function ask(question: string): Promise<Answer> {
     if (intent === "debated") q = q.order("comments", { ascending: false });
     else if (intent === "newest") q = q.order("published_on", { ascending: false, nullsFirst: false });
     else q = q.order("score", { ascending: false });
-    papers = ((await q.limit(intent === "who" ? 200 : 20)).data ?? []) as Score[];
+    papers = ((await q.limit(intent === "who" ? 200 : limit + 1)).data ?? []) as Score[];
   }
 
   const count = (names: string[][]) => {
@@ -102,5 +105,16 @@ export async function ask(question: string): Promise<Answer> {
   };
   const people = intent === "who" ? count(papers.map((p) => p.authors ?? [])) : [];
   const orgs = intent === "who" ? count(papers.map((p) => p.orgs ?? [])) : [];
-  return { intent, window, windowLabel: WINDOWS[window].label, area, papers: papers.slice(0, 20), people, orgs };
+  return {
+    intent,
+    window,
+    windowLabel: WINDOWS[window].label,
+    area,
+    papers: papers.slice(0, limit),
+    people,
+    orgs,
+    venue: neurips ? NEURIPS : null,
+    track: confTrack,
+    more: intent !== "who" && papers.length > limit,
+  };
 }

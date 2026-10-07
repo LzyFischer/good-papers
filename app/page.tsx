@@ -78,7 +78,7 @@ export default async function Home({ searchParams }: Props) {
     const p = new URLSearchParams();
     for (const [k, v] of Object.entries({ area, org, author, t })) if (v) p.set(k, v);
     p.set("n", String(shown + PAGE));
-    return `/?${p}#p${shown}`; // land on the first new paper
+    return `/?${p}`; // scroll={false} keeps your place; new papers appear below
   })();
   const [verdicts, openIds] = await Promise.all([getVerdicts(papers.map((p) => p.id)), openScoreIds().catch(() => [] as string[])]);
 
@@ -144,7 +144,7 @@ export default async function Home({ searchParams }: Props) {
           )}
         </section>
         {hasMore && (
-          <Link href={moreHref} className="load-more">
+          <Link href={moreHref} className="load-more" scroll={false}>
             Show {PAGE} more papers
           </Link>
         )}

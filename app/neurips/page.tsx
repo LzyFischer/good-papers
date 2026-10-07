@@ -75,7 +75,7 @@ export default async function NeuripsPage({ searchParams }: Props) {
         <p className="page-sub">Best rated first.</p>
         <List papers={papers.slice(0, shown)} />
         {papers.length > shown && (
-          <Link href={`/neurips?track=${track}&n=${shown + PAGE}#p${shown}`} className="load-more">
+          <Link href={`/neurips?track=${track}&n=${shown + PAGE}`} className="load-more" scroll={false}>
             Show {PAGE} more papers
           </Link>
         )}

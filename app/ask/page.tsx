@@ -8,7 +8,7 @@ import { openScoreIds } from "@/lib/trending";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-type Props = { searchParams: Promise<{ q?: string }> };
+type Props = { searchParams: Promise<{ q?: string; n?: string }> };
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const { q } = await searchParams;
@@ -17,8 +17,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 export default async function AskPage({ searchParams }: Props) {
   const openIds = await openScoreIds().catch(() => [] as string[]);
-  const q = ((await searchParams).q ?? "").trim().slice(0, 300);
-  const a = q ? await ask(q).catch(() => null) : null;
+  const sp = await searchParams;
+  const q = (sp.q ?? "").trim().slice(0, 300);
+  const shown = Math.min(400, Math.max(40, Number(sp.n) || 40));
+  const a = q ? await ask(q, shown).catch(() => null) : null;
   return (
     <main className="wrap page">
       <AskBox value={q} />
@@ -32,7 +34,17 @@ export default async function AskPage({ searchParams }: Props) {
                 {" "}in {a.area.group ? <b>{a.area.label}</b> : <Link href={`/?area=${a.area.key}`}>{a.area.label}</Link>}
               </>
             )}
-            , <b>{a.windowLabel}</b>. Answers come from ratings and discussions on Good Papers.
+            {a.venue ? (
+              <>
+                , at <b>{a.venue}</b>
+                {a.track && <> ({a.track}s)</>}
+              </>
+            ) : (
+              <>
+                , <b>{a.windowLabel}</b>
+              </>
+            )}
+            . Answers come from ratings and discussions on Good Papers.
           </p>
           {a.intent === "who" && (a.people.length > 0 || a.orgs.length > 0) && (
             <div className="who">
@@ -60,11 +72,19 @@ export default async function AskPage({ searchParams }: Props) {
           )}
           {a.papers.length > 0 ? (
             <div className="grid-cards">
-              {a.papers.map((s) => (
-                <MiniCard key={s.id} s={s} scoreOpen={openIds.includes(s.id)} />
+              {a.papers.map((s, i) => (
+                <div key={s.id} id={`p${i}`} className="card-anchor">
+                  <MiniCard s={s} scoreOpen={openIds.includes(s.id)} />
+                </div>
               ))}
             </div>
-          ) : (
+          ) : null}
+          {a.more && (
+            <Link href={`/ask?q=${encodeURIComponent(q)}&n=${shown + 40}`} className="load-more" scroll={false}>
+              Show 40 more papers
+            </Link>
+          )}
+          {a.papers.length === 0 && (
             <p className="empty">
               No rated papers match yet.{" "}
               {a.area && !a.area.group && <Link href={`/?area=${a.area.key}`}>See all rated {a.area.label} papers</Link>}
