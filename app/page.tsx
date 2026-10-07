@@ -6,6 +6,7 @@ import { Gauge, tierOf } from "@/components/Score";
 import { Shelf } from "@/components/Shelf";
 import { AREAS } from "@/lib/areas";
 import { topUpTrending } from "@/lib/ingest";
+import { NEURIPS, neuripsTrending } from "@/lib/neurips";
 import { getVerdicts } from "@/lib/papers";
 import { serverClient } from "@/lib/supabase";
 import { WINDOWS, WINDOW_LABELS, shelf, trending, type Window } from "@/lib/trending";
@@ -15,7 +16,9 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60; // room for the trending top-up after the page is sent
 
 
-type Props = { searchParams: Promise<{ area?: string; org?: string; author?: string; t?: string }> };
+type Props = { searchParams: Promise<{ area?: string; org?: string; author?: string; t?: string; n?: string }> };
+
+const PAGE = 40; // "Show more" adds this many papers to the list
 
 // PostgREST array "contains" with a quoted element, so names with commas or spaces work.
 const arrayHas = (v: string) => `{"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"}`;
@@ -42,7 +45,8 @@ function Spotlight({ s }: { s: Score }) {
 }
 
 export default async function Home({ searchParams }: Props) {
-  const { area, org, author, t } = await searchParams;
+  const { area, org, author, t, n } = await searchParams;
+  const shown = Math.min(1000, Math.max(PAGE, Math.round((Number(n) || PAGE) / PAGE) * PAGE));
   const window: Window = t && t in WINDOWS ? (t as Window) : "week";
   const activeArea = area && AREAS[area] ? area : null;
 
@@ -53,20 +57,28 @@ export default async function Home({ searchParams }: Props) {
     .not("area", "is", null) // in-scope (ML) papers only; others can come in from author/institution pages
     .order("published_on", { ascending: false, nullsFirst: false })
     .order("last_activity", { ascending: false })
-    .limit(30);
+    .order("id")
+    .limit(shown + 1); // one extra tells us whether there are more
   if (activeArea) q = q.eq("area", activeArea);
   if (org) q = q.filter("orgs", "cs", arrayHas(org));
   if (author) q = q.filter("authors", "cs", arrayHas(author));
   const filtered = activeArea ? AREAS[activeArea].label : org ? `papers from ${org}` : author ? `papers by ${author}` : null;
   const { data } = await q;
-  const papers = (data ?? []) as Score[];
+  const hasMore = (data ?? []).length > shown;
+  const papers = ((data ?? []) as Score[]).slice(0, shown);
+  const moreHref = (() => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries({ area, org, author, t })) if (v) p.set(k, v);
+    p.set("n", String(shown + PAGE));
+    return `/?${p}#p${shown}`; // land on the first new paper
+  })();
   const verdicts = await getVerdicts(papers.map((p) => p.id));
 
   const browsing = !filtered;
   if (browsing) after(() => topUpTrending().catch((e) => console.warn("Trending top-up failed:", e)));
-  const [hotNow, must, debated] = browsing
-    ? await Promise.all([trending(window, 24), shelf("must", 24), shelf("debated", 24)])
-    : [[], [], []];
+  const [hotNow, must, debated, nips] = browsing
+    ? await Promise.all([trending(window, 24), shelf("must", 24), shelf("debated", 24), neuripsTrending(24)])
+    : [[], [], [], []];
   // Paper of the day: the highest-scored paper trending this week, one with a picture if possible.
   const week = browsing ? (window === "week" ? hotNow : await trending("week")) : [];
   const best = (l: Score[]) => [...l].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
@@ -101,6 +113,7 @@ export default async function Home({ searchParams }: Props) {
                 ))}
               </nav>
             </Shelf>
+            <Shelf id="neurips" title={`Trending at ${NEURIPS}`} note="Orals, spotlights and posters people are talking about" papers={nips} more={{ href: "/neurips", label: "All sessions" }} />
             <Shelf id="must-read" title="Must read" note="This year's highest-rated papers" papers={must} more={{ href: "/shelf/must-read", label: "See all" }} />
             <Shelf id="debated" title="Most debated" note="Where the reviewers can't agree" papers={debated} more={{ href: "/shelf/debated", label: "See all" }} />
             <div className="section-head">
@@ -119,9 +132,18 @@ export default async function Home({ searchParams }: Props) {
           {papers.length === 0 ? (
             <p className="empty">No rated papers{filtered ? " here" : ""} yet. Search for a paper you&apos;ve read and add the first verdict.</p>
           ) : (
-            papers.map((s) => <PaperCard key={s.id} paper={s} score={s} verdicts={verdicts.get(s.id) ?? []} />)
+            papers.map((s, i) => (
+              <div key={s.id} id={`p${i}`} className="card-anchor">
+                <PaperCard paper={s} score={s} verdicts={verdicts.get(s.id) ?? []} />
+              </div>
+            ))
           )}
         </section>
+        {hasMore && (
+          <Link href={moreHref} className="load-more">
+            Show {PAGE} more papers
+          </Link>
+        )}
       </div>
     </main>
   );

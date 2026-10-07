@@ -4,6 +4,7 @@
 import { AREA_GROUPS, AREAS } from "./areas";
 import { systemOne } from "./jev";
 import { serverClient } from "./supabase";
+import { NEURIPS, neuripsTrending } from "./neurips";
 import { trending } from "./trending";
 import type { Score } from "./types";
 
@@ -72,13 +73,20 @@ export async function ask(question: string): Promise<Answer> {
     }
   }
 
-  const days = WINDOWS[window].days;
+  // "at NeurIPS", "NeurIPS orals": that conference's papers only, whatever the time frame.
+  const neurips = /neurips|nips\b/i.test(question);
+  const confTrack = neurips ? (/\boral/i.test(question) ? "oral" : /spotlight/i.test(question) ? "spotlight" : /poster/i.test(question) ? "poster" : null) : null;
+  const days = neurips ? 0 : WINDOWS[window].days;
   let papers: Score[];
-  if (intent === "trending") {
+  if (neurips && intent === "trending") {
+    papers = (await neuripsTrending(60)).filter((s) => (!areaKeys || (s.area && areaKeys.includes(s.area))) && (!confTrack || s.conf_track === confTrack));
+  } else if (intent === "trending") {
     const w = days && days <= 1 ? "day" : days && days <= 7 ? "week" : days && days <= 30 ? "month" : "year";
     papers = (await trending(w, 60)).filter((s) => !areaKeys || (s.area && areaKeys.includes(s.area)));
   } else {
     let q = serverClient().from("paper_scores").select("*").not("score", "is", null).not("area", "is", null);
+    if (neurips) q = q.eq("venue", NEURIPS);
+    if (confTrack) q = q.eq("conf_track", confTrack);
     if (areaKeys) q = q.in("area", areaKeys);
     if (days) q = q.gte("published_on", new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10));
     if (intent === "debated") q = q.order("comments", { ascending: false });

@@ -411,7 +411,7 @@ def seed_discussions(db: DB, writer: Writer, personas: dict, limit: int, dry: bo
         ai_total="gt.0",
         area="not.is.null",
         order="last_activity.desc.nullslast",  # papers judged moments ago (opened from search) go first
-        limit="200",
+        limit="1000",
     )
     try:
         discussed = {r["paper_id"] for r in db.get_all("comments", "id", select="id,paper_id", author_kind="eq.ai")}
@@ -419,7 +419,15 @@ def seed_discussions(db: DB, writer: Writer, personas: dict, limit: int, dry: bo
         if not dry:
             raise
         discussed = set()  # dry run before migration 005: no comments table yet
-    todo = [p for p in papers if p["id"] not in discussed][:limit]
+    # Bulk-imported conference papers are discussed only once someone opens them.
+    waiting = {r["id"] for r in db.get_all("papers", "id", select="id", discuss_on_demand="is.true",
+                                           discuss_requested_at="is.null")}
+    # Opened by a reader: first in line, whatever their place in the activity order.
+    requested = [{"id": r["id"]} for r in db.get_all("papers", "id", select="id", discuss_requested_at="not.is.null")
+                 if r["id"] not in discussed]
+    seen = {p["id"] for p in requested}
+    todo = (requested + [p for p in papers if p["id"] not in discussed and p["id"] not in waiting
+                         and p["id"] not in seen])[:limit]
 
     def one(s: dict) -> None:
         paper = db.get("papers", select="id,title,venue,abstract", id=f"eq.{s['id']}")[0]

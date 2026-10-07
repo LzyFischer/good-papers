@@ -29,6 +29,7 @@ The owner is a PhD student building this as a side project and wants to demo it 
 - `worker/rp_worker.py` + `worker/voices.py` (handles and personalities) + `worker/reputation.py` (reader weights, conflicts of interest, cross-camp consensus). Run by `.github/workflows/worker.yml`.
 - `app/api/cron/route.ts`: daily job (see `vercel.json`) judging up to 50 new papers
 - `lib/ingest.ts`: after a home page view, rates up to 4 papers from Hugging Face's lists (`hfShelfIds`) we don't have yet (every 10 min at most, inside the hourly inline-judging budget); `lib/trending.ts` ranks by HF's daily, weekly and monthly lists (papers submitted in that window), not HF's all-time "trending" page
+- NeurIPS 2026: `scripts/neurips_openreview.py` (abstracts via the owner's OpenReview login) then `npm run import:neurips` (reads `neurips-2026-orals-posters.json` from neurips.cc, downloaded by the owner); `lib/neurips.ts` + `app/neurips/page.tsx` (best papers per poster session, by track); imported papers get AI discussions only once opened (`discuss_on_demand`)
 - `supabase/schema.sql` (fresh install), `supabase/migrations/002`..`006` (applied on production in order)
 
 ## Ground rules

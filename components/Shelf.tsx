@@ -27,7 +27,12 @@ export function MiniCard({ s }: { s: Score }) {
       <span className="mini-title">{s.title}</span>
       {s.tldr && <span className="mini-tldr">{s.tldr}</span>}
       <span className="mini-meta">
-        {!isPreprint(s.venue) && <span className="mini-venue">{venueLabel(s.venue, s.year)}</span>}
+        {!isPreprint(s.venue) && (
+          <span className="mini-venue">
+            {venueLabel(s.venue, s.year)}
+            {s.conf_track && s.conf_track !== "poster" ? ` ${s.conf_track === "oral" ? "Oral" : "Spotlight"}` : ""}
+          </span>
+        )}
         {t?.label}
         {s.hf_upvotes ? ` · ▲ ${s.hf_upvotes} on HF` : ""}
         {s.comments ? ` · ${s.comments} comments` : ""}

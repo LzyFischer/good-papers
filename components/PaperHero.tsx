@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AREAS } from "@/lib/areas";
 import { arxivIdOf } from "@/lib/arxiv";
+import { sessionWhen } from "@/lib/sessions";
 import { isPreprint, orgKind, shortOrg, venueLabel } from "@/lib/orgs";
 import { PERSONA_IDS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
@@ -23,6 +24,7 @@ export function PaperHero({ paper, score, verdicts }: { paper: Paper; score: Sco
   const facts = [
     published && `Published ${published}`,
     citations ? `${citations.toLocaleString("en-US")} citation${citations === 1 ? "" : "s"}` : null, // 0 just means "new"
+    ...(score?.conf_sessions ?? []).map((ses) => [ses.name, sessionWhen(ses.name, ses.start, ses.end), ses.room].filter(Boolean).join(" · ")),
   ].filter(Boolean) as string[];
 
   return (

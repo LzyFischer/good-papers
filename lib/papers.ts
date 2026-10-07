@@ -6,7 +6,7 @@ import type { Judgement } from "./judge";
 import { spokespersons, type PersonaId } from "./personas";
 import type { AiVerdict, Paper, Score } from "./types";
 
-export const PAPER_ID = /^(W\d+|rp-[a-z0-9-]+|arxiv-\d{4}\.\d{4,5})$/;
+export const PAPER_ID = /^(W\d+|rp-[a-z0-9-]+|arxiv-\d{4}\.\d{4,5}|nips26-[\w-]+)$/;
 
 export function manualId(title: string) {
   return (

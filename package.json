@@ -8,7 +8,8 @@
     "start": "next start",
     "judge": "tsx --env-file=.env.local scripts/judge-file.ts",
     "rejudge": "tsx --env-file=.env.local scripts/rejudge-all.ts",
-    "backfill:hf": "tsx --env-file=.env.local scripts/backfill-hf.ts"
+    "backfill:hf": "tsx --env-file=.env.local scripts/backfill-hf.ts",
+    "import:neurips": "tsx --env-file=.env.local scripts/import-neurips.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",

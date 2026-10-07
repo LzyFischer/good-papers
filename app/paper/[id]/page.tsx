@@ -8,6 +8,7 @@ import { judgePaper } from "@/lib/judge";
 import { arxivIdOf } from "@/lib/arxiv";
 import { getPaperAnywhere, getScores, getVerdicts, storeJudgement, storedIdsByArxiv, underInlineBudget } from "@/lib/papers";
 import { nudgeWorker } from "@/lib/dispatch";
+import { adminClient } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -44,6 +45,16 @@ export default async function PaperPage({ params }: Props) {
     }
   }
   const score = (await getScores([id])).get(id) ?? null;
+
+  // Bulk-imported conference papers get their AI discussion when someone first opens them.
+  if (score && score.comments === 0 && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const db = adminClient();
+    const { data: flags } = await db.from("papers").select("discuss_on_demand, discuss_requested_at").eq("id", id).maybeSingle();
+    if (flags?.discuss_on_demand && !flags.discuss_requested_at) {
+      await db.from("papers").update({ discuss_requested_at: new Date().toISOString() }).eq("id", id);
+      await nudgeWorker();
+    }
+  }
 
   return (
     <main className="wrap page paper-page">

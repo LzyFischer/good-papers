@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AREAS } from "@/lib/areas";
 import { arxivIdOf } from "@/lib/arxiv";
+import { sessionWhen } from "@/lib/sessions";
 import { isPreprint, orgKind, shortOrg, venueLabel } from "@/lib/orgs";
 import { PERSONAS, PERSONA_IDS, TIERS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
@@ -157,9 +158,15 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
         <p className="authors">
           <AuthorLinks authors={paper.authors} max={linkTitle ? 4 : 60} paperId={paper.id} />
         </p>
-        {(published || citations !== null || score?.hf_upvotes || score?.github_url) && (
+        {(published || citations !== null || score?.hf_upvotes || score?.github_url || score?.conf_sessions?.length) && (
           <p className="pubinfo">
             {[
+              ...(score?.conf_sessions ?? []).map((ses) => (
+                <Link key={ses.name} href={`/neurips?session=${encodeURIComponent(ses.name)}`}>
+                  {ses.name}, {sessionWhen(ses.name, ses.start, ses.end).replace(" local time", "")}
+                  {ses.room ? `, ${ses.room}` : ""}
+                </Link>
+              )),
               published && <span key="p">Published {published}</span>,
               citations !== null && <span key="c">{`${citations.toLocaleString("en-US")} citation${citations === 1 ? "" : "s"}`}</span>,
               score?.hf_upvotes && arxivId ? (

@@ -45,6 +45,9 @@ export type Score = {
   github_url: string | null;
   github_stars: number | null;
   comments: number;
+  conf_track: "oral" | "spotlight" | "poster" | null;
+  conf_sessions: { name: string; start: string | null; end: string | null; room: string | null }[] | null;
+  openreview_url: string | null;
 };
 
 export type AiVerdict = {
