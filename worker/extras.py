@@ -139,9 +139,11 @@ def arxiv_meta(ids: list[str]) -> dict[str, list[str]]:
     return out
 
 
-def openalex_venues(ids: list[str]) -> dict[str, list[str]]:
-    """Names of non-arXiv sources where OpenAlex lists a version of each work."""
+def openalex_venues(ids: list[str]) -> tuple[dict[str, list[str]], dict[str, str]]:
+    """Names of non-arXiv sources where OpenAlex lists a version of each work, and the
+    arXiv id of works whose own link isn't arXiv (published papers with a preprint)."""
     out: dict[str, list[str]] = {}
+    found: dict[str, str] = {}
     works = [i for i in ids if re.fullmatch(r"W\d+", i)]
     for i in range(0, len(works), 50):
         try:
@@ -151,9 +153,15 @@ def openalex_venues(ids: list[str]) -> dict[str, list[str]]:
         except httpx.HTTPError:
             continue
         for w in r.json().get("results", []):
+            wid = w["id"].rsplit("/", 1)[-1]
             names = [((l.get("source") or {}).get("display_name") or "") for l in w.get("locations") or []]
-            out[w["id"].rsplit("/", 1)[-1]] = [n for n in names if n and "arxiv" not in n.lower()]
-    return out
+            out[wid] = [n for n in names if n and "arxiv" not in n.lower()]
+            for l in w.get("locations") or []:
+                aid = arxiv_id(l.get("landing_page_url")) or arxiv_id(l.get("pdf_url"))
+                if aid:
+                    found[wid] = aid
+                    break
+    return out, found
 
 
 def openalex_by_arxiv(aids: list[str]) -> dict[str, dict]:
@@ -208,14 +216,43 @@ def s2_venues(aids: list[str]) -> dict[str, str]:
     return out
 
 
+def norm_title(t: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", (t or "").lower()).strip()
+
+
+def arxiv_by_title(title: str) -> str | None:
+    """arXiv id of the preprint with exactly this title, if there is one."""
+    q = re.sub(r'["\\():]', " ", title or "").strip()[:200]
+    if not q:
+        return None
+    try:
+        r = httpx.get("https://export.arxiv.org/api/query", timeout=20,
+                      params={"search_query": f'ti:"{q}"', "max_results": "5"})
+    except httpx.HTTPError:
+        return None
+    for entry in r.text.split("<entry>")[1:]:
+        m = re.search(r"<id>https?://arxiv\.org/abs/(\d{4}\.\d{4,5})(?:v\d+)?</id>", entry)
+        t = re.search(r"<title>([\s\S]*?)</title>", entry)
+        if m and t and norm_title(t.group(1)) == norm_title(title):
+            return m.group(1)
+    return None
+
+
+TITLE_LOOKUPS = 15  # per run; arXiv asks for one request every three seconds
+
+
 def refresh_links(db, limit: int, dry: bool) -> int:
     cutoff = (datetime.now(timezone.utc) - RECHECK).isoformat()
-    rows = db.get("papers", select="id,url,thumbnail,venue,tags,year,orgs", order="extras_checked_at.asc.nullsfirst",
+    rows = db.get("papers", select="id,title,url,thumbnail,venue,tags,year,orgs", order="extras_checked_at.asc.nullsfirst",
                   **{"or": f"(extras_checked_at.is.null,extras_checked_at.lt.{cutoff})"}, limit=str(limit))
 
-    aids = {p["id"]: arxiv_id(p.get("url")) for p in rows}
+    oa, oa_aids = openalex_venues([p["id"] for p in rows])
+    aids = {p["id"]: arxiv_id(p.get("url")) or oa_aids.get(p["id"]) for p in rows}
+    # Published papers without a picture: find their arXiv preprint by exact title.
+    for p in [p for p in rows if not aids[p["id"]] and not p.get("thumbnail")][:TITLE_LOOKUPS]:
+        aids[p["id"]] = arxiv_by_title(p.get("title") or "")
+        time.sleep(3)
     ax = arxiv_meta([a for a in aids.values() if a])
-    oa = openalex_venues([p["id"] for p in rows])
     oa_ax = openalex_by_arxiv([aids[p["id"]] for p in rows if p["id"].startswith("arxiv-") and aids[p["id"]]])
     s2 = s2_venues([a for a in aids.values() if a])
 
