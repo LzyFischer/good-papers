@@ -44,7 +44,14 @@ export async function trending(window: Window, n = 12): Promise<Score[]> {
 export async function shelf(kind: "must" | "debated" | "new", n = 12): Promise<Score[]> {
   // Papers opened from author or institution pages can be outside ML; shelves show ML areas only.
   let q = serverClient().from("paper_scores").select("*").not("score", "is", null).not("area", "is", null);
-  if (kind === "must") q = q.gte("score", 0.8).order("score", { ascending: false });
+  // Must read: this year's papers only (the last 12 months early in the year, when that's thin).
+  if (kind === "must") {
+    const now = new Date();
+    const jan1 = `${now.getUTCFullYear()}-01-01`;
+    const yearAgo = new Date(Date.now() - 365 * 86400_000).toISOString().slice(0, 10);
+    const since = now.getUTCMonth() >= 2 ? jan1 : yearAgo;
+    q = q.gte("score", 0.8).gte("published_on", since).order("score", { ascending: false });
+  }
   if (kind === "debated") q = q.gt("comments", 0).order("comments", { ascending: false });
   // New today is the arXiv feed, which the cron checks against arXiv's ML categories.
   if (kind === "new") q = q.ilike("url", "%arxiv%").order("published_on", { ascending: false, nullsFirst: false });

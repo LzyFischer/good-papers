@@ -41,20 +41,6 @@ function Spotlight({ s }: { s: Score }) {
   );
 }
 
-// The paper at the top of the page: the highest-scored paper from the last month that has a picture.
-async function paperOfTheDay(): Promise<Score | undefined> {
-  const { data } = await serverClient()
-    .from("paper_scores")
-    .select("*")
-    .not("score", "is", null)
-    .not("area", "is", null)
-    .not("thumbnail", "is", null)
-    .gte("published_on", new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10))
-    .order("score", { ascending: false })
-    .limit(1);
-  return (data?.[0] as Score | undefined) ?? undefined;
-}
-
 export default async function Home({ searchParams }: Props) {
   const { area, org, author, t } = await searchParams;
   const window: Window = t && t in WINDOWS ? (t as Window) : "week";
@@ -81,7 +67,10 @@ export default async function Home({ searchParams }: Props) {
   const [hotNow, must, debated, fresh] = browsing
     ? await Promise.all([trending(window), shelf("must"), shelf("debated"), shelf("new")])
     : [[], [], [], []];
-  const spot = browsing ? (await paperOfTheDay()) ?? hotNow[0] ?? must[0] : undefined;
+  // Paper of the day: the highest-scored paper trending this week, one with a picture if possible.
+  const week = browsing ? (window === "week" ? hotNow : await trending("week")) : [];
+  const best = (l: Score[]) => [...l].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
+  const spot = best(week.filter((s) => s.thumbnail)) ?? best(week) ?? must[0];
 
   return (
     <main>
@@ -112,7 +101,7 @@ export default async function Home({ searchParams }: Props) {
                 ))}
               </nav>
             </Shelf>
-            <Shelf id="must-read" title="Must read" note="The top fifth of everything rated" papers={must} />
+            <Shelf id="must-read" title="Must read" note="This year's highest-rated papers" papers={must} />
             <Shelf id="debated" title="Most debated" note="Where the reviewers can't agree" papers={debated} />
             <Shelf id="new" title="New today" note="Fresh off arXiv" papers={fresh} />
             <div className="section-head">
