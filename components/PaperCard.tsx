@@ -5,6 +5,7 @@ import { sessionWhen } from "@/lib/sessions";
 import { isPreprint, orgKind, shortOrg, venueLabel } from "@/lib/orgs";
 import { PERSONAS, PERSONA_IDS, TIERS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
+import { Gate } from "./Gate";
 import { Icon, type IconName } from "./Icons";
 import { Gauge, tierOf } from "./Score";
 import { VoteButtons } from "./VoteButtons";
@@ -100,10 +101,10 @@ type Props = {
   verdicts: AiVerdict[];
   linkTitle?: boolean; // link the title to our paper page (lists) or to the source (paper page)
   openPanel?: boolean;
-  splitOpen?: boolean; // show how readers split without voting (the Trending teaser)
+  scoreOpen?: boolean; // show how readers split without voting (the Trending teaser)
 };
 
-export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel = false, splitOpen = false }: Props) {
+export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel = false, scoreOpen = false }: Props) {
   const v = tierOf(score);
   const area = score?.area && AREAS[score.area] ? { key: score.area, label: AREAS[score.area].label } : null;
   const ordered = PERSONA_IDS.map((id) => verdicts.find((x) => x.persona === id)).filter(Boolean) as AiVerdict[];
@@ -123,10 +124,21 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
 
   return (
     <article className="card">
-      <div className={`score ${v ? `tone-${v.tone}` : "pending"}`}>
-        {v ? <Gauge pct={v.pct} tone={v.tone} /> : <span className="gauge gauge--lg gauge--empty"><b>?</b></span>}
-        <span className="word">{v ? v.label : "Not rated yet"}</span>
-      </div>
+      <Gate
+        id={paper.id}
+        open={scoreOpen || !v}
+        mask={
+          <div className="score pending">
+            <span className="gauge gauge--lg gauge--empty"><b>?</b></span>
+            <span className="word">Vote to see</span>
+          </div>
+        }
+      >
+        <div className={`score ${v ? `tone-${v.tone}` : "pending"}`}>
+          {v ? <Gauge pct={v.pct} tone={v.tone} /> : <span className="gauge gauge--lg gauge--empty"><b>?</b></span>}
+          <span className="word">{v ? v.label : "Not rated yet"}</span>
+        </div>
+      </Gate>
 
       <div className="card-body">
         <div className="meta">
@@ -193,13 +205,14 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
           </p>
         )}
 
+        <Gate id={paper.id} open={scoreOpen || !v} mask={<p className="gate-hint">Readers and the AI panel: vote on this paper to see what they said.</p>}>
         <div className="tables">
           <Table
             icon="readers"
             label="Readers"
             fresh={score?.reader_fresh ?? 0}
             total={score?.reader_total ?? 0}
-            open={splitOpen}
+            open
             note={[
               score?.consensus ? "Cross-camp consensus" : null,
               score?.reader_coi ? `${score.reader_coi} from authors or colleagues not counted` : null,
@@ -207,18 +220,21 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
           />
           <Table icon="ai" label="AI panel" fresh={score?.ai_fresh ?? 0} total={score?.ai_total ?? 0} ai />
         </div>
+        </Gate>
 
         <VoteButtons
           paper={{ id: paper.id, title: paper.title, authors: paper.authors, year: paper.year, venue: paper.venue, url: paper.url }}
         />
 
         {ordered.length > 0 && (
-          <details className="panel" open={openPanel}>
-            <summary>
-              AI panel: {ordered.filter((x) => x.fresh).length} of {ordered.length} reviewers recommend it
-            </summary>
-            <AiDots ordered={ordered} />
-          </details>
+          <Gate id={paper.id} open={scoreOpen} mask={null}>
+            <details className="panel" open={openPanel}>
+              <summary>
+                AI panel: {ordered.filter((x) => x.fresh).length} of {ordered.length} reviewers recommend it
+              </summary>
+              <AiDots ordered={ordered} />
+            </details>
+          </Gate>
         )}
       </div>
     </article>

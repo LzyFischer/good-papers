@@ -8,10 +8,11 @@ import type { AiVerdict, Paper, Score } from "@/lib/types";
 import { AiDots, AuthorLinks, formatPublished } from "./PaperCard";
 import { Gauge, tierOf } from "./Score";
 import { ShareButton } from "./ShareButton";
+import { Gate } from "./Gate";
 import { VoteButtons } from "./VoteButtons";
 
 // The top of a paper page: header, scorecard (overall, readers, AI panel) and the panel consensus.
-export function PaperHero({ paper, score, verdicts, splitOpen = false }: { paper: Paper; score: Score | null; verdicts: AiVerdict[]; splitOpen?: boolean }) {
+export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper: Paper; score: Score | null; verdicts: AiVerdict[]; scoreOpen?: boolean }) {
   const t = tierOf(score);
   const area = score?.area && AREAS[score.area] ? { key: score.area, label: AREAS[score.area].label } : null;
   const ordered = PERSONA_IDS.map((id) => verdicts.find((x) => x.persona === id)).filter(Boolean) as AiVerdict[];
@@ -68,29 +69,56 @@ export function PaperHero({ paper, score, verdicts, splitOpen = false }: { paper
       </div>
 
       <div className="scorecard">
-        <div className={`sc sc--main ${t ? `tone-${t.tone}` : ""}`}>
-          {t ? <Gauge pct={t.pct} tone={t.tone} /> : <span className="gauge gauge--lg gauge--empty"><b>?</b></span>}
-          <div>
-            <span className="sc-label">Overall</span>
-            <span className="sc-tier">{t ? t.label : "Not rated yet"}</span>
-            {t && !score?.ai_total && !score?.reader_total && score?.conf_track && (
-              <span className="sc-note">Starting score from its {score.venue} track. The AI panel reads it once the abstract is public.</span>
-            )}
+        <Gate
+          id={paper.id}
+          open={scoreOpen || !t}
+          mask={
+            <div className="sc sc--main">
+              <span className="gauge gauge--lg gauge--empty"><b>?</b></span>
+              <div>
+                <span className="sc-label">Overall</span>
+                <span className="sc-tier">Vote to see</span>
+                <span className="sc-note">Scores stay hidden until you&apos;ve voted, so every vote is your own call. This week&apos;s top 3 trending papers show theirs.</span>
+              </div>
+            </div>
+          }
+        >
+          <div className={`sc sc--main ${t ? `tone-${t.tone}` : ""}`}>
+            {t ? <Gauge pct={t.pct} tone={t.tone} /> : <span className="gauge gauge--lg gauge--empty"><b>?</b></span>}
+            <div>
+              <span className="sc-label">Overall</span>
+              <span className="sc-tier">{t ? t.label : "Not rated yet"}</span>
+              {t && !score?.ai_total && !score?.reader_total && score?.conf_track && (
+                <span className="sc-note">Starting score from its {score.venue} track. The AI panel reads it once the abstract is public.</span>
+              )}
+            </div>
           </div>
-        </div>
+        </Gate>
         <div className="sc">
           <span className="sc-label">Readers</span>
           <VoteButtons
             paper={{ id: paper.id, title: paper.title, authors: paper.authors, year: paper.year, venue: paper.venue, url: paper.url }}
-            reveal={{ readerFresh: score?.reader_fresh ?? 0, readerTotal: readers, aiYes, aiTotal: ordered.length, coi: score?.reader_coi ?? 0, open: splitOpen }}
+            reveal={{ readerFresh: score?.reader_fresh ?? 0, readerTotal: readers, aiYes, aiTotal: ordered.length, coi: score?.reader_coi ?? 0, open: scoreOpen }}
           />
         </div>
-        <div className="sc sc--ai">
-          <span className="sc-label">AI panel</span>
-          <span className="sc-num">{ordered.length ? `${aiYes}/${ordered.length}` : "–"}</span>
-          <span className="sc-sub">reviewers recommend it</span>
-          {ordered.length > 0 && <AiDots ordered={ordered} />}
-        </div>
+        <Gate
+          id={paper.id}
+          open={scoreOpen || !ordered.length}
+          mask={
+            <div className="sc sc--ai">
+              <span className="sc-label">AI panel</span>
+              <span className="sc-num">?</span>
+              <span className="sc-sub">Vote to see what the 20 AI reviewers said</span>
+            </div>
+          }
+        >
+          <div className="sc sc--ai">
+            <span className="sc-label">AI panel</span>
+            <span className="sc-num">{ordered.length ? `${aiYes}/${ordered.length}` : "–"}</span>
+            <span className="sc-sub">reviewers recommend it</span>
+            {ordered.length > 0 && <AiDots ordered={ordered} />}
+          </div>
+        </Gate>
       </div>
 
       {score?.panel_consensus && (

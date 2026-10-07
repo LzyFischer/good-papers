@@ -8,7 +8,7 @@ import { judgePaper } from "@/lib/judge";
 import { arxivIdOf } from "@/lib/arxiv";
 import { getPaperAnywhere, getScores, getVerdicts, storeJudgement, storedIdsByArxiv, underInlineBudget } from "@/lib/papers";
 import { nudgeWorker } from "@/lib/dispatch";
-import { openSplitIds } from "@/lib/trending";
+import { openScoreIds } from "@/lib/trending";
 import { adminClient } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -63,7 +63,7 @@ export default async function PaperPage({ params }: Props) {
         paper={{ ...paper, tags: paper.tags.length ? paper.tags : score?.tags ?? [], orgs: paper.orgs.length ? paper.orgs : score?.orgs ?? [] }}
         score={score}
         verdicts={verdicts}
-        splitOpen={(await openSplitIds().catch(() => [] as string[])).includes(id)}
+        scoreOpen={(await openScoreIds().catch(() => [] as string[])).includes(id)}
       />
       <NoteBox paperId={paper.id} />
       <div className="paper-cols">

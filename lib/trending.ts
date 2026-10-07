@@ -59,10 +59,11 @@ export async function shelf(kind: "must" | "debated", n = 12): Promise<Score[]> 
   return (data ?? []) as Score[];
 }
 
-// "You vs everyone": how readers split is hidden until you vote, except on the top half of
-// this week's Trending shelf, which shows it as a teaser. Cached for ten minutes.
-export const openSplitIds = unstable_cache(
-  async () => (await trending("week", 24)).slice(0, 12).map((s) => s.id),
-  ["open-split-ids"],
+// Scores are hidden until you vote, except on the top 3 of this week's Trending, which
+// show theirs to everyone as a preview. Cached for ten minutes.
+export const OPEN_SCORES = 3;
+export const openScoreIds = unstable_cache(
+  async () => (await trending("week", OPEN_SCORES)).map((s) => s.id),
+  ["open-score-ids"],
   { revalidate: 600 },
 );

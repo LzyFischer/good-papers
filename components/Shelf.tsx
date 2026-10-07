@@ -2,10 +2,11 @@ import Link from "next/link";
 import { AREAS } from "@/lib/areas";
 import { isPreprint, venueLabel } from "@/lib/orgs";
 import type { Score } from "@/lib/types";
+import { Gate } from "./Gate";
 import { Gauge, tierOf } from "./Score";
 
 // Compact card for horizontal shelves: thumbnail, score, title, TL;DR.
-export function MiniCard({ s, splitOpen = false }: { s: Score; splitOpen?: boolean }) {
+export function MiniCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: boolean }) {
   const t = tierOf(s);
   const area = s.area ? AREAS[s.area]?.label : null;
   return (
@@ -20,7 +21,9 @@ export function MiniCard({ s, splitOpen = false }: { s: Score; splitOpen?: boole
         )}
         {t && (
           <span className="mini-score">
-            <Gauge pct={t.pct} tone={t.tone} size="sm" />
+            <Gate id={s.id} open={scoreOpen} mask={<span className="gauge gauge--sm gauge--empty"><b>?</b></span>}>
+              <Gauge pct={t.pct} tone={t.tone} size="sm" />
+            </Gate>
           </span>
         )}
       </span>
@@ -33,12 +36,10 @@ export function MiniCard({ s, splitOpen = false }: { s: Score; splitOpen?: boole
             {s.conf_track && s.conf_track !== "poster" ? ` ${s.conf_track === "oral" ? "Oral" : "Spotlight"}` : ""}
           </span>
         )}
-        {t?.label}
-        {s.reader_total
-          ? splitOpen
-            ? ` · ${Math.round((s.reader_fresh / s.reader_total) * 100)}% of ${s.reader_total} readers upvoted`
-            : ` · ${s.reader_total} readers voted, vote to see`
-          : ""}
+        <Gate id={s.id} open={scoreOpen || !t} mask="Vote to see the score">
+          {t?.label}
+          {s.reader_total ? ` · ${Math.round((s.reader_fresh / s.reader_total) * 100)}% of ${s.reader_total} readers upvoted` : ""}
+        </Gate>
         {s.hf_upvotes ? ` · ▲ ${s.hf_upvotes} on HF` : ""}
         {s.comments ? ` · ${s.comments} comments` : ""}
       </span>
@@ -48,7 +49,7 @@ export function MiniCard({ s, splitOpen = false }: { s: Score; splitOpen?: boole
 
 export function Shelf({ id, title, note, papers, children, more, openIds }: {
   id?: string; title: string; note?: string; papers: Score[]; children?: React.ReactNode; more?: { href: string; label: string };
-  openIds?: string[]; // papers whose reader split shows without voting
+  openIds?: string[]; // papers whose score shows without voting (top of Trending)
 }) {
   if (papers.length === 0 && !children) return null;
   return (
@@ -66,7 +67,7 @@ export function Shelf({ id, title, note, papers, children, more, openIds }: {
       ) : (
         <div className="shelf-row">
           {papers.map((s) => (
-            <MiniCard key={s.id} s={s} splitOpen={openIds?.includes(s.id)} />
+            <MiniCard key={s.id} s={s} scoreOpen={openIds?.includes(s.id)} />
           ))}
         </div>
       )}

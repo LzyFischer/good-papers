@@ -2,6 +2,7 @@ import Link from "next/link";
 import { dedupeByTitle } from "@/lib/openalex";
 import { getScores } from "@/lib/papers";
 import type { Paper } from "@/lib/types";
+import { openScoreIds } from "@/lib/trending";
 import { PaperRow } from "./PaperRow";
 
 // A full list from OpenAlex with our scores where we have them; unrated papers
@@ -9,6 +10,7 @@ import { PaperRow } from "./PaperRow";
 export async function PaperList({ papers: raw, total, page, pageSize = 50, baseHref }: {
   papers: Paper[]; total: number; page: number; pageSize?: number; baseHref: string;
 }) {
+  const openIds = await openScoreIds().catch(() => [] as string[]);
   const papers = dedupeByTitle(raw, (p) => p.title);
   const scores = await getScores(papers.map((p) => p.id));
   const sep = baseHref.includes("?") ? "&" : "?";
@@ -20,7 +22,7 @@ export async function PaperList({ papers: raw, total, page, pageSize = 50, baseH
       ) : (
         <ul className="paper-list">
           {papers.map((p) => (
-            <PaperRow key={p.id} {...p} score={scores.get(p.id) ?? null} />
+            <PaperRow key={p.id} {...p} score={scores.get(p.id) ?? null} scoreOpen={openIds.includes(p.id)} />
           ))}
         </ul>
       )}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthButton } from "@/components/AuthButton";
+import { GateRevealer } from "@/components/GateRevealer";
 import { Notifications } from "@/components/Notifications";
 import { Icon, IconSprite } from "@/components/Icons";
 import { SearchForm } from "@/components/SearchForm";
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </nav>
             <SearchForm />
             <Notifications />
+            <GateRevealer />
             <AuthButton />
           </div>
         </header>

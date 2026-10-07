@@ -2,6 +2,7 @@ import Link from "next/link";
 import { after } from "next/server";
 import { AskBox } from "@/components/AskBox";
 import { PaperCard } from "@/components/PaperCard";
+import { Gate } from "@/components/Gate";
 import { Gauge, tierOf } from "@/components/Score";
 import { Shelf } from "@/components/Shelf";
 import { AREAS } from "@/lib/areas";
@@ -9,7 +10,7 @@ import { topUpTrending } from "@/lib/ingest";
 import { NEURIPS, neuripsTrending } from "@/lib/neurips";
 import { getVerdicts } from "@/lib/papers";
 import { serverClient } from "@/lib/supabase";
-import { WINDOWS, WINDOW_LABELS, openSplitIds, shelf, trending, type Window } from "@/lib/trending";
+import { WINDOWS, WINDOW_LABELS, openScoreIds, shelf, trending, type Window } from "@/lib/trending";
 import type { Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +24,7 @@ const PAGE = 40; // "Show more" adds this many papers to the list
 // PostgREST array "contains" with a quoted element, so names with commas or spaces work.
 const arrayHas = (v: string) => `{"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"}`;
 
-function Spotlight({ s }: { s: Score }) {
+function Spotlight({ s, open }: { s: Score; open: boolean }) {
   const t = tierOf(s);
   return (
     <Link href={`/paper/${s.id}`} className="spot">
@@ -33,9 +34,15 @@ function Spotlight({ s }: { s: Score }) {
         <img src={s.thumbnail} alt="" className="spot-img" />
       )}
       <span className="spot-body">
-        {t && <Gauge pct={t.pct} tone={t.tone} />}
+        {t && (
+          <Gate id={s.id} open={open} mask={<span className="gauge gauge--lg gauge--empty"><b>?</b></span>}>
+            <Gauge pct={t.pct} tone={t.tone} />
+          </Gate>
+        )}
         <span>
-          <span className="spot-tier">{t?.label}</span>
+          <span className="spot-tier">
+            <Gate id={s.id} open={open} mask="Vote to see the score">{t?.label}</Gate>
+          </span>
           <span className="spot-title">{s.title}</span>
         </span>
       </span>
@@ -72,7 +79,7 @@ export default async function Home({ searchParams }: Props) {
     p.set("n", String(shown + PAGE));
     return `/?${p}#p${shown}`; // land on the first new paper
   })();
-  const [verdicts, openIds] = await Promise.all([getVerdicts(papers.map((p) => p.id)), openSplitIds().catch(() => [] as string[])]);
+  const [verdicts, openIds] = await Promise.all([getVerdicts(papers.map((p) => p.id)), openScoreIds().catch(() => [] as string[])]);
 
   const browsing = !filtered;
   if (browsing) after(() => topUpTrending().catch((e) => console.warn("Trending top-up failed:", e)));
@@ -96,7 +103,7 @@ export default async function Home({ searchParams }: Props) {
               <p className="hero-lede">You decide which ones are good research papers.</p>
               <AskBox dark />
             </div>
-            {spot && <Spotlight s={spot} />}
+            {spot && <Spotlight s={spot} open={openIds.includes(spot.id)} />}
           </div>
         </section>
       )}
@@ -113,9 +120,9 @@ export default async function Home({ searchParams }: Props) {
                 ))}
               </nav>
             </Shelf>
-            <Shelf id="neurips" title={`Trending at ${NEURIPS}`} note="Orals, spotlights and posters people are talking about" papers={nips} more={{ href: "/neurips", label: "All sessions" }} />
-            <Shelf id="must-read" title="Must read" note="This year's highest-rated papers" papers={must} more={{ href: "/shelf/must-read", label: "See all" }} />
-            <Shelf id="debated" title="Most debated" note="Where the reviewers can't agree" papers={debated} more={{ href: "/shelf/debated", label: "See all" }} />
+            <Shelf id="neurips" title={`Trending at ${NEURIPS}`} note="Orals, spotlights and posters people are talking about" papers={nips} openIds={openIds} more={{ href: "/neurips", label: "All sessions" }} />
+            <Shelf id="must-read" title="Must read" note="This year's highest-rated papers" papers={must} openIds={openIds} more={{ href: "/shelf/must-read", label: "See all" }} />
+            <Shelf id="debated" title="Most debated" note="Where the reviewers can't agree" papers={debated} openIds={openIds} more={{ href: "/shelf/debated", label: "See all" }} />
             <div className="section-head">
               <h2 className="section-title">All papers</h2>
               <Link href="/how">How scores work</Link>
@@ -134,7 +141,7 @@ export default async function Home({ searchParams }: Props) {
           ) : (
             papers.map((s, i) => (
               <div key={s.id} id={`p${i}`} className="card-anchor">
-                <PaperCard paper={s} score={s} verdicts={verdicts.get(s.id) ?? []} splitOpen={openIds.includes(s.id)} />
+                <PaperCard paper={s} score={s} verdicts={verdicts.get(s.id) ?? []} scoreOpen={openIds.includes(s.id)} />
               </div>
             ))
           )}

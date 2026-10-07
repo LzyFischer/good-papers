@@ -5,6 +5,7 @@ import { dedupeByTitle, getPapersByArxivIds, normTitle, searchPapers } from "@/l
 import { getScores, withStoredIds } from "@/lib/papers";
 import { searchS2 } from "@/lib/s2";
 import type { Paper } from "@/lib/types";
+import { openScoreIds } from "@/lib/trending";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 }
 
 export default async function SearchPage({ searchParams }: Props) {
+  const openIds = await openScoreIds().catch(() => [] as string[]);
   const { q = "" } = await searchParams;
   const query = q.trim();
 
@@ -75,7 +77,7 @@ export default async function SearchPage({ searchParams }: Props) {
       {results.length > 0 && (
         <ul className="paper-list">
           {results.map((p) => (
-            <PaperRow key={p.id} {...p} score={scores.get(p.id) ?? null} />
+            <PaperRow key={p.id} {...p} score={scores.get(p.id) ?? null} scoreOpen={openIds.includes(p.id)} />
           ))}
         </ul>
       )}

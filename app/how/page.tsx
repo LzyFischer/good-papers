@@ -33,10 +33,10 @@ export default function How() {
       <p>Signed-in readers upvote (worth reading) or downvote (not for me) papers they have read. Their votes:</p>
       <ul>
         <li>
-          <b>Stay hidden until you vote.</b> Everyone sees the overall score, but how readers split on a paper is
-          shown only after you&apos;ve voted on it, so your vote is your own and not a follow-the-crowd click. Then
-          you see how many readers and AI reviewers agree with you. The top half of this week&apos;s Trending shelf
-          shows its split to everyone, as a preview.
+          <b>Come before the score.</b> A paper&apos;s score, how readers split and what the AI panel said are shown
+          after you&apos;ve voted on it, so your vote is your own call and not a follow-the-crowd click. Then you see
+          how many readers and AI reviewers agree with you. The top 3 papers on this week&apos;s Trending shelf show
+          their scores to everyone, as a preview.
         </li>
         <li>
           <b>Don&apos;t count when there is a conflict of interest.</b> Votes on your own papers, your recent

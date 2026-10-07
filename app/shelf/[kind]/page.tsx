@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PaperCard } from "@/components/PaperCard";
 import { getVerdicts } from "@/lib/papers";
-import { WINDOWS, WINDOW_LABELS, shelf, trending, type Window } from "@/lib/trending";
+import { WINDOWS, WINDOW_LABELS, openScoreIds, shelf, trending, type Window } from "@/lib/trending";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ShelfPage({ params, searchParams }: Props) {
+  const openIds = await openScoreIds().catch(() => [] as string[]);
   const { kind } = await params;
   if (!(kind in KINDS)) notFound();
   const { t } = await searchParams;
@@ -51,7 +52,7 @@ export default async function ShelfPage({ params, searchParams }: Props) {
         {papers.length === 0 ? (
           <p className="empty">Nothing here yet.</p>
         ) : (
-          papers.map((s) => <PaperCard key={s.id} paper={s} score={s} verdicts={verdicts.get(s.id) ?? []} />)
+          papers.map((s) => <PaperCard key={s.id} paper={s} score={s} verdicts={verdicts.get(s.id) ?? []} scoreOpen={openIds.includes(s.id)} />)
         )}
       </section>
     </main>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AskBox } from "@/components/AskBox";
 import { MiniCard } from "@/components/Shelf";
 import { ask, INTENTS } from "@/lib/ask";
+import { openScoreIds } from "@/lib/trending";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -15,6 +16,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 }
 
 export default async function AskPage({ searchParams }: Props) {
+  const openIds = await openScoreIds().catch(() => [] as string[]);
   const q = ((await searchParams).q ?? "").trim().slice(0, 300);
   const a = q ? await ask(q).catch(() => null) : null;
   return (
@@ -59,7 +61,7 @@ export default async function AskPage({ searchParams }: Props) {
           {a.papers.length > 0 ? (
             <div className="grid-cards">
               {a.papers.map((s) => (
-                <MiniCard key={s.id} s={s} />
+                <MiniCard key={s.id} s={s} scoreOpen={openIds.includes(s.id)} />
               ))}
             </div>
           ) : (
