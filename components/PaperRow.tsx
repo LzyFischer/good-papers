@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Score } from "@/lib/types";
 import { formatAuthors } from "./PaperCard";
 import { Gate } from "./Gate";
-import { ScoreChip } from "./Score";
+import { ScoreChip, tierOf } from "./Score";
 
 type Props = {
   id: string;
@@ -17,7 +17,7 @@ type Props = {
 export function PaperRow({ id, title, authors, year, venue, score, scoreOpen = false }: Props) {
   return (
     <li className="paper-row">
-      <Gate id={id} open={scoreOpen || score?.score == null} mask={<span className="chip chip--pending">?</span>}>
+      <Gate id={id} open={scoreOpen || score?.score == null} mask={<span className="chip chip--pending" title="Vote to see the score">{tierOf(score)?.label ?? "?"}</span>}>
         <ScoreChip score={score} />
       </Gate>
       <div>

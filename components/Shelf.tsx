@@ -36,8 +36,8 @@ export function MiniCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: boole
             {s.conf_track && s.conf_track !== "poster" ? ` ${s.conf_track === "oral" ? "Oral" : "Spotlight"}` : ""}
           </span>
         )}
-        <Gate id={s.id} open={scoreOpen || !t} mask="Vote to see the score">
-          {t?.label}
+        {t?.label}
+        <Gate id={s.id} open={scoreOpen || !t} mask={s.reader_total ? ` · ${s.reader_total} readers voted` : ""}>
           {s.reader_total ? ` · ${Math.round((s.reader_fresh / s.reader_total) * 100)}% of ${s.reader_total} readers upvoted` : ""}
         </Gate>
         {s.hf_upvotes ? ` · ▲ ${s.hf_upvotes} on HF` : ""}

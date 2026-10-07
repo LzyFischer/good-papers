@@ -67,6 +67,8 @@ class OpenAlex:
     def get(self, path: str, **params) -> dict:
         if self.mail:
             params["mailto"] = self.mail
+        if os.environ.get("OPENALEX_API_KEY"):
+            params["api_key"] = os.environ["OPENALEX_API_KEY"]
         r = self.http.get(path, params=params)
         r.raise_for_status()
         return r.json()

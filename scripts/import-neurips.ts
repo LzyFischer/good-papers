@@ -14,7 +14,7 @@
 import { readFileSync } from "node:fs";
 import { judgePaper, mapLimit } from "@/lib/judge";
 import { normTitle } from "@/lib/openalex";
-import { storeJudgement } from "@/lib/papers";
+import { storeJudgement, storedIdsByArxiv } from "@/lib/papers";
 import { adminClient } from "@/lib/supabase";
 import type { Paper } from "@/lib/types";
 
@@ -31,7 +31,7 @@ type Entry = {
   room_name: string | null;
   paper_url: string | null;
 };
-type OpenReview = Record<string, { title?: string; abstract?: string; keywords?: string[] }>;
+type OpenReview = Record<string, { title?: string; abstract?: string; keywords?: string[]; arxiv?: string }>;
 type Session = { name: string; start: string | null; end: string | null; room: string | null };
 
 const track = (d: string | null) => (/oral/i.test(d ?? "") ? "oral" : /spotlight/i.test(d ?? "") ? "spotlight" : "poster");
@@ -76,11 +76,13 @@ async function judgedIds(ids: string[]): Promise<Set<string>> {
   console.log(`${papers.size} papers in the conference data`);
 
   const stored = await storedTitles();
+  // Same paper already here under its arXiv or OpenAlex id (title may differ slightly).
+  const byArxiv = await storedIdsByArxiv(Object.values(or).map((x) => x.arxiv ?? "").filter(Boolean));
   const rows = [...papers.values()].map(({ forum, e, track, sessions }) => {
     const info = or[forum] ?? {};
     const orgs = [...new Set((e.authors ?? []).map((a) => a.institution).filter((x): x is string => Boolean(x)))].slice(0, 8);
     // An earlier import's own row isn't "existing": it may have gained an abstract since.
-    const match = stored.get(normTitle(e.name));
+    const match = stored.get(normTitle(e.name)) ?? (info.arxiv ? byArxiv.get(info.arxiv) : undefined);
     const existing = match && !match.startsWith("nips26-") ? match : undefined;
     const paper: Paper = {
       id: existing ?? `nips26-${forum}`,
@@ -88,14 +90,15 @@ async function judgedIds(ids: string[]): Promise<Set<string>> {
       authors: (e.authors ?? []).map((a) => a.fullname).filter(Boolean),
       year: 2026,
       venue: VENUE,
-      url: `https://openreview.net/forum?id=${forum}`,
+      // The arXiv version when we found one: the worker gets its first figure and HF info from it.
+      url: info.arxiv ? `https://arxiv.org/abs/${info.arxiv}` : `https://openreview.net/forum?id=${forum}`,
       abstract: info.abstract ?? null,
       orgs,
       tags: track === "oral" ? ["Oral"] : track === "spotlight" ? ["Spotlight"] : [],
       publishedOn: null,
       citedByCount: null,
     };
-    const conf = { conf_track: track, conf_sessions: sessions, openreview_url: paper.url };
+    const conf = { conf_track: track, conf_sessions: sessions, openreview_url: `https://openreview.net/forum?id=${forum}` };
     return { paper, conf, existing: Boolean(existing) };
   });
 

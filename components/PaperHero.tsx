@@ -58,6 +58,9 @@ export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper
               </a>
             ) : null}
             {paper.url && <a href={paper.url} target="_blank" rel="noopener noreferrer">{arxivId ? "arXiv" : /openreview/.test(paper.url) ? "OpenReview" : "Paper"} ↗</a>}
+            {score?.openreview_url && score.openreview_url !== paper.url && (
+              <a href={score.openreview_url} target="_blank" rel="noopener noreferrer">OpenReview ↗</a>
+            )}
             <ShareButton id={paper.id} title={paper.title} pct={t ? t.pct : null} />
           </p>
         </div>
@@ -73,12 +76,12 @@ export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper
           id={paper.id}
           open={scoreOpen || !t}
           mask={
-            <div className="sc sc--main">
+            <div className={`sc sc--main ${t ? `tone-${t.tone}` : ""}`}>
               <span className="gauge gauge--lg gauge--empty"><b>?</b></span>
               <div>
                 <span className="sc-label">Overall</span>
-                <span className="sc-tier">Vote to see</span>
-                <span className="sc-note">Scores stay hidden until you&apos;ve voted, so every vote is your own call. This week&apos;s top 3 trending papers show theirs.</span>
+                <span className="sc-tier">{t?.label}</span>
+                <span className="sc-note">The exact score shows once you&apos;ve voted, so every vote is your own call. This week&apos;s top 3 trending papers show theirs.</span>
               </div>
             </div>
           }

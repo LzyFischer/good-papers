@@ -22,7 +22,9 @@ import httpx
 ARXIV = re.compile(r"arxiv\.org/(?:abs|pdf|html)/(\d{4}\.\d{4,5})|10\.48550/arxiv\.(\d{4}\.\d{4,5})", re.I)
 CONSENSUS_MIN = 3     # comments before a paper gets a consensus line
 CONSENSUS_EVERY = 3   # new comments before it is rewritten
-RECHECK = timedelta(hours=20)  # HF upvotes and stars move; refresh about daily
+RECHECK = timedelta(hours=20)
+# OpenAlex's anonymous budget is shared and runs out; use our key when there is one.
+OA_AUTH = {k: v for k, v in {"api_key": os.environ.get("OPENALEX_API_KEY"), "mailto": os.environ.get("OPENALEX_MAILTO")}.items() if v}  # HF upvotes and stars move; refresh about daily
 WORKERS = 8
 
 TLDR_SYSTEM = (
@@ -148,7 +150,7 @@ def openalex_venues(ids: list[str]) -> tuple[dict[str, list[str]], dict[str, str
     for i in range(0, len(works), 50):
         try:
             r = httpx.get("https://api.openalex.org/works", timeout=30, params={
-                "filter": "openalex_id:" + "|".join(works[i:i + 50]), "per_page": "50", "select": "id,locations"})
+                "filter": "openalex_id:" + "|".join(works[i:i + 50]), "per_page": "50", "select": "id,locations", **OA_AUTH})
             r.raise_for_status()
         except httpx.HTTPError:
             continue
@@ -173,7 +175,7 @@ def openalex_by_arxiv(aids: list[str]) -> dict[str, dict]:
         try:
             r = httpx.get("https://api.openalex.org/works", timeout=30, params={
                 "filter": "doi:" + "|".join(f"10.48550/arxiv.{a}" for a in batch), "per_page": "50",
-                "select": "doi,authorships,locations"})
+                "select": "doi,authorships,locations", **OA_AUTH})
             r.raise_for_status()
         except httpx.HTTPError:
             continue
