@@ -6,7 +6,7 @@ import { storedIdsByArxiv } from "./papers";
 import { serverClient } from "./supabase";
 import type { Score } from "./types";
 
-export const WINDOWS = { day: 1, week: 7, month: 30 } as const;
+export const WINDOWS = { day: 1, week: 7, month: 30, year: 365 } as const;
 export type Window = keyof typeof WINDOWS;
 
 const since = (days: number) => new Date(Date.now() - days * 86400_000).toISOString();
@@ -14,11 +14,11 @@ const since = (days: number) => new Date(Date.now() - days * 86400_000).toISOStr
 // trending = 3 x reader votes + 2 x reader comments + likes (all within the window)
 //          + HF upvotes / 10 for papers published within the window
 //          + a bonus for the paper's place on Hugging Face's list for the same window
-//            (daily / weekly / monthly; 30 for #1 .. 1 for #30)
+//            (daily / weekly / monthly, or the past year's standouts; #1 gets the most)
 export async function trending(window: Window, n = 12): Promise<Score[]> {
   const db = serverClient();
   const from = since(WINDOWS[window]);
-  const hfNow = getHfList(window, 30).catch(() => []);
+  const hfNow = getHfList(window, window === "year" ? 60 : 30).catch(() => []);
   const [votes, comments, likes, fresh] = await Promise.all([
     db.from("ratings").select("paper_id").gte("updated_at", from).not("worth_reading", "is", null).limit(5000),
     db.from("comments").select("paper_id").eq("author_kind", "user").gte("created_at", from).limit(5000),

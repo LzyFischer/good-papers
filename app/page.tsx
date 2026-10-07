@@ -96,7 +96,7 @@ export default async function Home({ searchParams }: Props) {
               <nav className="seg" aria-label="Trending window">
                 {(Object.keys(WINDOWS) as Window[]).map((w) => (
                   <Link key={w} href={w === "week" ? "/#trending" : `/?t=${w}#trending`} aria-current={w === window ? "page" : undefined} scroll={false}>
-                    {w === "day" ? "Today" : w === "week" ? "This week" : "This month"}
+                    {{ day: "Today", week: "This week", month: "This month", year: "Past year" }[w]}
                   </Link>
                 ))}
               </nav>

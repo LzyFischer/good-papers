@@ -15,24 +15,29 @@ let lastRun = 0; // per server instance; the budget check is the site-wide guard
 export async function topUpTrending(): Promise<number> {
   if (Date.now() - lastRun < EVERY_MS || !jevConfigured() || !process.env.SUPABASE_SERVICE_ROLE_KEY) return 0;
   lastRun = Date.now();
-  // Today's and this week's lists: what the Trending shelf shows by default.
-  const ids = [...new Set([...(await getHfList("day", 15)), ...(await getHfList("week", 30))].map((t) => t.arxivId))];
+  // Today's and this week's lists first (what the Trending shelf shows by default), then the past year's.
+  const lists = await Promise.all([getHfList("day", 15), getHfList("week", 30), getHfList("year", 60)]);
+  const n = await ingestArxivIds([...new Set(lists.flat().map((t) => t.arxivId))], PER_RUN);
+  if (n) await nudgeWorker(); // discussion, TL;DR, thumbnail and HF upvotes follow
+  return n;
+}
+
+// Rate up to `max` of these arXiv papers that we don't have yet (ML categories only).
+export async function ingestArxivIds(ids: string[], max: number): Promise<number> {
   const stored = await storedIdsByArxiv(ids);
   const missing = ids.filter((a) => !stored.has(a));
-  if (!missing.length || !(await underInlineBudget(Math.min(PER_RUN, missing.length)))) return 0;
+  if (!missing.length || !(await underInlineBudget(Math.min(max, missing.length)))) return 0;
   const cats = await arxivCategories(missing).catch(() => new Map<string, string[]>());
-  const todo = missing.filter((a) => !cats.has(a) || isML(cats.get(a))).slice(0, PER_RUN);
+  const todo = missing.filter((a) => !cats.has(a) || isML(cats.get(a))).slice(0, max);
   const papers = (await getPapersForArxivIds(todo)).filter((p) => p.abstract);
-  const done = await mapLimit(papers, 2, async (paper) => {
+  const done = await mapLimit(papers, 3, async (paper) => {
     try {
       await storeJudgement(paper, await judgePaper(paper, { withTakes: false }));
       return true;
     } catch (e) {
-      console.warn("Trending top-up failed for", paper.id, e);
+      console.warn("Ingest failed for", paper.id, e);
       return false;
     }
   });
-  const n = done.filter(Boolean).length;
-  if (n) await nudgeWorker(); // discussion, TL;DR, thumbnail and HF upvotes follow
-  return n;
+  return done.filter(Boolean).length;
 }

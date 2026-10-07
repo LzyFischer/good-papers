@@ -75,7 +75,7 @@ export async function ask(question: string): Promise<Answer> {
   const days = WINDOWS[window].days;
   let papers: Score[];
   if (intent === "trending") {
-    const w = days && days <= 1 ? "day" : days && days <= 7 ? "week" : "month";
+    const w = days && days <= 1 ? "day" : days && days <= 7 ? "week" : days && days <= 30 ? "month" : "year";
     papers = (await trending(w, 60)).filter((s) => !areaKeys || (s.area && areaKeys.includes(s.area)));
   } else {
     let q = serverClient().from("paper_scores").select("*").not("score", "is", null).not("area", "is", null);

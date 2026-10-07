@@ -5,7 +5,7 @@ import { arxivIdOf, getArxivPapers } from "./arxiv";
 import { getPapersByArxivIds } from "./openalex";
 import type { Paper } from "./types";
 
-export type HfWindow = "day" | "week" | "month";
+export type HfWindow = "day" | "week" | "month" | "year";
 type HfItem = { arxivId: string; upvotes: number };
 
 // ISO week, as Hugging Face's weekly list names it ("2026-W41").
@@ -17,10 +17,10 @@ function isoWeek(d: Date): string {
   return `${t.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
-async function hfList(query: string): Promise<HfItem[]> {
+async function hfList(query: string, revalidate = 1800): Promise<HfItem[]> {
   const res = await fetch(`https://huggingface.co/api/daily_papers?${query}&limit=100`, {
     signal: AbortSignal.timeout(8000),
-    next: { revalidate: 1800 }, // the home page reads these on every view
+    next: { revalidate }, // the home page reads these on every view
   });
   if (!res.ok) throw new Error(`Hugging Face papers failed (${res.status})`);
   const items = (await res.json()) as { paper?: { id?: string; upvotes?: number } }[];
@@ -33,6 +33,7 @@ async function hfList(query: string): Promise<HfItem[]> {
 // month, most upvoted first, the same lists as huggingface.co/papers/{date,week,month}.
 // Early in a period the list is thin, so the previous period is added after it.
 export async function getHfList(window: HfWindow, limit = 30): Promise<HfItem[]> {
+  if (window === "year") return getHfPastYear(limit);
   const now = new Date();
   const back = new Date(now.getTime() - (window === "day" ? 1 : window === "week" ? 7 : 31) * 86400_000);
   const key = (d: Date) =>
@@ -44,6 +45,40 @@ export async function getHfList(window: HfWindow, limit = 30): Promise<HfItem[]>
   return [...current.sort((a, b) => b.upvotes - a.upvotes), ...previous.sort((a, b) => b.upvotes - a.upvotes)]
     .filter((x) => !seen.has(x.arxivId) && Boolean(seen.add(x.arxivId)))
     .slice(0, limit);
+}
+
+// arXiv ids start with the year and month of submission: 2510.22200 is October 2025.
+const monthsAgo = (arxivId: string, now: Date) =>
+  (now.getUTCFullYear() % 100 - Number(arxivId.slice(0, 2))) * 12 + now.getUTCMonth() + 1 - Number(arxivId.slice(2, 4));
+
+// The past year's standouts: the most upvoted papers of each of the last 12 monthly
+// lists, plus papers from the last 12 months on HF's all-time trending page (older
+// papers that are hot again, like vLLM, are left out). Upvote counts keep growing on
+// HF, so raw counts would favor recent months: rank by place within the month instead
+// (every month's #1, then every #2, ...), upvotes breaking ties.
+export async function getHfPastYear(limit = 60, perMonth = 8): Promise<HfItem[]> {
+  const now = new Date();
+  const months = Array.from({ length: 12 }, (_, i) =>
+    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)).toISOString().slice(0, 7),
+  );
+  const lists = await Promise.all([
+    ...months.map((m, i) =>
+      hfList(`month=${m}`, i === 0 ? 1800 : 86400) // past months barely change
+        .then((l) => l.sort((a, b) => b.upvotes - a.upvotes).slice(0, perMonth))
+        .catch(() => []),
+    ),
+    hfList("sort=trending").then((l) => l.filter((x) => monthsAgo(x.arxivId, now) <= 12).slice(0, perMonth)).catch(() => []),
+  ]);
+  const best = new Map<string, HfItem & { place: number }>();
+  for (const list of lists)
+    list.forEach((x, place) => {
+      const had = best.get(x.arxivId);
+      if (!had || place < had.place) best.set(x.arxivId, { ...x, place });
+    });
+  return [...best.values()]
+    .sort((a, b) => a.place - b.place || b.upvotes - a.upvotes)
+    .slice(0, limit)
+    .map(({ arxivId, upvotes }) => ({ arxivId, upvotes }));
 }
 
 // This week's list, for the daily cron.
