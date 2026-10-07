@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 import re
+import time
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -28,12 +29,17 @@ def _get(path: str, params: dict) -> dict | None:
         p["mailto"] = os.environ["OPENALEX_MAILTO"]
     if os.environ.get("OPENALEX_API_KEY"):
         p["api_key"] = os.environ["OPENALEX_API_KEY"]
-    try:
-        r = httpx.get(f"{OPENALEX}{path}", params=p, timeout=30)
-        r.raise_for_status()
-        return r.json()
-    except httpx.HTTPError:
-        return None
+    for attempt in range(4):  # OpenAlex rate-limits bursts (429) and has the odd 5xx
+        try:
+            r = httpx.get(f"{OPENALEX}{path}", params=p, timeout=30)
+            if r.status_code == 429 or r.status_code >= 500:
+                raise httpx.HTTPStatusError("retry", request=r.request, response=r)
+            r.raise_for_status()
+            return r.json()
+        except httpx.HTTPError as e:
+            print(f"OpenAlex {path} failed ({e}), attempt {attempt + 1}", flush=True)
+            time.sleep(2 ** attempt)
+    return None
 
 
 def short(oa_id: str | None) -> str:
