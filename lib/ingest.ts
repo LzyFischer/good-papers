@@ -6,7 +6,7 @@ import { nudgeWorker } from "./dispatch";
 import { getPapersForArxivIds, hfShelfIds } from "./huggingface";
 import { jevConfigured } from "./jev";
 import { judgePaper, mapLimit } from "./judge";
-import { storeJudgement, storedIdsByArxiv, underInlineBudget } from "./papers";
+import { refreshAiCurve, storeJudgement, storedIdsByArxiv, underInlineBudget } from "./papers";
 
 const PER_RUN = 4;
 const EVERY_MS = 10 * 60_000;
@@ -38,5 +38,7 @@ export async function ingestArxivIds(ids: string[], max: number, { budget = true
       return false;
     }
   });
-  return done.filter(Boolean).length;
+  const n = done.filter(Boolean).length;
+  if (n) await refreshAiCurve();
+  return n;
 }

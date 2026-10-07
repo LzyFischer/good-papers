@@ -5,7 +5,7 @@
 // (ANTHROPIC_API_KEY optional, for the two takes).
 import { judgePaper, mapLimit } from "../lib/judge";
 import { getCitationCounts } from "../lib/openalex";
-import { storeJudgement } from "../lib/papers";
+import { refreshAiCurve, storeJudgement } from "../lib/papers";
 import { adminClient } from "../lib/supabase";
 import type { Paper } from "../lib/types";
 
@@ -40,6 +40,7 @@ async function main() {
       console.error(`Failed on "${paper.title}":`, err);
     }
   });
+  await refreshAiCurve();
   console.log(`Done: ${ok}/${papers.length}`);
 }
 

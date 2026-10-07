@@ -97,6 +97,13 @@ export async function getVerdicts(ids: string[]): Promise<Map<string, AiVerdict[
   return map;
 }
 
+// The AI curve (percentile ranks) is a materialized view; refresh it after storing new
+// verdicts, once per batch (migration 012).
+export async function refreshAiCurve() {
+  const { error } = await adminClient().rpc("refresh_ai_curve");
+  if (error) console.warn("refresh_ai_curve failed:", error.message);
+}
+
 export async function storeJudgement(
   paper: Paper,
   j: Judgement,

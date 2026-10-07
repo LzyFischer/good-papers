@@ -8,7 +8,7 @@ import { nudgeWorker } from "@/lib/dispatch";
 import { getHfTrendingPapers } from "@/lib/huggingface";
 import { judgePaper, mapLimit } from "@/lib/judge";
 import { getNewestPapers } from "@/lib/openalex";
-import { fillMissingTakes, isAuthorized, refreshCitations, storeJudgement, withStoredIds } from "@/lib/papers";
+import { fillMissingTakes, isAuthorized, refreshAiCurve, refreshCitations, storeJudgement, withStoredIds } from "@/lib/papers";
 import { serverClient } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -60,6 +60,7 @@ export async function GET(req: Request) {
       return { id: paper.id, ok: false, error: String(e) };
     }
   });
+  await refreshAiCurve();
   if (results.some((r) => r.ok)) await nudgeWorker(); // discussions, TL;DRs, thumbnails for the new papers
   const takesFilled = await fillMissingTakes(5);
   const citationsRefreshed = await refreshCitations().catch((e) => String(e));

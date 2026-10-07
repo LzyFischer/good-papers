@@ -14,7 +14,7 @@
 import { readFileSync } from "node:fs";
 import { judgePaper, mapLimit } from "@/lib/judge";
 import { normTitle } from "@/lib/openalex";
-import { storeJudgement, storedIdsByArxiv } from "@/lib/papers";
+import { refreshAiCurve, storeJudgement, storedIdsByArxiv } from "@/lib/papers";
 import { adminClient } from "@/lib/supabase";
 import type { Paper } from "@/lib/types";
 
@@ -146,5 +146,6 @@ async function judgedIds(ids: string[]): Promise<Set<string>> {
       console.log(`${done} judged, ${failed} failed, ${min.toFixed(1)} min`);
     }
   });
+  await refreshAiCurve();
   console.log(`done: ${done} judged, ${failed} failed`);
 })();

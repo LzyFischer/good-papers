@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { judgePaper } from "../lib/judge";
 import { getCitationCounts } from "../lib/openalex";
-import { manualId, storeJudgement } from "../lib/papers";
+import { manualId, refreshAiCurve, storeJudgement } from "../lib/papers";
 import type { Paper } from "../lib/types";
 
 type Entry = {
@@ -57,6 +57,7 @@ async function main() {
       console.error(`Failed on "${paper.title}":`, err);
     }
   }
+  await refreshAiCurve();
 }
 
 main();

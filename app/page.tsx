@@ -7,10 +7,10 @@ import { Gauge, tierOf } from "@/components/Score";
 import { Shelf } from "@/components/Shelf";
 import { AREAS } from "@/lib/areas";
 import { topUpTrending } from "@/lib/ingest";
-import { NEURIPS, neuripsTrending } from "@/lib/neurips";
+import { NEURIPS } from "@/lib/neurips";
 import { getVerdicts } from "@/lib/papers";
 import { serverClient } from "@/lib/supabase";
-import { WINDOWS, WINDOW_LABELS, openScoreIds, pickPaperOfTheDay, shelf, trending, type Window } from "@/lib/trending";
+import { WINDOWS, WINDOW_LABELS, homeShelves, openScoreIds, pickPaperOfTheDay, type Window } from "@/lib/trending";
 import type { Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -84,10 +84,8 @@ export default async function Home({ searchParams }: Props) {
 
   const browsing = !filtered;
   if (browsing) after(() => topUpTrending().catch((e) => console.warn("Trending top-up failed:", e)));
-  const [hotNow, must, debated, nips] = browsing
-    ? await Promise.all([trending(window, 24), shelf("must", 24), shelf("debated", 24), neuripsTrending(24)])
-    : [[], [], [], []];
-  const week = browsing ? (window === "week" ? hotNow : await trending("week")) : [];
+  const [hotNow, must, debated, nips] = browsing ? await homeShelves(window) : [[], [], [], []];
+  const week = browsing ? (window === "week" ? hotNow : (await homeShelves("week"))[0]) : [];
   const spot = pickPaperOfTheDay(week) ?? must[0];
 
   return (

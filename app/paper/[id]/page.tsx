@@ -7,7 +7,7 @@ import { tierOf } from "@/components/Score";
 import { jevConfigured } from "@/lib/jev";
 import { judgePaper } from "@/lib/judge";
 import { arxivIdOf } from "@/lib/arxiv";
-import { getPaperAnywhere, getScores, getVerdicts, storeJudgement, storedIdsByArxiv, underInlineBudget } from "@/lib/papers";
+import { getPaperAnywhere, getScores, getVerdicts, refreshAiCurve, storeJudgement, storedIdsByArxiv, underInlineBudget } from "@/lib/papers";
 import { nudgeWorker } from "@/lib/dispatch";
 import { openScoreIds } from "@/lib/trending";
 import { SITE_URL } from "@/lib/site";
@@ -71,6 +71,7 @@ export default async function PaperPage({ params }: Props) {
   if (verdicts.length === 0 && paper.abstract && jevConfigured() && process.env.SUPABASE_SERVICE_ROLE_KEY && (await underInlineBudget())) {
     try {
       await storeJudgement(paper, await judgePaper(paper, { withTakes: false }));
+      await refreshAiCurve();
       verdicts = (await getVerdicts([id])).get(id) ?? [];
       await nudgeWorker(); // AI discussion, TL;DR and consensus follow in a couple of minutes
     } catch (e) {

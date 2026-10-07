@@ -82,3 +82,12 @@ export const openScoreIds = unstable_cache(
   ["open-score-ids-v3"],
   { revalidate: 600 },
 );
+
+// The home page's four shelves, shared by every visitor for two minutes: they change slowly,
+// and computing them takes several database round trips.
+export const homeShelves = unstable_cache(
+  async (window: Window) =>
+    Promise.all([trending(window, SHELF_SIZE), shelf("must", SHELF_SIZE), shelf("debated", SHELF_SIZE), neuripsTrending(SHELF_SIZE)]),
+  ["home-shelves"],
+  { revalidate: 120 },
+);

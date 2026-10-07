@@ -3,7 +3,7 @@
 //      -H "Content-Type: application/json" -d '{"ids":["W4415..."]}'
 import { NextResponse } from "next/server";
 import { judgePaper } from "@/lib/judge";
-import { getPaperAnywhere, isAuthorized, storeJudgement } from "@/lib/papers";
+import { getPaperAnywhere, isAuthorized, refreshAiCurve, storeJudgement } from "@/lib/papers";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -27,5 +27,6 @@ export async function POST(req: Request) {
       results.push({ id, ok: false, error: String(e) });
     }
   }
+  await refreshAiCurve();
   return NextResponse.json({ results });
 }
