@@ -96,14 +96,14 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
       {reveal && (
         <>
           <span className="sc-num">{pct === null ? "–" : !shown ? "?" : `${pct}%`}</span>
-          <span className="sc-sub">
-            {!reveal.readerTotal
-              ? "No votes yet. Read it? Be the first."
-              : !shown
+          {reveal.readerTotal > 0 && (
+            <span className="sc-sub">
+              {!shown
                 ? `${reveal.readerTotal} reader${reveal.readerTotal === 1 ? "" : "s"} voted. Vote to see how they split.`
                 : `${reveal.readerFresh} of ${reveal.readerTotal} upvoted`}
-            {shown && reveal.coi ? ` · ${reveal.coi} from authors or colleagues not counted` : ""}
-          </span>
+              {shown && reveal.coi ? ` · ${reveal.coi} from authors or colleagues not counted` : ""}
+            </span>
+          )}
           {voted && vote !== null && <YouVsEveryone vote={vote} reveal={reveal} />}
         </>
       )}
