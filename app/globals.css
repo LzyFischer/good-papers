@@ -445,3 +445,6 @@ button { font: inherit; }
 .gate:not(.revealed) > .gate-real, .gate.revealed > .gate-mask { display: none; }
 .gate-real, .gate-mask { display: contents; }
 .gate-hint { color: var(--muted); font-size: .82rem; }
+.vote-to-see { display: block; font: 600 .74rem var(--body); color: var(--ai); margin-top: .15rem; }
+.mini-meta .vote-to-see, .spot-tier .vote-to-see { display: inline; margin: 0; }
+.spot-tier .vote-to-see { color: var(--lime); }

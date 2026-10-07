@@ -40,7 +40,10 @@ function Spotlight({ s, open }: { s: Score; open: boolean }) {
           </Gate>
         )}
         <span>
-          <span className="spot-tier">{t?.label}</span>
+          <span className="spot-tier">
+            {t?.label}
+            <Gate id={s.id} open={open} mask={<span className="vote-to-see"> · vote to see score</span>}>{""}</Gate>
+          </span>
           <span className="spot-title">{s.title}</span>
         </span>
       </span>

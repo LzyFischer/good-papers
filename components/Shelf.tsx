@@ -37,7 +37,7 @@ export function MiniCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: boole
           </span>
         )}
         {t?.label}
-        <Gate id={s.id} open={scoreOpen || !t} mask={s.reader_total ? ` · ${s.reader_total} readers voted` : ""}>
+        <Gate id={s.id} open={scoreOpen || !t} mask={<span className="vote-to-see"> · vote to see score</span>}>
           {s.reader_total ? ` · ${Math.round((s.reader_fresh / s.reader_total) * 100)}% of ${s.reader_total} readers upvoted` : ""}
         </Gate>
         {s.hf_upvotes ? ` · ▲ ${s.hf_upvotes} on HF` : ""}

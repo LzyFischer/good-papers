@@ -17,7 +17,7 @@ type Props = {
 export function PaperRow({ id, title, authors, year, venue, score, scoreOpen = false }: Props) {
   return (
     <li className="paper-row">
-      <Gate id={id} open={scoreOpen || score?.score == null} mask={<span className="chip chip--pending" title="Vote to see the score">{tierOf(score)?.label ?? "?"}</span>}>
+      <Gate id={id} open={scoreOpen || score?.score == null} mask={<span className="chip chip--pending" title="Vote to see the score">{tierOf(score)?.label ?? "?"} · vote to see</span>}>
         <ScoreChip score={score} />
       </Gate>
       <div>

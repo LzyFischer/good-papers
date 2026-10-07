@@ -131,6 +131,7 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
           <div className={`score ${v ? `tone-${v.tone}` : "pending"}`}>
             <span className="gauge gauge--lg gauge--empty" title="Vote to see the score"><b>?</b></span>
             <span className="word">{v?.label}</span>
+            <span className="vote-to-see">Vote to see the score</span>
           </div>
         }
       >
