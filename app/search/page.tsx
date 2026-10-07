@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PaperRow } from "@/components/PaperRow";
-import { arxivIdOf } from "@/lib/arxiv";
+import { arxivIdOf, searchArxiv } from "@/lib/arxiv";
 import { dedupeByTitle, getPapersByArxivIds, normTitle, searchPapers } from "@/lib/openalex";
 import { getScores, withStoredIds } from "@/lib/papers";
 import { searchS2 } from "@/lib/s2";
@@ -22,26 +22,28 @@ export default async function SearchPage({ searchParams }: Props) {
   let results: Paper[] = [];
   let failed = false;
   if (query) {
-    // OpenAlex and Semantic Scholar side by side: S2 has last week's arXiv papers,
-    // OpenAlex has institutions and everything else. Either one alone is enough.
-    const [oa, s2] = await Promise.allSettled([searchPapers(query), searchS2(query)]);
-    const fromOA = oa.status === "fulfilled" ? oa.value : [];
-    let fromS2 = s2.status === "fulfilled" ? s2.value : [];
-    failed = oa.status === "rejected" && (s2.status === "rejected" || fromS2.length === 0);
-    // S2 hits OpenAlex does know get OpenAlex's version (it has institutions).
+    // OpenAlex has institutions and everything published; arXiv (and Semantic Scholar,
+    // when S2_API_KEY is set) has this week's papers, which OpenAlex indexes a week or two late.
+    const [oa, ax, s2] = await Promise.allSettled([searchPapers(query), searchArxiv(query), searchS2(query)]);
+    const ok = (r: PromiseSettledResult<Paper[]>) => (r.status === "fulfilled" ? r.value : []);
+    const fromOA = ok(oa);
+    failed = fromOA.length === 0 && ok(ax).length === 0 && ok(s2).length === 0 && [oa, ax].some((r) => r.status === "rejected");
+    // A hit OpenAlex also knows gets OpenAlex's version (it has institutions).
     const titles = new Set(fromOA.map((p) => normTitle(p.title)));
-    fromS2 = fromS2.filter((p) => !titles.has(normTitle(p.title)));
-    const inOA = new Set(fromOA.map((p) => arxivIdOf(p.url)).filter(Boolean));
-    const missing = fromS2.map((p) => arxivIdOf(p.url)!).filter((a) => !inOA.has(a));
+    const fresh = (l: Paper[]) => l.filter((p) => !titles.has(normTitle(p.title)));
+    const [fromS2, fromArxiv] = [fresh(ok(s2)), fresh(ok(ax))];
+    const missing = [...new Set([...fromS2, ...fromArxiv].map((p) => arxivIdOf(p.url)!))];
     const oaVersions = new Map(
       (await getPapersByArxivIds(missing).catch(() => [])).map((p) => [arxivIdOf(p.url) ?? "", p]),
     );
-    fromS2 = fromS2.map((p) => {
+    const upgrade = (p: Paper) => {
       const v = oaVersions.get(arxivIdOf(p.url)!);
       return v ? { ...v, abstract: v.abstract ?? p.abstract } : p;
-    });
+    };
+    // Interleave the sources so each one's best hits come first.
+    const lists = [fromS2.map(upgrade), fromArxiv.map(upgrade), fromOA];
     const merged: Paper[] = [];
-    for (let i = 0; i < Math.max(fromOA.length, fromS2.length); i++) merged.push(...[fromS2[i], fromOA[i]].filter(Boolean));
+    for (let i = 0; i < 20; i++) for (const l of lists) if (l[i]) merged.push(l[i]);
     results = await withStoredIds(merged);
   }
   const scores = await getScores(results.map((r) => r.id));
@@ -59,7 +61,8 @@ export default async function SearchPage({ searchParams }: Props) {
       return a.i - b.i;
     })
     .map((x) => x.p);
-  results = dedupeByTitle(results, (p) => p.title); // rated versions sort first, so they're the ones kept
+  // Rated versions sort first, so they're the ones kept.
+  results = dedupeByTitle(dedupeByTitle(results, (p) => p.title), (p) => p.id).slice(0, 30);
 
   return (
     <main className="wrap page">

@@ -48,9 +48,39 @@ export const arxivPaperId = (aid: string) => `arxiv-${aid}`;
 const unxml = (s: string) =>
   s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
 
+type ArxivPaper = Paper & { categories: string[] };
+
+// Atom entries from the arXiv API → papers (new-style ids only).
+function parseEntries(xml: string): ArxivPaper[] {
+  const out: ArxivPaper[] = [];
+  for (const entry of xml.split("<entry>").slice(1)) {
+    const aid = entry.match(/<id>https?:\/\/arxiv\.org\/abs\/([^<]+?)(?:v\d+)?<\/id>/)?.[1];
+    const title = entry.match(/<title>([\s\S]*?)<\/title>/)?.[1];
+    if (!aid || !title || !/^\d{4}\.\d{4,5}$/.test(aid)) continue;
+    const published = entry.match(/<published>(\d{4}-\d{2}-\d{2})/)?.[1] ?? null;
+    const primary = entry.match(/<arxiv:primary_category[^>]*term="([^"]+)"/)?.[1];
+    const all = [...entry.matchAll(/<category[^>]*term="([^"]+)"/g)].map((m) => m[1]);
+    out.push({
+      id: arxivPaperId(aid),
+      title: unxml(title),
+      authors: [...entry.matchAll(/<author>\s*<name>([\s\S]*?)<\/name>/g)].map((m) => unxml(m[1])),
+      year: published ? Number(published.slice(0, 4)) : null,
+      venue: "arXiv",
+      url: `https://arxiv.org/abs/${aid}`,
+      abstract: unxml(entry.match(/<summary>([\s\S]*?)<\/summary>/)?.[1] ?? "") || null,
+      orgs: [],
+      tags: [],
+      publishedOn: published,
+      citedByCount: null,
+      categories: primary ? [primary, ...all.filter((c) => c !== primary)] : all,
+    });
+  }
+  return out;
+}
+
 // Title, authors, abstract and categories straight from arXiv, 100 ids per request.
-export async function getArxivPapers(ids: string[]): Promise<(Paper & { categories: string[] })[]> {
-  const out: (Paper & { categories: string[] })[] = [];
+export async function getArxivPapers(ids: string[]): Promise<ArxivPaper[]> {
+  const out: ArxivPaper[] = [];
   const unique = [...new Set(ids)];
   for (let i = 0; i < unique.length; i += 100) {
     const batch = unique.slice(i, i + 100);
@@ -59,28 +89,24 @@ export async function getArxivPapers(ids: string[]): Promise<(Paper & { categori
       next: { revalidate: 86400 },
     });
     if (!res.ok) throw new Error(`arXiv API failed (${res.status})`);
-    for (const entry of (await res.text()).split("<entry>").slice(1)) {
-      const aid = entry.match(/<id>https?:\/\/arxiv\.org\/abs\/([^<]+?)(?:v\d+)?<\/id>/)?.[1];
-      const title = entry.match(/<title>([\s\S]*?)<\/title>/)?.[1];
-      if (!aid || !title || !/^\d{4}\.\d{4,5}$/.test(aid)) continue;
-      const published = entry.match(/<published>(\d{4}-\d{2}-\d{2})/)?.[1] ?? null;
-      const primary = entry.match(/<arxiv:primary_category[^>]*term="([^"]+)"/)?.[1];
-      const all = [...entry.matchAll(/<category[^>]*term="([^"]+)"/g)].map((m) => m[1]);
-      out.push({
-        id: arxivPaperId(aid),
-        title: unxml(title),
-        authors: [...entry.matchAll(/<author>\s*<name>([\s\S]*?)<\/name>/g)].map((m) => unxml(m[1])),
-        year: published ? Number(published.slice(0, 4)) : null,
-        venue: "arXiv",
-        url: `https://arxiv.org/abs/${aid}`,
-        abstract: unxml(entry.match(/<summary>([\s\S]*?)<\/summary>/)?.[1] ?? "") || null,
-        orgs: [],
-        tags: [],
-        publishedOn: published,
-        citedByCount: null,
-        categories: primary ? [primary, ...all.filter((c) => c !== primary)] : all,
-      });
-    }
+    out.push(...parseEntries(await res.text()));
   }
   return out;
+}
+
+// Search arXiv's ML categories: every word must appear (title, abstract or authors).
+// New papers show up the day they're announced. arXiv asks for at most one request
+// every three seconds, so results are cached for an hour.
+export async function searchArxiv(query: string): Promise<ArxivPaper[]> {
+  const words = query.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{N}\-.]*/gu)?.slice(0, 8) ?? [];
+  if (!words.length) return [];
+  const cats = [...ML_CATEGORIES].map((c) => `cat:${c}`).join(" OR ");
+  const q = `(${words.map((w) => `all:${w}`).join(" AND ")}) AND (${cats})`;
+  const p = new URLSearchParams({ search_query: q, max_results: "20", sortBy: "relevance" });
+  const res = await fetch(`https://export.arxiv.org/api/query?${p}`, {
+    signal: AbortSignal.timeout(8000),
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) throw new Error(`arXiv search failed (${res.status})`);
+  return parseEntries(await res.text());
 }
