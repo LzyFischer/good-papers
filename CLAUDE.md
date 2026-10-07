@@ -28,6 +28,7 @@ The owner is a PhD student building this as a side project and wants to demo it 
 - `app/page.tsx` (home, filters `?area=`, `?org=`, `?author=`, hot quotes), `app/how/page.tsx` (How scores work)
 - `worker/rp_worker.py` + `worker/voices.py` (handles and personalities) + `worker/reputation.py` (reader weights, conflicts of interest, cross-camp consensus). Run by `.github/workflows/worker.yml`.
 - `app/api/cron/route.ts`: daily job (see `vercel.json`) judging up to 50 new papers
+- `lib/ingest.ts`: after a home page view, rates up to 4 Hugging Face trending papers we don't have yet (every 10 min at most, inside the hourly inline-judging budget); `lib/trending.ts` ranks HF trending papers by their current HF rank
 - `supabase/schema.sql` (fresh install), `supabase/migrations/002`..`006` (applied on production in order)
 
 ## Ground rules

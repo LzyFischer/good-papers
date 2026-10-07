@@ -54,7 +54,8 @@ export async function storedIdsByArxiv(aids: string[]): Promise<Map<string, stri
   const unique = [...new Set(aids)].filter((a) => /^\d{4}\.\d{4,5}$/.test(a));
   for (let i = 0; i < unique.length; i += 40) {
     const batch = unique.slice(i, i + 40);
-    const or = batch.flatMap((a) => [`id.eq.${arxivPaperId(a)}`, `url.like.*arxiv.org/abs/${a}*`, `url.ilike.*10.48550/arxiv.${a}*`]).join(",");
+    // abs/, pdf/ or html/ links and arXiv DOIs; arxivIdOf below confirms the exact id.
+    const or = batch.flatMap((a) => [`id.eq.${arxivPaperId(a)}`, `url.ilike.*${a}*`]).join(",");
     const { data } = await serverClient().from("papers").select("id, url").or(or);
     for (const r of (data ?? []) as { id: string; url: string | null }[]) {
       const a = r.id.match(ARXIV_PAPER)?.[1] ?? arxivIdOf(r.url);
@@ -188,6 +189,17 @@ export async function refreshCitations(limit = 200): Promise<number> {
   const counts = await getCitationCounts((data ?? []).map((r: { id: string }) => r.id));
   for (const [id, n] of counts) await db.from("papers").update({ cited_by_count: n }).eq("id", id);
   return counts.size;
+}
+
+// Site-wide cap on papers judged outside the daily cron (page views, the trending top-up),
+// so a crawler or a busy hour can't run up the Jev bill.
+const INLINE_JUDGE_PER_HOUR = 120; // counts every new paper, including the daily cron's batch
+export async function underInlineBudget(papers = 1) {
+  const { count } = await serverClient()
+    .from("papers")
+    .select("id", { count: "exact", head: true })
+    .gte("created_at", new Date(Date.now() - 3600_000).toISOString());
+  return (count ?? 0) + papers <= INLINE_JUDGE_PER_HOUR;
 }
 
 export function isAuthorized(req: Request) {

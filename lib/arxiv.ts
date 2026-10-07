@@ -94,14 +94,23 @@ export async function getArxivPapers(ids: string[]): Promise<ArxivPaper[]> {
   return out;
 }
 
-// Search arXiv's ML categories: every word must appear (title, abstract or authors).
-// New papers show up the day they're announced. arXiv asks for at most one request
-// every three seconds, so results are cached for an hour.
+// Words arXiv's search drops: an AND with one of them matches nothing.
+const STOPWORDS = new Set(
+  "a an and are as at be by can do does for from has have how in into is it its not of on or our that the their then there these this to via was we what when which why will with".split(" "),
+);
+
+// Search arXiv's ML categories: the exact title, or every word somewhere in the title,
+// abstract or authors. New papers show up the day they're announced. arXiv asks for
+// at most one request every three seconds, so results are cached for an hour.
 export async function searchArxiv(query: string): Promise<ArxivPaper[]> {
-  const words = query.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{N}\-.]*/gu)?.slice(0, 8) ?? [];
+  const words = (query.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{N}\-.]*/gu) ?? [])
+    .map((w) => w.replace(/[.-]+$/, ""))
+    .filter((w) => w && !STOPWORDS.has(w))
+    .slice(0, 8);
   if (!words.length) return [];
+  const phrase = query.replace(/["\\():]/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
   const cats = [...ML_CATEGORIES].map((c) => `cat:${c}`).join(" OR ");
-  const q = `(${words.map((w) => `all:${w}`).join(" AND ")}) AND (${cats})`;
+  const q = `(ti:"${phrase}" OR (${words.map((w) => `all:${w}`).join(" AND ")})) AND (${cats})`;
   const p = new URLSearchParams({ search_query: q, max_results: "20", sortBy: "relevance" });
   const res = await fetch(`https://export.arxiv.org/api/query?${p}`, {
     signal: AbortSignal.timeout(8000),

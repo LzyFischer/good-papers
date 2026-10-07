@@ -6,24 +6,13 @@ import { PaperHero } from "@/components/PaperHero";
 import { jevConfigured } from "@/lib/jev";
 import { judgePaper } from "@/lib/judge";
 import { arxivIdOf } from "@/lib/arxiv";
-import { getPaperAnywhere, getScores, getVerdicts, storeJudgement, storedIdsByArxiv } from "@/lib/papers";
+import { getPaperAnywhere, getScores, getVerdicts, storeJudgement, storedIdsByArxiv, underInlineBudget } from "@/lib/papers";
 import { nudgeWorker } from "@/lib/dispatch";
-import { serverClient } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 type Props = { params: Promise<{ id: string }> };
-
-// Site-wide cap on papers judged on page view, so a crawler or a busy hour can't run up the Jev bill.
-const INLINE_JUDGE_PER_HOUR = 120; // counts every new paper, including the daily cron's batch
-async function underInlineBudget() {
-  const { count } = await serverClient()
-    .from("papers")
-    .select("id", { count: "exact", head: true })
-    .gte("created_at", new Date(Date.now() - 3600_000).toISOString());
-  return (count ?? 0) < INLINE_JUDGE_PER_HOUR;
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;

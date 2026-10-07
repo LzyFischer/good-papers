@@ -1,15 +1,18 @@
 import Link from "next/link";
+import { after } from "next/server";
 import { AskBox } from "@/components/AskBox";
 import { PaperCard } from "@/components/PaperCard";
 import { Gauge, tierOf } from "@/components/Score";
 import { Shelf } from "@/components/Shelf";
 import { AREAS } from "@/lib/areas";
+import { topUpTrending } from "@/lib/ingest";
 import { getVerdicts } from "@/lib/papers";
 import { serverClient } from "@/lib/supabase";
 import { WINDOWS, shelf, trending, type Window } from "@/lib/trending";
 import type { Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // room for the trending top-up after the page is sent
 
 
 type Props = { searchParams: Promise<{ area?: string; org?: string; author?: string; t?: string }> };
@@ -61,6 +64,7 @@ export default async function Home({ searchParams }: Props) {
   const verdicts = await getVerdicts(papers.map((p) => p.id));
 
   const browsing = !filtered;
+  if (browsing) after(() => topUpTrending().catch((e) => console.warn("Trending top-up failed:", e)));
   const [hotNow, must, debated, fresh] = browsing
     ? await Promise.all([trending(window), shelf("must"), shelf("debated"), shelf("new")])
     : [[], [], [], []];
