@@ -7,7 +7,7 @@ import { arxivCategories, arxivIdOf, isML } from "@/lib/arxiv";
 import { getHfTrendingPapers } from "@/lib/huggingface";
 import { judgePaper, mapLimit } from "@/lib/judge";
 import { getNewestPapers } from "@/lib/openalex";
-import { fillMissingTakes, isAuthorized, refreshCitations, storeJudgement } from "@/lib/papers";
+import { fillMissingTakes, isAuthorized, refreshCitations, storeJudgement, withStoredIds } from "@/lib/papers";
 import { serverClient } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -23,12 +23,20 @@ export async function GET(req: Request) {
     return [];
   });
   const seen = new Set(hf.map((p) => p.id));
-  const fetched = [...hf, ...(await getNewestPapers(3, 100)).filter((p) => !seen.has(p.id))];
+  // A paper stored as "arxiv-<id>" keeps that id when OpenAlex catches up, and vice versa.
+  const fetched = await withStoredIds([...hf, ...(await getNewestPapers(3, 100)).filter((p) => !seen.has(p.id))]);
+  const once = new Set<string>();
+  const unique = fetched.filter((p) => {
+    const k = arxivIdOf(p.url) ?? p.id;
+    if (once.has(k)) return false;
+    once.add(k);
+    return true;
+  });
   // OpenAlex's AI topic tag lets physics and math in; keep papers arXiv files under ML.
-  let newest = fetched;
+  let newest = unique;
   try {
-    const cats = await arxivCategories(fetched.map((p) => arxivIdOf(p.url)).filter((x): x is string => Boolean(x)));
-    newest = fetched.filter((p) => {
+    const cats = await arxivCategories(unique.map((p) => arxivIdOf(p.url)).filter((x): x is string => Boolean(x)));
+    newest = unique.filter((p) => {
       const id = arxivIdOf(p.url);
       return !id || !cats.has(id) || isML(cats.get(id));
     });
@@ -56,7 +64,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     judged: results.filter((r) => r.ok).length,
-    skippedNotML: fetched.length - newest.length,
+    skippedNotML: unique.length - newest.length,
     fromHuggingFace: hf.length,
     results,
     takesFilled,

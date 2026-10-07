@@ -1,7 +1,7 @@
 # Discussion worker (worker/rp_worker.py): Jev labels new comments, the AI panel
 # answers readers and opens discussions on newly judged papers.
 # Needs repository secrets: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
-# TINKER_API_KEY, TYPESAFE_API_KEY.
+# TINKER_API_KEY, TYPESAFE_API_KEY. Optional: S2_API_KEY (Semantic Scholar venues).
 name: worker
 
 on:
@@ -30,6 +30,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TINKER_API_KEY: ${{ secrets.TINKER_API_KEY }}
+          S2_API_KEY: ${{ secrets.S2_API_KEY }}  # optional: venues from Semantic Scholar
           TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # higher rate limit for public GitHub profiles
           OPENALEX_MAILTO: ${{ secrets.OPENALEX_MAILTO }}

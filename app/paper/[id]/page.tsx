@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Comments } from "@/components/Comments";
 import { NoteBox } from "@/components/NoteBox";
 import { PaperHero } from "@/components/PaperHero";
 import { jevConfigured } from "@/lib/jev";
 import { judgePaper } from "@/lib/judge";
-import { getPaperAnywhere, getScores, getVerdicts, storeJudgement } from "@/lib/papers";
+import { arxivIdOf } from "@/lib/arxiv";
+import { getPaperAnywhere, getScores, getVerdicts, storeJudgement, storedIdsByArxiv } from "@/lib/papers";
 import { nudgeWorker } from "@/lib/dispatch";
 import { serverClient } from "@/lib/supabase";
 
@@ -36,6 +37,11 @@ export default async function PaperPage({ params }: Props) {
   if (!paper) notFound();
 
   let verdicts = (await getVerdicts([id])).get(id) ?? [];
+
+  // Same arXiv paper already stored under its other id ("W…" or "arxiv-…"): go there.
+  const aid = verdicts.length === 0 ? arxivIdOf(paper.url) : null;
+  const stored = aid ? (await storedIdsByArxiv([aid]).catch(() => new Map<string, string>())).get(aid) : undefined;
+  if (stored && stored !== id) redirect(`/paper/${stored}`);
 
   // AI warm start: the first visit to an unjudged paper asks Jev (fast, no takes).
   // The daily cron writes the one-line takes afterwards.

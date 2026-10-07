@@ -26,9 +26,18 @@ export function shortOrg(org: string): string {
     .slice(0, 32);
 }
 
+// Venues the worker recognizes (worker/extras.py VENUES). It always writes the year when it
+// knows it, so a bare "ICLR" means the year is unknown: the preprint's year is often not the
+// conference's, so it isn't added.
+const SHORT_VENUES = new Set([
+  "NeurIPS", "ICML", "ICLR", "CVPR", "ICCV", "ECCV", "NAACL", "EACL", "EMNLP", "COLING", "COLM", "ACL", "AAAI",
+  "IJCAI", "KDD", "WWW", "SIGIR", "CIKM", "WSDM", "AISTATS", "UAI", "CoRL", "ICRA", "IROS", "RSS", "MICCAI",
+  "ISBI", "ICASSP", "Interspeech", "TMLR", "JMLR", "TPAMI", "LoG",
+]);
+
 // "arXiv (Cornell University)" → "arXiv"; venues the worker detected already carry their year.
 export function venueLabel(venue: string | null | undefined, year: number | null | undefined): string | null {
   if (!venue) return year ? String(year) : null;
   const v = /arxiv/i.test(venue) ? "arXiv" : venue;
-  return /\b(19|20)\d{2}\b/.test(v) || !year ? v : `${v} ${year}`;
+  return /\b(19|20)\d{2}\b/.test(v) || !year || SHORT_VENUES.has(v) ? v : `${v} ${year}`;
 }

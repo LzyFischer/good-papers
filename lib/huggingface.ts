@@ -1,5 +1,6 @@
 // Hugging Face Papers: the trending list (what the community is upvoting) feeds
 // the daily cron, so popular papers get rated even if OpenAlex's feed misses them.
+import { arxivIdOf, getArxivPapers } from "./arxiv";
 import { getPapersByArxivIds } from "./openalex";
 import type { Paper } from "./types";
 
@@ -13,6 +14,11 @@ export async function getHfTrending(limit = 30): Promise<{ arxivId: string; upvo
 }
 
 export async function getHfTrendingPapers(limit = 30): Promise<Paper[]> {
-  const trending = await getHfTrending(limit);
-  return getPapersByArxivIds(trending.map((t) => t.arxivId));
+  const ids = (await getHfTrending(limit)).map((t) => t.arxivId);
+  const fromOA = await getPapersByArxivIds(ids);
+  // Most trending papers are days old, before OpenAlex indexes them: take those from arXiv.
+  const have = new Set(fromOA.map((p) => arxivIdOf(p.url)));
+  const missing = ids.filter((a) => !have.has(a));
+  const fromArxiv = missing.length ? await getArxivPapers(missing).catch(() => []) : [];
+  return [...fromOA, ...fromArxiv];
 }

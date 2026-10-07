@@ -1,3 +1,4 @@
+import { ARXIV_PAPER, arxivIdOf, arxivPaperId, getArxivPapers } from "./arxiv";
 import { getCitationCounts, getPaper } from "./openalex";
 import { adminClient, serverClient } from "./supabase";
 import { writeTakes } from "./takes";
@@ -5,7 +6,7 @@ import type { Judgement } from "./judge";
 import { spokespersons, type PersonaId } from "./personas";
 import type { AiVerdict, Paper, Score } from "./types";
 
-export const PAPER_ID = /^(W\d+|rp-[a-z0-9-]+)$/;
+export const PAPER_ID = /^(W\d+|rp-[a-z0-9-]+|arxiv-\d{4}\.\d{4,5})$/;
 
 export function manualId(title: string) {
   return (
@@ -36,13 +37,40 @@ function rowToPaper(r: any): Paper {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-// Our database first (it may hold manual papers), then OpenAlex.
+// Our database first (it may hold manual papers), then OpenAlex or arXiv.
 export async function getPaperAnywhere(id: string): Promise<Paper | null> {
   if (!PAPER_ID.test(id)) return null;
   const { data } = await serverClient().from("papers").select("*").eq("id", id).maybeSingle();
   if (data && data.abstract) return rowToPaper(data);
-  const fromOpenAlex = id.startsWith("W") ? await getPaper(id) : null;
-  return fromOpenAlex ?? (data ? rowToPaper(data) : null);
+  const aid = id.match(ARXIV_PAPER)?.[1];
+  const fetched = id.startsWith("W") ? await getPaper(id) : aid ? (await getArxivPapers([aid]))[0] ?? null : null;
+  return fetched ?? (data ? rowToPaper(data) : null);
+}
+
+// One arXiv paper can reach us as an OpenAlex work ("W…") or as "arxiv-<id>".
+// Whichever id we stored first is the paper's id for good: map arXiv ids to it.
+export async function storedIdsByArxiv(aids: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const unique = [...new Set(aids)].filter((a) => /^\d{4}\.\d{4,5}$/.test(a));
+  for (let i = 0; i < unique.length; i += 40) {
+    const batch = unique.slice(i, i + 40);
+    const or = batch.flatMap((a) => [`id.eq.${arxivPaperId(a)}`, `url.like.*arxiv.org/abs/${a}*`, `url.ilike.*10.48550/arxiv.${a}*`]).join(",");
+    const { data } = await serverClient().from("papers").select("id, url").or(or);
+    for (const r of (data ?? []) as { id: string; url: string | null }[]) {
+      const a = r.id.match(ARXIV_PAPER)?.[1] ?? arxivIdOf(r.url);
+      if (a && batch.includes(a) && !out.has(a)) out.set(a, r.id);
+    }
+  }
+  return out;
+}
+
+// Give each paper the id it is already stored under, if any.
+export async function withStoredIds<T extends Paper>(papers: T[]): Promise<T[]> {
+  const stored = await storedIdsByArxiv(papers.map((p) => arxivIdOf(p.url) ?? "").filter(Boolean)).catch(() => new Map<string, string>());
+  return papers.map((p) => {
+    const id = stored.get(arxivIdOf(p.url) ?? "");
+    return id && id !== p.id ? { ...p, id } : p;
+  });
 }
 
 export async function getScores(ids: string[]): Promise<Map<string, Score>> {

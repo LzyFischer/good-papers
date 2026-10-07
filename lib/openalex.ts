@@ -98,8 +98,9 @@ export async function getCitationCounts(ids: string[]): Promise<Map<string, numb
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const PAGE_SIZE = 50;
 const CS_FIELDS = new Set(["Computer Science", "Mathematics", "Engineering", "Decision Sciences"]);
-const norm = (s: string) =>
+export const normTitle = (s: string) =>
   s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const norm = normTitle;
 const shortId = (id: string) => String(id).replace("https://openalex.org/", "");
 
 async function oa(path: string, extra: Record<string, string>, select?: string): Promise<any> {
@@ -119,7 +120,7 @@ async function works(filter: string, page: number, extra: Record<string, string>
 export function dedupeByTitle<T>(items: T[], title: (x: T) => string): T[] {
   const seen = new Set<string>();
   return items.filter((x) => {
-    const k = norm(title(x));
+    const k = normTitle(title(x));
     if (seen.has(k)) return false;
     seen.add(k);
     return true;

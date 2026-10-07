@@ -1,7 +1,8 @@
 """Paper extras, run by rp_worker.py each time:
 
-  links:     Hugging Face upvotes, GitHub repo and stars (HF papers API), and a
-             thumbnail: the first real figure on the arXiv HTML page.
+  links:     Hugging Face upvotes, GitHub repo and stars (HF papers API), a
+             thumbnail (the first real figure on the arXiv HTML page), the venue,
+             and institutions for "arxiv-<id>" papers once OpenAlex has indexed them.
   tldr:      one sentence on what the paper does (Inkling-Small), shown on cards.
   consensus: one sentence summing up the discussion, a "critics
              consensus" style, shown under the score; rewritten once a paper has
@@ -10,6 +11,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -98,6 +100,7 @@ VENUES = [
     (r"\btmlr\b|transactions on machine learning research", "TMLR"), (r"\bjmlr\b|journal of machine learning research", "JMLR"),
     (r"\btpami\b|pattern analysis and machine intelligence", "TPAMI"), (r"\blog\b.*graphs", "LoG"),
 ]
+SHORT_VENUES = {short for _, short in VENUES}
 VENUE_TAGS = [(r"\boral\b", "Oral"), (r"\bspotlight\b", "Spotlight"), (r"\bfindings\b", "Findings"), (r"\bworkshop\b", "Workshop")]
 
 
@@ -152,19 +155,84 @@ def openalex_venues(ids: list[str]) -> dict[str, list[str]]:
     return out
 
 
+def openalex_by_arxiv(aids: list[str]) -> dict[str, dict]:
+    """Institutions and venues OpenAlex has for arXiv ids, via their arXiv DOIs (50 per request).
+    Used for papers we stored as "arxiv-<id>" before OpenAlex indexed them."""
+    out: dict[str, dict] = {}
+    for i in range(0, len(aids), 50):
+        batch = aids[i:i + 50]
+        try:
+            r = httpx.get("https://api.openalex.org/works", timeout=30, params={
+                "filter": "doi:" + "|".join(f"10.48550/arxiv.{a}" for a in batch), "per_page": "50",
+                "select": "doi,authorships,locations"})
+            r.raise_for_status()
+        except httpx.HTTPError:
+            continue
+        for w in r.json().get("results", []):
+            aid = arxiv_id(w.get("doi"))
+            if not aid:
+                continue
+            orgs: list[str] = []
+            for a in w.get("authorships") or []:
+                for inst in a.get("institutions") or []:
+                    if inst.get("display_name") and inst["display_name"] not in orgs:
+                        orgs.append(inst["display_name"])
+            names = [((l.get("source") or {}).get("display_name") or "") for l in w.get("locations") or []]
+            out[aid] = {"orgs": orgs[:8], "venues": [n for n in names if n and "arxiv" not in n.lower()]}
+    return out
+
+
+def s2_venues(aids: list[str]) -> dict[str, str]:
+    """Venue names Semantic Scholar has (from DBLP, so conference papers are well covered).
+    Only with S2_API_KEY; without a key the shared pool is almost always rate-limited."""
+    key = os.environ.get("S2_API_KEY")
+    out: dict[str, str] = {}
+    if not key:
+        return out
+    for i in range(0, len(aids), 500):
+        batch = aids[i:i + 500]
+        try:
+            r = httpx.post("https://api.semanticscholar.org/graph/v1/paper/batch", timeout=60,
+                           params={"fields": "externalIds,venue,publicationVenue"}, headers={"x-api-key": key},
+                           json={"ids": [f"arXiv:{a}" for a in batch]})
+            r.raise_for_status()
+        except httpx.HTTPError:
+            continue
+        for w in r.json():
+            aid = ((w or {}).get("externalIds") or {}).get("ArXiv")
+            name = ((w or {}).get("publicationVenue") or {}).get("name") or (w or {}).get("venue") or ""
+            if aid and name and "arxiv" not in name.lower():
+                out[aid] = name
+        time.sleep(1)  # one request per second with a key
+    return out
+
+
 def refresh_links(db, limit: int, dry: bool) -> int:
     cutoff = (datetime.now(timezone.utc) - RECHECK).isoformat()
-    rows = db.get("papers", select="id,url,thumbnail,venue,tags,year", order="extras_checked_at.asc.nullsfirst",
+    rows = db.get("papers", select="id,url,thumbnail,venue,tags,year,orgs", order="extras_checked_at.asc.nullsfirst",
                   **{"or": f"(extras_checked_at.is.null,extras_checked_at.lt.{cutoff})"}, limit=str(limit))
 
     aids = {p["id"]: arxiv_id(p.get("url")) for p in rows}
     ax = arxiv_meta([a for a in aids.values() if a])
     oa = openalex_venues([p["id"] for p in rows])
+    oa_ax = openalex_by_arxiv([aids[p["id"]] for p in rows if p["id"].startswith("arxiv-") and aids[p["id"]]])
+    s2 = s2_venues([a for a in aids.values() if a])
 
     def one(p: dict) -> None:
         aid = aids[p["id"]]
         values = {"extras_checked_at": datetime.now(timezone.utc).isoformat()}
-        venue, tags = detect_venue([*ax.get(aid or "", []), *oa.get(p["id"], []), p.get("venue") or ""], p.get("year"))
+        late = oa_ax.get(aid or "", {})
+        if late.get("orgs") and not p.get("orgs"):
+            values["orgs"] = late["orgs"]
+        stored = p.get("venue") or ""
+        if stored in SHORT_VENUES:
+            stored = ""  # a bare "ICLR" came from S2 without a year; don't give it the preprint's year
+        texts = [*ax.get(aid or "", []), *oa.get(p["id"], []), *late.get("venues", []), stored]
+        venue, tags = detect_venue(texts, p.get("year"))
+        if not venue and aid in s2:
+            # S2 names the venue but not the edition, and a preprint's year is often not the
+            # conference's (QA-LoRA: arXiv 2023, ICLR 2024), so no year rather than a wrong one.
+            venue, tags = detect_venue([s2[aid]], None)
         if venue and venue != p.get("venue"):
             values["venue"] = venue
         new_tags = [t for t in tags if t not in (p.get("tags") or [])]

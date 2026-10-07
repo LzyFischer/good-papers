@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { PaperRow } from "@/components/PaperRow";
-import { dedupeByTitle, searchPapers } from "@/lib/openalex";
-import { getScores } from "@/lib/papers";
+import { arxivIdOf } from "@/lib/arxiv";
+import { dedupeByTitle, getPapersByArxivIds, normTitle, searchPapers } from "@/lib/openalex";
+import { getScores, withStoredIds } from "@/lib/papers";
+import { searchS2 } from "@/lib/s2";
 import type { Paper } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -20,14 +22,30 @@ export default async function SearchPage({ searchParams }: Props) {
   let results: Paper[] = [];
   let failed = false;
   if (query) {
-    try {
-      results = await searchPapers(query);
-    } catch {
-      failed = true;
-    }
+    // OpenAlex and Semantic Scholar side by side: S2 has last week's arXiv papers,
+    // OpenAlex has institutions and everything else. Either one alone is enough.
+    const [oa, s2] = await Promise.allSettled([searchPapers(query), searchS2(query)]);
+    const fromOA = oa.status === "fulfilled" ? oa.value : [];
+    let fromS2 = s2.status === "fulfilled" ? s2.value : [];
+    failed = oa.status === "rejected" && (s2.status === "rejected" || fromS2.length === 0);
+    // S2 hits OpenAlex does know get OpenAlex's version (it has institutions).
+    const titles = new Set(fromOA.map((p) => normTitle(p.title)));
+    fromS2 = fromS2.filter((p) => !titles.has(normTitle(p.title)));
+    const inOA = new Set(fromOA.map((p) => arxivIdOf(p.url)).filter(Boolean));
+    const missing = fromS2.map((p) => arxivIdOf(p.url)!).filter((a) => !inOA.has(a));
+    const oaVersions = new Map(
+      (await getPapersByArxivIds(missing).catch(() => [])).map((p) => [arxivIdOf(p.url) ?? "", p]),
+    );
+    fromS2 = fromS2.map((p) => {
+      const v = oaVersions.get(arxivIdOf(p.url)!);
+      return v ? { ...v, abstract: v.abstract ?? p.abstract } : p;
+    });
+    const merged: Paper[] = [];
+    for (let i = 0; i < Math.max(fromOA.length, fromS2.length); i++) merged.push(...[fromS2[i], fromOA[i]].filter(Boolean));
+    results = await withStoredIds(merged);
   }
   const scores = await getScores(results.map((r) => r.id));
-  // Rated papers first, most votes first (readers, then the AI panel); the rest keep OpenAlex's relevance order.
+  // Rated papers first, most votes first (readers, then the AI panel); the rest keep search relevance order.
   const votes = (id: string) => {
     const s = scores.get(id);
     return s && s.score !== null ? [s.reader_total, s.ai_total] : null;

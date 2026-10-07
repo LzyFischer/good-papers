@@ -7,7 +7,7 @@ The owner is a PhD student building this as a side project and wants to demo it 
 ## Stack
 - Next.js 15 (App Router, TypeScript), deployed on Vercel at https://good-papers.vercel.app (auto-deploys on push to `main` of github.com/LzyFischer/good-papers, public)
 - Supabase (project `ijcgvfgdmwzbnajvhymf`): Postgres + GitHub OAuth
-- OpenAlex for search, citations, institutions and the daily "newest papers" feed
+- OpenAlex for search, citations, institutions and the daily "newest papers" feed; Semantic Scholar (`lib/s2.ts`, needs `S2_API_KEY`) joins search for papers from the last week or two, which OpenAlex hasn't indexed yet. Such papers are stored as `arxiv-<id>` (fetched from the arXiv API); `withStoredIds` in `lib/papers.ts` keeps one id per arXiv paper.
 - Jev (TypeSafe AI) for the AI panel and for labeling comments: `POST {JEV_BASE_URL}/v1/systemone` with `{ model, state, questions }`. Jev returns typed answers with probabilities and cannot write text.
 - Tinker (Thinking Machines), native Python SDK, model `thinkingmachines/Inkling-Small` with thinking effort "none", writes the AI comments in `worker/`
 
