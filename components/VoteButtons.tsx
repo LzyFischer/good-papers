@@ -66,7 +66,10 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
     }
     await setMyVote(session.user.id, paper.id, next);
     setVote(next);
-    router.refresh();
+    // Reveal this paper's score everywhere on the page right away (GateRevealer).
+    window.dispatchEvent(new Event("gp-voted"));
+    // Shelf cards don't need fresh server data; the paper page refreshes its counts.
+    if (!compact) router.refresh();
   }
 
   const voted = vote !== undefined;

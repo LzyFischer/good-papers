@@ -23,8 +23,10 @@ export function GateRevealer() {
     apply();
     const observer = new MutationObserver(schedule);
     observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener("gp-voted", schedule); // a vote just landed: reveal without waiting
     return () => {
       observer.disconnect();
+      window.removeEventListener("gp-voted", schedule);
       cancelAnimationFrame(frame);
     };
   }, [session]);
