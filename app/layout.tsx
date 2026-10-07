@@ -5,11 +5,18 @@ import { GateRevealer } from "@/components/GateRevealer";
 import { Notifications } from "@/components/Notifications";
 import { Icon, IconSprite } from "@/components/Icons";
 import { SearchForm } from "@/components/SearchForm";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: "Good Papers: read the good ones", template: "%s | Good Papers" },
-  description: "New ML papers, scored by the people who read them, with a 20-reviewer AI panel from day one.",
+  description:
+    "Which ML papers are worth reading? Readers rate them, a 20-reviewer AI panel weighs in from day one, and NeurIPS 2026 is rated session by session.",
+  alternates: { canonical: "/" },
+  openGraph: { siteName: "Good Papers", type: "website" },
+  twitter: { card: "summary_large_image" },
+  verification: process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : undefined,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
