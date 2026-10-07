@@ -309,7 +309,7 @@ def write_tldrs(db, writer, limit: int, dry: bool) -> int:
 
 def write_consensus(db, writer, limit: int, dry: bool, tier_of) -> int:
     counts: dict[str, int] = {}
-    for c in db.get("comments", select="paper_id", limit="100000"):
+    for c in db.get_all("comments", "id", select="id,paper_id"):
         counts[c["paper_id"]] = counts.get(c["paper_id"], 0) + 1
     papers = {p["id"]: p for p in db.get("papers", select="id,title,abstract,consensus_comments",
                                          id=f"in.({','.join(counts) or 'none'})")} if counts else {}

@@ -220,15 +220,15 @@ def run(db, dry: bool) -> str:
     r.raise_for_status()
     users = {u["id"]: (u.get("user_metadata") or {}) for u in r.json().get("users", [])}
 
-    ratings = db.get("ratings", select="user_id,paper_id,worth_reading", worth_reading="not.is.null", limit="100000")
+    ratings = db.get_all("ratings", "user_id,paper_id", select="user_id,paper_id,worth_reading", worth_reading="not.is.null")
     voted_papers = sorted({x["paper_id"] for x in ratings})
     papers = {}
     for i in range(0, len(voted_papers), 100):
         chunk = voted_papers[i:i + 100]
         for p in db.get("papers", select="id,authors,orgs", id=f"in.({','.join(chunk)})"):
             papers[p["id"]] = p
-    ai = {s["id"]: (s["ai_fresh"] / s["ai_total"]) for s in db.get(
-        "paper_scores", select="id,ai_fresh,ai_total", ai_total="gt.0", limit="100000")}
+    ai = {s["id"]: (s["ai_fresh"] / s["ai_total"]) for s in db.get_all(
+        "paper_scores", "id", select="id,ai_fresh,ai_total", ai_total="gt.0")}
 
     gh_token = os.environ.get("GITHUB_TOKEN")
     gh_headers = {"Authorization": f"Bearer {gh_token}"} if gh_token else {}

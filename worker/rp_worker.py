@@ -98,6 +98,15 @@ class DB:
         r.raise_for_status()
         return r.json()
 
+    def get_all(self, table: str, order: str, page: int = 1000, **params) -> list[dict]:
+        """Every matching row: PostgREST caps a response at 1000 rows. `order` must be unique."""
+        out: list[dict] = []
+        while True:
+            rows = self.get(table, order=order, limit=str(page), offset=str(len(out)), **params)
+            out += rows
+            if len(rows) < page:
+                return out
+
     def insert(self, table: str, rows: list[dict]) -> list[dict]:
         r = self.http.post(f"/{table}", json=rows, headers={"Prefer": "return=representation"})
         r.raise_for_status()
@@ -405,7 +414,7 @@ def seed_discussions(db: DB, writer: Writer, personas: dict, limit: int, dry: bo
         limit="200",
     )
     try:
-        discussed = {r["paper_id"] for r in db.get("comments", select="paper_id", author_kind="eq.ai", limit="5000")}
+        discussed = {r["paper_id"] for r in db.get_all("comments", "id", select="id,paper_id", author_kind="eq.ai")}
     except httpx.HTTPStatusError:
         if not dry:
             raise
