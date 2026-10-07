@@ -16,7 +16,10 @@ export type PaperStub = {
   url: string | null;
 };
 
-export function VoteButtons({ paper }: { paper: PaperStub }) {
+// What readers and the AI panel said, revealed once you've voted ("you vs everyone").
+export type Reveal = { readerFresh: number; readerTotal: number; aiYes: number; aiTotal: number; coi: number };
+
+export function VoteButtons({ paper, reveal }: { paper: PaperStub; reveal?: Reveal }) {
   const router = useRouter();
   const { session } = useSession();
   // undefined: no vote; true/false: fresh/rotten; null: read it, abstained.
@@ -65,8 +68,25 @@ export function VoteButtons({ paper }: { paper: PaperStub }) {
     router.refresh();
   }
 
+  const voted = vote !== undefined;
+  const pct = reveal?.readerTotal ? Math.round((reveal.readerFresh / reveal.readerTotal) * 100) : null;
+
   return (
     <div className="vote-wrap">
+      {reveal && (
+        <>
+          <span className="sc-num">{!voted ? "?" : pct === null ? "–" : `${pct}%`}</span>
+          <span className="sc-sub">
+            {!voted
+              ? reveal.readerTotal
+                ? `${reveal.readerTotal} reader${reveal.readerTotal === 1 ? "" : "s"} voted. Vote to see how they split.`
+                : "No votes yet. Read it? Be the first."
+              : `${reveal.readerFresh} of ${reveal.readerTotal} upvoted`}
+            {voted && reveal.coi ? ` · ${reveal.coi} from authors or colleagues not counted` : ""}
+          </span>
+          {voted && vote !== null && <YouVsEveryone vote={vote} reveal={reveal} />}
+        </>
+      )}
       <div className="vote">
         <button className="vbtn f" aria-pressed={vote === true} aria-label="Upvote: worth reading" disabled={busy} onClick={() => cast(true)}>
           <Icon name="up" />
@@ -86,5 +106,19 @@ export function VoteButtons({ paper }: { paper: PaperStub }) {
         </p>
       )}
     </div>
+  );
+}
+
+function YouVsEveryone({ vote, reveal }: { vote: boolean; reveal: Reveal }) {
+  const same = vote ? reveal.readerFresh : reveal.readerTotal - reveal.readerFresh;
+  const others = reveal.readerTotal - 1; // your own vote is in the count
+  const aiSame = vote ? reveal.aiYes : reveal.aiTotal - reveal.aiYes;
+  return (
+    <p className="reveal">
+      {others <= 0
+        ? "You're the first reader to vote."
+        : `${Math.round(((same - 1) / others) * 100)}% of other readers agree with you.`}
+      {reveal.aiTotal > 0 && ` ${aiSame} of ${reveal.aiTotal} AI reviewers do too.`}
+    </p>
   );
 }

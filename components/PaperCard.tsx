@@ -77,7 +77,8 @@ function Table({ icon, label, fresh, total, note, ai }: {
   icon: IconName; label: string; fresh: number; total: number; note?: string; ai?: boolean;
 }) {
   // The AI panel shows a count, not a percentage: "3 of 20" reads fairer than "15%".
-  const pct = !total ? "–" : ai ? `${fresh}/${total}` : `${Math.round((fresh / total) * 100)}%`;
+  // Readers' split is revealed on the paper page after you vote; cards show how many voted.
+  const pct = !total ? "–" : ai ? `${fresh}/${total}` : String(total);
   return (
     <div className={ai ? "tbl tbl--ai" : "tbl"}>
       <Icon name={icon} />
@@ -85,7 +86,7 @@ function Table({ icon, label, fresh, total, note, ai }: {
         {pct} <span className="l">{label}</span>
       </span>
       <span className="l">
-        {total ? (ai ? "reviewers recommend it" : `${fresh} of ${total} upvoted`) : "No votes yet"}
+        {total ? (ai ? "reviewers recommend it" : `voted. Vote to see how they split`) : "No votes yet"}
         {note ? `. ${note}` : ""}
       </span>
     </div>

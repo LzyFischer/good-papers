@@ -7,7 +7,8 @@
 //
 // A paper we already have (same title) keeps its id and gets the conference fields; new
 // ones are stored as "nips26-<OpenReview forum id>". AI discussions for new papers start
-// when someone opens them (discuss_on_demand). Resumable: judged papers are skipped.
+// when someone opens them (discuss_on_demand). Resumable: judged papers are skipped, and
+// papers stored without an abstract are judged on a later run once one turns up.
 //
 // Usage: npm run import:neurips [max]
 import { readFileSync } from "node:fs";
@@ -78,7 +79,9 @@ async function judgedIds(ids: string[]): Promise<Set<string>> {
   const rows = [...papers.values()].map(({ forum, e, track, sessions }) => {
     const info = or[forum] ?? {};
     const orgs = [...new Set((e.authors ?? []).map((a) => a.institution).filter((x): x is string => Boolean(x)))].slice(0, 8);
-    const existing = stored.get(normTitle(e.name));
+    // An earlier import's own row isn't "existing": it may have gained an abstract since.
+    const match = stored.get(normTitle(e.name));
+    const existing = match && !match.startsWith("nips26-") ? match : undefined;
     const paper: Paper = {
       id: existing ?? `nips26-${forum}`,
       title: info.title || e.name,

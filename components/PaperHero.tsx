@@ -7,6 +7,7 @@ import { PERSONA_IDS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
 import { AiDots, AuthorLinks, formatPublished } from "./PaperCard";
 import { Gauge, tierOf } from "./Score";
+import { ShareButton } from "./ShareButton";
 import { VoteButtons } from "./VoteButtons";
 
 // The top of a paper page: header, scorecard (overall, readers, AI panel) and the panel consensus.
@@ -19,7 +20,6 @@ export function PaperHero({ paper, score, verdicts }: { paper: Paper; score: Sco
   const published = formatPublished(paper.publishedOn ?? score?.published_on, paper.year);
   const citations = paper.citedByCount ?? score?.cited_by_count ?? null;
   const readers = score?.reader_total ?? 0;
-  const readerPct = readers ? Math.round(((score?.reader_fresh ?? 0) / readers) * 100) : null;
 
   const facts = [
     published && `Published ${published}`,
@@ -56,7 +56,8 @@ export function PaperHero({ paper, score, verdicts }: { paper: Paper; score: Sco
                 Code{score.github_stars ? ` ★ ${score.github_stars.toLocaleString("en-US")}` : ""}
               </a>
             ) : null}
-            {paper.url && <a href={paper.url} target="_blank" rel="noopener noreferrer">{arxivId ? "arXiv" : "Paper"} ↗</a>}
+            {paper.url && <a href={paper.url} target="_blank" rel="noopener noreferrer">{arxivId ? "arXiv" : /openreview/.test(paper.url) ? "OpenReview" : "Paper"} ↗</a>}
+            <ShareButton id={paper.id} title={paper.title} pct={t ? t.pct : null} />
           </p>
         </div>
         {score?.thumbnail && (
@@ -76,12 +77,10 @@ export function PaperHero({ paper, score, verdicts }: { paper: Paper; score: Sco
         </div>
         <div className="sc">
           <span className="sc-label">Readers</span>
-          <span className="sc-num">{readerPct === null ? "–" : `${readerPct}%`}</span>
-          <span className="sc-sub">
-            {readers ? `${score?.reader_fresh} of ${readers} upvoted` : "No votes yet. Read it? Be the first."}
-            {score?.reader_coi ? ` · ${score.reader_coi} from authors or colleagues not counted` : ""}
-          </span>
-          <VoteButtons paper={{ id: paper.id, title: paper.title, authors: paper.authors, year: paper.year, venue: paper.venue, url: paper.url }} />
+          <VoteButtons
+            paper={{ id: paper.id, title: paper.title, authors: paper.authors, year: paper.year, venue: paper.venue, url: paper.url }}
+            reveal={{ readerFresh: score?.reader_fresh ?? 0, readerTotal: readers, aiYes, aiTotal: ordered.length, coi: score?.reader_coi ?? 0 }}
+          />
         </div>
         <div className="sc sc--ai">
           <span className="sc-label">AI panel</span>

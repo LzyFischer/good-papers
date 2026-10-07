@@ -33,6 +33,11 @@ export default function How() {
       <p>Signed-in readers upvote (worth reading) or downvote (not for me) papers they have read. Their votes:</p>
       <ul>
         <li>
+          <b>Stay hidden until you vote.</b> Everyone sees the overall score, but how readers split on a paper is
+          shown only after you&apos;ve voted on it, so your vote is your own and not a follow-the-crowd click. Then
+          you see how many readers and AI reviewers agree with you.
+        </li>
+        <li>
           <b>Don&apos;t count when there is a conflict of interest.</b> Votes on your own papers, your recent
           co-authors&apos; papers, or papers from your institution are shown separately and left out of the score. We
           infer this from your GitHub profile and public bibliographic data (OpenAlex); we never display it.

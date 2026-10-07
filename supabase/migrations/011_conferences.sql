@@ -1,7 +1,7 @@
 -- NeurIPS 2026 (and later conferences): each accepted paper's track and poster sessions,
 -- a view of papers per session ranked by score for the /neurips page, and on-demand AI
 -- discussions for bulk-imported papers (the worker only discusses them once someone
--- opens them). Safe to run once after 010.
+-- opens them). Also a my_replies view for reply notifications. Safe to run once after 010.
 
 alter table public.papers add column if not exists conf_track text
   check (conf_track in ('oral', 'spotlight', 'poster'));
@@ -91,3 +91,13 @@ from public.paper_scores s, jsonb_array_elements(s.conf_sessions) ses
 where s.conf_sessions is not null;
 
 grant select on public.conf_session_papers to anon, authenticated;
+
+-- Replies to the signed-in reader's comments, newest first, for the notification bell.
+create or replace view public.my_replies with (security_invoker = true) as
+select c.id, c.paper_id, c.author_kind, c.author_name, c.body, c.created_at, p.title as paper_title
+from public.comments c
+join public.comments mine on mine.id = c.parent_id
+join public.papers p on p.id = c.paper_id
+where mine.user_id = auth.uid() and c.user_id is distinct from auth.uid();
+
+grant select on public.my_replies to authenticated;

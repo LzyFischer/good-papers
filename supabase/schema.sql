@@ -666,3 +666,13 @@ from public.paper_scores s, jsonb_array_elements(s.conf_sessions) ses
 where s.conf_sessions is not null;
 
 grant select on public.conf_session_papers to anon, authenticated;
+
+-- Replies to the signed-in reader's comments, newest first, for the notification bell.
+create or replace view public.my_replies with (security_invoker = true) as
+select c.id, c.paper_id, c.author_kind, c.author_name, c.body, c.created_at, p.title as paper_title
+from public.comments c
+join public.comments mine on mine.id = c.parent_id
+join public.papers p on p.id = c.paper_id
+where mine.user_id = auth.uid() and c.user_id is distinct from auth.uid();
+
+grant select on public.my_replies to authenticated;

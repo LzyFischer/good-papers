@@ -412,3 +412,27 @@ button { font: inherit; }
 .load-more { display: block; width: max-content; margin: 1.5rem auto 3rem; padding: .75rem 1.6rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 700 .95rem var(--display); text-decoration: none; }
 .load-more:hover { border-color: var(--ink); }
 .crumb { margin: 0 0 .4rem; font-size: .9rem; }
+
+/* Share */
+.share { position: relative; display: inline-flex; }
+.share-btn { font: 600 .85rem var(--body); padding: .25rem .8rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.share-btn:hover { border-color: var(--ink); }
+.share-menu { position: absolute; top: calc(100% + .35rem); left: 0; z-index: 20; display: flex; flex-direction: column; min-width: 10rem; padding: .3rem; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+.share-menu button, .share-menu a { font: 500 .88rem var(--body); text-align: left; padding: .45rem .6rem; border: 0; border-radius: 6px; background: none; color: var(--ink); text-decoration: none; cursor: pointer; }
+.share-menu button:hover, .share-menu a:hover { background: var(--bg); }
+
+/* You vs everyone, after voting */
+.reveal { margin: .5rem 0 0; padding: .45rem .65rem; border-radius: 8px; background: var(--lime); color: var(--lime-ink); font-weight: 600; font-size: .88rem; }
+
+/* Reply notifications */
+.bell { position: relative; display: inline-flex; }
+.bell-btn { position: relative; display: inline-flex; padding: .35rem; border: 0; background: none; color: var(--night-muted); cursor: pointer; }
+.bell-btn:hover { color: var(--lime); }
+.bell-dot { position: absolute; top: -.1rem; right: -.2rem; min-width: 1.05rem; height: 1.05rem; padding: 0 .25rem; border-radius: 999px; background: var(--lime); color: var(--lime-ink); font: 700 .68rem/1.05rem var(--body); text-align: center; }
+.bell-menu { position: absolute; top: calc(100% + .4rem); right: 0; z-index: 30; width: min(24rem, 90vw); max-height: 70vh; overflow: auto; display: flex; flex-direction: column; padding: .35rem; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+.bell-item { display: block; padding: .55rem .65rem; border-radius: 8px; color: var(--ink); text-decoration: none; font-size: .86rem; line-height: 1.35; }
+.bell-item:hover { background: var(--bg); }
+.bell-item--new { box-shadow: inset 3px 0 0 var(--lime); }
+.bell-item i { font-style: normal; font-weight: 600; }
+.bell-body { display: block; color: var(--muted); margin-top: .2rem; }
+.bell-empty { padding: .7rem; color: var(--muted); font-size: .88rem; }
