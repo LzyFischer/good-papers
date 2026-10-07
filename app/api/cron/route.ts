@@ -1,9 +1,10 @@
-// Daily job (see vercel.json): pull the newest AI papers from OpenAlex,
-// give each an AI panel verdict, fill in any missing one-line takes, and
-// refresh stored citation counts.
+// Daily job (see vercel.json): pull Hugging Face's trending lists and the newest AI
+// papers from OpenAlex, give each new one an AI panel verdict, fill in any missing
+// one-line takes, refresh stored citation counts, and wake the discussion worker.
 // Vercel Cron sends "Authorization: Bearer $CRON_SECRET" automatically.
 import { NextResponse } from "next/server";
 import { arxivCategories, arxivIdOf, isML } from "@/lib/arxiv";
+import { nudgeWorker } from "@/lib/dispatch";
 import { getHfTrendingPapers } from "@/lib/huggingface";
 import { judgePaper, mapLimit } from "@/lib/judge";
 import { getNewestPapers } from "@/lib/openalex";
@@ -17,8 +18,8 @@ export async function GET(req: Request) {
   if (!isAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const max = Number(process.env.CRON_MAX_PAPERS ?? 50);
-  // Hugging Face trending first (what people are upvoting), then OpenAlex's newest.
-  const hf = await getHfTrendingPapers(30).catch((e) => {
+  // Hugging Face's lists first (today, this week, this month, the past year), then OpenAlex's newest.
+  const hf = await getHfTrendingPapers().catch((e) => {
     console.warn("Hugging Face trending failed:", e);
     return [];
   });
@@ -59,6 +60,7 @@ export async function GET(req: Request) {
       return { id: paper.id, ok: false, error: String(e) };
     }
   });
+  if (results.some((r) => r.ok)) await nudgeWorker(); // discussions, TL;DRs, thumbnails for the new papers
   const takesFilled = await fillMissingTakes(5);
   const citationsRefreshed = await refreshCitations().catch((e) => String(e));
 
