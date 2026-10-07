@@ -3,6 +3,7 @@ import { AREAS } from "@/lib/areas";
 import { isPreprint, venueLabel } from "@/lib/orgs";
 import type { Score } from "@/lib/types";
 import { Gate } from "./Gate";
+import { ReaderCounts } from "./ReaderCounts";
 import { VoteButtons } from "./VoteButtons";
 import { Gauge, tierOf } from "./Score";
 
@@ -40,7 +41,7 @@ export function MiniCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: boole
           )}
           {t?.label}
           <Gate id={s.id} open={scoreOpen || !t} mask={<span className="vote-to-see"> · vote to see score</span>}>
-            {s.reader_total ? ` · ${Math.round((s.reader_fresh / s.reader_total) * 100)}% of ${s.reader_total} readers upvoted` : ""}
+            <ReaderCounts id={s.id} fresh={s.reader_fresh} total={s.reader_total} kind="mini" />
           </Gate>
           {s.hf_upvotes ? ` · ▲ ${s.hf_upvotes} on HF` : ""}
           {s.comments ? ` · ${s.comments} comments` : ""}

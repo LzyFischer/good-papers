@@ -67,9 +67,11 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
     await setMyVote(session.user.id, paper.id, next);
     setVote(next);
     // Reveal this paper's score everywhere on the page right away (GateRevealer).
-    window.dispatchEvent(new Event("gp-voted"));
-    // Shelf cards don't need fresh server data; the paper page refreshes its counts.
-    if (!compact) router.refresh();
+    window.dispatchEvent(new CustomEvent("gp-voted", { detail: { id: paper.id, prev: vote, next } }));
+    // Only the paper page reloads its numbers. Cards update in place (ReaderCounts): reloading
+    // a list would reorder it under you, and the home shelves are cached anyway.
+    if (reveal) router.refresh();
+    fetch("/api/voted", { method: "POST" }).catch(() => {}); // let the cached home shelves catch up
   }
 
   const voted = vote !== undefined;

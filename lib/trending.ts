@@ -80,7 +80,7 @@ export const openScoreIds = unstable_cache(
     return [...new Set([...half(week), ...half(nips), ...half(must), ...half(debated), ...(spot ? [spot.id] : [])])];
   },
   ["open-score-ids-v3"],
-  { revalidate: 600 },
+  { revalidate: 600, tags: ["home"] },
 );
 
 // The home page's four shelves, shared by every visitor for two minutes: they change slowly,
@@ -89,5 +89,5 @@ export const homeShelves = unstable_cache(
   async (window: Window) =>
     Promise.all([trending(window, SHELF_SIZE), shelf("must", SHELF_SIZE), shelf("debated", SHELF_SIZE), neuripsTrending(SHELF_SIZE)]),
   ["home-shelves"],
-  { revalidate: 120 },
+  { revalidate: 120, tags: ["home"] },
 );

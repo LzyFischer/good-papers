@@ -6,6 +6,7 @@ import { isPreprint, orgKind, shortOrg, venueLabel } from "@/lib/orgs";
 import { PERSONAS, PERSONA_IDS, TIERS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
 import { Gate } from "./Gate";
+import { ReaderCounts } from "./ReaderCounts";
 import { Icon, type IconName } from "./Icons";
 import { Gauge, tierOf } from "./Score";
 import { VoteButtons } from "./VoteButtons";
@@ -74,8 +75,8 @@ export function AiDots({ ordered }: { ordered: AiVerdict[] }) {
   );
 }
 
-function Table({ icon, label, fresh, total, note, ai, open }: {
-  icon: IconName; label: string; fresh: number; total: number; note?: string; ai?: boolean; open?: boolean;
+function Table({ icon, label, fresh, total, note, ai, open, id }: {
+  icon: IconName; label: string; fresh: number; total: number; note?: string; ai?: boolean; open?: boolean; id?: string;
 }) {
   // The AI panel shows a count, not a percentage: "3 of 20" reads fairer than "15%".
   // Readers' split is revealed on the paper page after you vote (open: the Trending teaser).
@@ -84,10 +85,12 @@ function Table({ icon, label, fresh, total, note, ai, open }: {
     <div className={ai ? "tbl tbl--ai" : "tbl"}>
       <Icon name={icon} />
       <span className="n">
-        {pct} <span className="l">{label}</span>
+        {id && open && !ai ? <ReaderCounts id={id} fresh={fresh} total={total} kind="pct" /> : pct} <span className="l">{label}</span>
       </span>
       <span className="l">
-        {total ? (ai ? "reviewers recommend it" : open ? `${fresh} of ${total} upvoted` : "voted. Vote to see how they split") : "No votes yet"}
+        {id && open && !ai ? (
+          <ReaderCounts id={id} fresh={fresh} total={total} kind="text" />
+        ) : total ? (ai ? "reviewers recommend it" : open ? `${fresh} of ${total} upvoted` : "voted. Vote to see how they split") : "No votes yet"}
         {note ? `. ${note}` : ""}
       </span>
     </div>
@@ -214,6 +217,7 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
             fresh={score?.reader_fresh ?? 0}
             total={score?.reader_total ?? 0}
             open
+            id={paper.id}
             note={[
               score?.consensus ? "Cross-camp consensus" : null,
               score?.reader_coi ? `${score.reader_coi} from authors or colleagues not counted` : null,
