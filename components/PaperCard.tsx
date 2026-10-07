@@ -6,9 +6,10 @@ import { isPreprint, orgKind, shortOrg, venueLabel } from "@/lib/orgs";
 import { PERSONAS, PERSONA_IDS, TIERS } from "@/lib/personas";
 import type { AiVerdict, Paper, Score } from "@/lib/types";
 import { Gate } from "./Gate";
+import { LiveGauge, LiveLabel } from "./LiveScore";
 import { ReaderCounts } from "./ReaderCounts";
 import { Icon, type IconName } from "./Icons";
-import { Gauge, tierOf } from "./Score";
+import { tierOf } from "./Score";
 import { VoteButtons } from "./VoteButtons";
 
 export function formatAuthors(authors: string[], max = 4) {
@@ -139,8 +140,8 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
         }
       >
         <div className={`score ${v ? `tone-${v.tone}` : "pending"}`}>
-          {v ? <Gauge pct={v.pct} tone={v.tone} /> : <span className="gauge gauge--lg gauge--empty"><b>?</b></span>}
-          <span className="word">{v ? v.label : "Not rated yet"}</span>
+          {v ? <LiveGauge id={paper.id} score={score!.score!} /> : <span className="gauge gauge--lg gauge--empty"><b>?</b></span>}
+          <span className="word">{v ? <LiveLabel id={paper.id} score={score!.score!} /> : "Not rated yet"}</span>
         </div>
       </Gate>
 

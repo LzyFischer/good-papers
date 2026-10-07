@@ -19,8 +19,17 @@ export function ReaderCounts({ id, fresh, total, kind }: { id: string; fresh: nu
         return { fresh: Math.max(0, f), total: Math.max(0, t) };
       });
     };
+    // Then the exact numbers from the database (conflict-of-interest votes left out).
+    const exact = (e: Event) => {
+      const d = (e as CustomEvent<{ id: string; fresh: number; total: number }>).detail;
+      if (d?.id === id) setC({ fresh: d.fresh, total: d.total });
+    };
     window.addEventListener("gp-voted", on);
-    return () => window.removeEventListener("gp-voted", on);
+    window.addEventListener("gp-score", exact);
+    return () => {
+      window.removeEventListener("gp-voted", on);
+      window.removeEventListener("gp-score", exact);
+    };
   }, [id]);
   const pct = c.total ? Math.round((c.fresh / c.total) * 100) : 0;
   if (kind === "pct") return <>{c.total ? `${pct}%` : "–"}</>;

@@ -3,9 +3,10 @@ import { AREAS } from "@/lib/areas";
 import { isPreprint, venueLabel } from "@/lib/orgs";
 import type { Score } from "@/lib/types";
 import { Gate } from "./Gate";
+import { LiveGauge, LiveLabel } from "./LiveScore";
 import { ReaderCounts } from "./ReaderCounts";
 import { VoteButtons } from "./VoteButtons";
-import { Gauge, tierOf } from "./Score";
+import { tierOf } from "./Score";
 
 // Compact card for horizontal shelves: thumbnail, score, title, TL;DR.
 export function MiniCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: boolean }) {
@@ -25,7 +26,7 @@ export function MiniCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: boole
           {t && (
             <span className="mini-score">
               <Gate id={s.id} open={scoreOpen} mask={<span className="gauge gauge--sm gauge--empty"><b>?</b></span>}>
-                <Gauge pct={t.pct} tone={t.tone} size="sm" />
+                <LiveGauge id={s.id} score={s.score!} size="sm" />
               </Gate>
             </span>
           )}
@@ -39,7 +40,7 @@ export function MiniCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: boole
               {s.conf_track && s.conf_track !== "poster" ? ` ${s.conf_track === "oral" ? "Oral" : "Spotlight"}` : ""}
             </span>
           )}
-          {t?.label}
+          {t && <LiveLabel id={s.id} score={s.score!} />}
           <Gate id={s.id} open={scoreOpen || !t} mask={<span className="vote-to-see"> · vote to see score</span>}>
             <ReaderCounts id={s.id} fresh={s.reader_fresh} total={s.reader_total} kind="mini" />
           </Gate>

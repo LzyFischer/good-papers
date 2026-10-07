@@ -71,6 +71,18 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
     // Only the paper page reloads its numbers. Cards update in place (ReaderCounts): reloading
     // a list would reorder it under you, and the home shelves are cached anyway.
     if (reveal) router.refresh();
+    // The new score and tallies, for the cards on this page (LiveScore, ReaderCounts).
+    supabase
+      .from("paper_scores")
+      .select("score, reader_fresh, reader_total")
+      .eq("id", paper.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data)
+          window.dispatchEvent(
+            new CustomEvent("gp-score", { detail: { id: paper.id, score: data.score, fresh: data.reader_fresh, total: data.reader_total } }),
+          );
+      });
     fetch("/api/voted", { method: "POST" }).catch(() => {}); // let the cached home shelves catch up
   }
 
