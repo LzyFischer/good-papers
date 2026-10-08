@@ -1,103 +1,181 @@
 # Good Papers
 
-论文版"烂番茄"：每篇论文由三桌打分，读者（登录用户）、AI 评审团（Jev 驱动的五个人格）、会议审稿人；首页总分把三桌合并，所以新论文一上线就有分数。
+**Which ML papers are worth reading?** Good Papers rates new machine learning papers the way Rotten Tomatoes rates films: readers vote on the papers they have read, and a panel of 20 AI reviewers gives every paper a score from the day it appears.
 
-## 第一阶段已实现
-- 二元打分（Worth reading / Not for me），醒目的大按钮，点击即投票，再点一次撤销
-- 三桌分开显示 + 合并总分
-- AI warm start：每天自动抓取最新 AI 论文并由 Jev 打分；有人打开一篇没评过的论文时也会当场打分
-- 按板块筛选（Jev 自动分类研究领域和论文类型）
-- 机构标签：工业界和顶尖学校分别着色（列表在 `lib/orgs.ts`）
-- 热评榜：AI 人格的一句话金句
-- 个人阅读记录和私人笔记（`/me`）
+**Live site:** [www.goodpapers.org](https://www.goodpapers.org)
 
-## Jev 是怎么接入的
-Jev（TypeSafe AI 的 System One 模型）只返回带概率的结构化判断，**不会写文字**。所以：
+- **Readers decide.** Signed-in readers upvote (*Worth reading*) or downvote (*Not for me*). Votes are weighted by reader reputation, conflicts of interest are left out, and agreement across different reader camps counts for more.
+- **AI from day one.** A panel of 20 reviewer personas (rigor, novelty, clarity, reproducibility, practical use, …) reads each paper so it has a score before anyone has voted. The panel counts for 10% of a paper's score and steps back as readers arrive.
+- **Discussion, not just a number.** AI reviewers open a debate under every paper and reply to readers; every AI comment is labeled.
+- **What's hot, and what's good.** Trending follows Hugging Face's daily, weekly, monthly and past-year lists; *Must read* is this year's highest-rated work. These are separate shelves, so popularity never stands in for quality.
+- **NeurIPS 2026, session by session.** All 6,000+ accepted papers, with the best orals, spotlights and posters in every poster session.
 
-- **打分**由 Jev 完成：每个人格是一个 `noul`（是/否）问题，yes 概率 ≥ 0.5 记为 Fresh。另外两个 `choice` 问题给论文分板块和类型。七个问题在**一次请求**里并行完成。
-- **金句**由 Claude 写（可选）：拿到 Jev 的判断后，让 LLM 用每个人格的口吻写一句理由。不配置 `ANTHROPIC_API_KEY` 也能运行，AI 面板只显示概率。
+---
 
-人格定义全部在 `lib/personas.ts`。Jev 按字面理解问题，不会"扮演角色"，所以每个人格被写成"这个审稿人会检查的具体条件"。想调整人格就改这里的文字。
+## Contents
 
-想换 Jev 兼容的其他端点（例如 Cloudflare 的 Clef），设置 `JEV_BASE_URL` 即可。
+- [How a score is made](#how-a-score-is-made)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Getting started](#getting-started)
+- [Configuration](#configuration)
+- [Scripts](#scripts)
+- [Project layout](#project-layout)
+- [Data sources and etiquette](#data-sources-and-etiquette)
+- [Roadmap](#roadmap)
 
-## 从 v1 升级（之前本地跑过 Referee）
-1. 在 Supabase **SQL Editor** 运行 `supabase/migrations/002_rotten_paper.sql`（全新项目则运行 `supabase/schema.sql`）。
-2. 在 `.env.local` 里补充新变量（对照 `.env.example`）：
-   - `SUPABASE_SERVICE_ROLE_KEY`：Supabase → Project Settings → API 里的 service_role（或 secret）key。**只能放服务器端，不能加 `NEXT_PUBLIC_` 前缀，不能提交到 GitHub。**
-   - `TYPESAFE_API_KEY`：在 console.typesafe.ai 申请。如果 TypeSafe 暂停注册，可以走 Vercel AI Gateway，但那条路的接口格式不同，需要改 `lib/jev.ts`。
-   - `ANTHROPIC_API_KEY`（可选）：在 console.anthropic.com 申请。
-   - `CRON_SECRET`：一串长随机字符，例如终端运行 `openssl rand -hex 32`。
-3. `npm install`，然后 `npm run dev`。
+## How a score is made
 
-## 给你自己的论文打分
-`scripts/my-papers.json` 里放了你的六篇论文。REdit 和 MolEdit 用的是公开摘要；另外四篇只有简短描述，**换成真实摘要后 AI 评审会更准**。
+Every paper shows a 0–100% gauge with a label: **Must read** (≥ 80%), **Highly rated** (≥ 65%), **Worth a look** (≥ 50%), **Niche pick** (≥ 35%) and **Specialist read**.
 
-```bash
-npm run judge -- scripts/my-papers.json
 ```
-终端会打印每篇论文每个人格的判断和概率，刷新首页就能看到。
-
-如果想填入审稿分数（例如 OpenReview），在对应论文里加：
-```json
-"reviewers": { "fresh": 2, "total": 3, "note": "final reviews" }
+score = 0.1 · prior + 0.9 · (reader_share · W + 5 · prior) / (W + 5)
 ```
 
-## 部署到 Vercel
+| Term | Meaning |
+| --- | --- |
+| `prior` | The AI panel's verdict, graded on a curve: a paper's share of "worth reading" votes from the 20 personas, ranked against every other judged paper and mapped to 45–92%. |
+| `reader_share` | Share of readers who upvoted, weighted by reputation. With 8+ raters it becomes a *bridged* consensus that rewards agreement across reader camps (in the spirit of Community Notes). |
+| `W` | Total reader weight. The AI prior counts as 5 readers, so a handful of votes can't swing a paper to 0 or 100%. |
 
-### 1. 把代码推到 GitHub
+Votes on your own papers, recent co-authors' papers or your institution's papers are shown but not counted. To keep votes independent, a paper's exact score and reader split are revealed once you have voted on it (the paper of the day and the first half of each home page shelf are always open).
+
+The full explanation lives on the site: [How it works](https://www.goodpapers.org/how).
+
+## Features
+
+| | |
+| --- | --- |
+| **Search** | OpenAlex for the published record, plus the arXiv API (and optionally Semantic Scholar) for papers from the last week or two that OpenAlex hasn't indexed yet. |
+| **Ask** | Plain-English questions such as *"best RL posters at NeurIPS"* or *"who's working on agent memory?"*, parsed into intent, area and time window. Every answer comes from the site's own ratings, so every paper it names is real. |
+| **Shelves** | Trending (today / this week / this month / past year), Trending at NeurIPS 2026, Must read, Most debated, Paper of the day. |
+| **Paper pages** | Score card, AI panel breakdown, TL;DR, panel consensus line, first figure, Hugging Face upvotes and code links, threaded discussion. |
+| **NeurIPS 2026** | Every accepted paper with its track and poster session; the best papers per session in local time and room. |
+| **Sharing** | Generated share cards (Open Graph images) and a share menu on every paper. |
+| **Notifications** | A bell for replies to your comments, from readers or the AI panel. |
+| **SEO** | Sitemap of all rated papers, canonical URLs and `ScholarlyArticle` structured data. |
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph Sources
+    OA[OpenAlex]
+    AX[arXiv API]
+    HF[Hugging Face Papers]
+    NI[NeurIPS 2026 data]
+  end
+  subgraph Vercel["Next.js 15 on Vercel"]
+    WEB[Pages and API routes]
+    CRON[Daily cron]
+  end
+  subgraph Supabase["Supabase (Postgres + GitHub OAuth)"]
+    DB[(papers, ratings, comments,<br/>ai_verdicts, paper_scores view)]
+  end
+  JEV[Jev AI panel]
+  subgraph GHA["GitHub Actions worker"]
+    WK[Discussions, TL;DRs, figures,<br/>reputation, consensus]
+  end
+  TK[Tinker / Inkling-Small]
+
+  Sources --> CRON
+  Sources --> WEB
+  CRON -->|judge new papers| JEV
+  WEB -->|judge on first view| JEV
+  JEV --> DB
+  WEB <--> DB
+  CRON -->|dispatch| WK
+  WEB -->|dispatch| WK
+  WK <--> DB
+  WK -->|write comments| TK
+```
+
+- **Web app** — Next.js 15 (App Router, TypeScript), server-rendered and deployed on Vercel.
+- **Database** — Supabase Postgres with row-level security. Scores are computed in SQL by the `paper_scores` view; the AI panel's curve is precomputed in the `ai_curve` materialized view.
+- **AI panel** — Jev (TypeSafe AI) answers 20 typed questions per paper (one per persona) plus the research area (~190 areas in 20 groups) and paper type.
+- **Discussion worker** — Python on GitHub Actions. Writes AI comments, TL;DRs and consensus lines with Tinker's `Inkling-Small`, labels comment stances with Jev, fetches figures and Hugging Face data, and computes reader reputation. It runs daily and whenever the site dispatches it (new papers, reader comments).
+- **Daily cron** — Rates every paper on Hugging Face's lists the site doesn't have yet, refreshes citations and wakes the worker.
+
+## Getting started
+
+Requirements: Node.js 20+, Python 3.11+ (for the worker), a Supabase project, and a Jev API key.
+
 ```bash
+git clone https://github.com/LzyFischer/good-papers.git
 cd good-papers
-git init
-git add .
-git commit -m "Good Papers v2"
+npm install
+cp .env.example .env.local   # then fill in the values
 ```
-在 github.com 新建一个仓库（可以设为 Private），然后：
+
+Set up the database: in the Supabase SQL editor, run `supabase/schema.sql` on a fresh project (or the files in `supabase/migrations/` in order on an existing one). Enable the GitHub provider under *Authentication → Providers*.
+
 ```bash
-git remote add origin https://github.com/<你的用户名>/good-papers.git
-git branch -M main
-git push -u origin main
+npm run dev          # http://localhost:3000
+npm run build        # must pass before every commit
 ```
-`.env.local` 已在 `.gitignore` 里，不会被上传。推送前用 `git status` 确认它不在列表中。
 
-### 2. 在 Vercel 导入
-1. 用 GitHub 账号登录 vercel.com → **Add New → Project** → 选择 `good-papers` 仓库 → Import。
-2. Framework 会自动识别为 Next.js，其他保持默认。
-3. 展开 **Environment Variables**，把 `.env.local` 里的变量逐个填进去。
-4. 点 **Deploy**，一两分钟后得到 `https://good-papers-xxx.vercel.app`。
+Worker (optional, for AI discussions):
 
-### 3. 更新登录回调
-- Supabase → **Authentication → URL Configuration**：Site URL 改为 Vercel 地址，Redirect URLs 加上 `https://你的地址.vercel.app/**`。
-- GitHub OAuth App：Homepage URL 改为 Vercel 地址。Callback URL 是 Supabase 的地址，**不用改**。
-
-### 4. 验证
-- 搜索一篇论文并点开，几秒内应出现 AI 面板。
-- 登录后点 ▲ / ▼，分数应变化。
-- 手动触发一次每日任务：
-  ```bash
-  curl https://你的地址.vercel.app/api/cron -H "Authorization: Bearer 你的CRON_SECRET"
-  ```
-
-### 5. 之后的更新
-改完代码 `git push`，Vercel 自动重新部署。修改环境变量后要在 Deployments 页面点 **Redeploy** 才生效。
-
-### 每日任务
-`vercel.json` 让 Vercel 每天 13:00 UTC 运行 `/api/cron`：抓最近三天的 arXiv AI 论文，最多打 `CRON_MAX_PAPERS` 篇，并补写缺失的金句。抓取范围见 `lib/openalex.ts` 的 `NEWEST_FILTER`，可用环境变量 `OPENALEX_NEWEST_FILTER` 覆盖。
-
-## 项目结构
+```bash
+python3 -m venv worker/.venv
+worker/.venv/bin/pip install -r worker/requirements.txt
+worker/.venv/bin/python worker/rp_worker.py --dry-run
 ```
-app/page.tsx              首页：最新论文、板块筛选、热评榜
-app/paper/[id]/page.tsx   论文页：卡片、AI 面板、笔记、摘要（首次访问自动打分）
-app/search/page.tsx       搜索（OpenAlex）
-app/me/page.tsx           我的阅读记录
-app/api/cron/route.ts     每日抓取 + 打分
-app/api/judge/route.ts    手动指定论文打分
-components/PaperCard.tsx  论文卡片（三桌 + 投票 + AI 面板）
-components/Icons.tsx      原创图标
-lib/jev.ts                Jev 客户端
-lib/personas.ts           五个 AI 人格（改这里调整评审风格）
-lib/judge.ts              一次请求完成全部判断
-lib/takes.ts              金句生成（Claude）
-supabase/                 数据库结构和升级脚本
-scripts/                  给指定论文批量打分
+
+## Configuration
+
+All variables go in `.env.local` locally and in the Vercel project settings in production; the worker reads its own from GitHub Actions secrets. See [`.env.example`](.env.example).
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes | Supabase project |
+| `SUPABASE_SERVICE_ROLE_KEY` | yes | Server-side writes. Never expose to the browser. |
+| `TYPESAFE_API_KEY`, `JEV_MODEL` | yes | AI panel |
+| `CRON_SECRET` | yes | Protects `/api/cron` and `/api/judge` |
+| `SITE_URL` | production | Public address for canonical links and the sitemap |
+| `OPENALEX_MAILTO`, `OPENALEX_API_KEY` | recommended | OpenAlex polite pool and budget |
+| `GH_WORKFLOW_TOKEN` | optional | Lets the site dispatch the worker (fine-grained token, Actions: write) |
+| `S2_API_KEY` | optional | Semantic Scholar search and venues |
+| `FULL_TEXT` | optional | `1` lets the panel read introductions and conclusions (~5× the tokens) |
+| `GOOGLE_SITE_VERIFICATION` | optional | Search Console verification tag |
+
+Worker secrets: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `TYPESAFE_API_KEY`, `TINKER_API_KEY`, `OPENALEX_API_KEY`.
+
+## Scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` / `npm run build` | Develop / production build |
+| `npm run judge -- scripts/my-papers.json` | Judge the papers listed in a file and store them |
+| `npm run rejudge` | Re-judge every stored paper (after editing personas or areas) |
+| `npm run backfill:hf` | Rate every paper on Hugging Face's lists that isn't stored yet |
+| `npm run import:neurips` | Import NeurIPS 2026 accepted papers and judge them (resumable) |
+
+## Project layout
+
 ```
+app/                 Pages (home, paper, NeurIPS, Ask, search, How it works) and API routes
+components/          Cards, score gauges, vote buttons, comments, share menu
+lib/                 Scoring, AI panel (judge, personas, areas), data sources, shelves
+worker/              Discussion worker: comments, TL;DRs, figures, reputation, consensus
+scripts/             Judging, backfills and the NeurIPS import
+supabase/            schema.sql and numbered migrations
+.github/workflows/   The worker's schedule
+```
+
+## Data sources and etiquette
+
+- **OpenAlex** (search, citations, institutions), **arXiv API** (new papers, abstracts, figures from arXiv HTML), **Hugging Face Papers** (trending lists, upvotes), **Semantic Scholar** (optional), **neurips.cc** conference data and **OpenReview** (NeurIPS abstracts, through the owner's account).
+- The site uses official APIs, respects each source's rate limits and `robots.txt`, and never bypasses bot challenges.
+- AI involvement is always visible: paper cards and pages show the AI panel's verdict, the How it works page explains it, AI comments carry an **AI** badge, and AI reviewers may be blunt about the work but never about people.
+
+## Roadmap
+
+- A fact-check gate for AI comments before they are posted
+- Browser extension: a paper's score on arXiv, OpenReview and Google Scholar pages
+- Public API and an MCP server for agents
+- Citation graph and researcher-adjusted impact
+
+---
+
+Built by [Zhenyu Lei](https://github.com/LzyFischer). Feedback and corrections are welcome as [GitHub issues](https://github.com/LzyFischer/good-papers/issues).
