@@ -95,16 +95,34 @@ export async function ask(question: string, limit = 40): Promise<Answer> {
     if (intent === "debated") q = q.order("comments", { ascending: false });
     else if (intent === "newest") q = q.order("published_on", { ascending: false, nullsFirst: false });
     else q = q.order("score", { ascending: false });
-    papers = ((await q.limit(intent === "who" ? 200 : limit + 1)).data ?? []) as Score[];
+    papers = ((await q.limit(limit + 1)).data ?? []) as Score[];
   }
 
+  // "Who's working on it": count authors and institutions over every matching paper,
+  // not just the ones on screen (page through authors and orgs only, up to 20,000 papers).
+  let pool: { authors: string[] | null; orgs: string[] | null }[] = [];
+  if (intent === "who") {
+    for (let from = 0; from < 20000; from += 1000) {
+      let q = serverClient().from("paper_scores").select("authors, orgs").not("score", "is", null).not("area", "is", null);
+      if (neurips) q = q.eq("venue", NEURIPS);
+      if (confTrack) q = q.eq("conf_track", confTrack);
+      if (areaKeys) q = q.in("area", areaKeys);
+      if (days) q = q.gte("published_on", new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10));
+      const { data } = await q.order("id").range(from, from + 999);
+      pool.push(...((data ?? []) as typeof pool));
+      if (!data || data.length < 1000) break;
+    }
+  }
   const count = (names: string[][]) => {
     const m = new Map<string, number>();
     for (const list of names) for (const n of new Set(list)) m.set(n, (m.get(n) ?? 0) + 1);
-    return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([name, papers]) => ({ name, papers }));
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15).map(([name, papers]) => ({ name, papers }));
   };
-  const people = intent === "who" ? count(papers.map((p) => p.authors ?? [])) : [];
-  const orgs = intent === "who" ? count(papers.map((p) => p.orgs ?? [])) : [];
+  const people = intent === "who" ? count(pool.map((p) => p.authors ?? [])) : [];
+  // NeurIPS lists some affiliations twice ("Tsinghua University, Tsinghua University").
+  const tidy = (o: string) => [...new Set(o.split(/\s*,\s*/))].join(", ");
+  const orgs = intent === "who" ? count(pool.map((p) => (p.orgs ?? []).map(tidy))) : [];
+  pool = [];
   return {
     intent,
     window,
@@ -115,6 +133,6 @@ export async function ask(question: string, limit = 40): Promise<Answer> {
     orgs,
     venue: neurips ? NEURIPS : null,
     track: confTrack,
-    more: intent !== "who" && papers.length > limit,
+    more: papers.length > limit,
   };
 }
