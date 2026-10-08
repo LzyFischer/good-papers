@@ -82,7 +82,6 @@ export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper
                 <span className="sc-label">Overall</span>
                 <span className="sc-tier">{t?.label}</span>
                 <span className="vote-to-see">Vote to see the score</span>
-                <span className="sc-note">The exact score shows once you&apos;ve voted, so every vote is your own call. The first half of each home page shelf shows its scores.</span>
               </div>
             </div>
           }

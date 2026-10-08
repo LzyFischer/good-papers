@@ -1,0 +1,256 @@
+%% WSDM 2027 Demo Paper -- single-blind, max 4 pages INCLUDING references & appendix
+%% 如需行号便于修改，可改成 \documentclass[sigconf,review]{acmart}
+\documentclass[sigconf]{acmart}
+
+%% ---------- 投稿阶段：去掉版权框和 ACM Reference Format，省版面 ----------
+\settopmatter{printacmref=false}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\setcopyright{none}
+\acmConference[WSDM '27]{The 20th ACM International Conference on Web Search and Data Mining}{2027}{Hong Kong}
+\acmYear{2027}
+\acmDOI{}
+\acmISBN{}
+
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit}
+
+%% Demo 视频链接（<= 3 分钟），同时要填进 CMT 表单
+\newcommand{\demovideo}{\url{https://youtu.be/XXXXXXXX}}
+\newcommand{\democode}{\url{https://github.com/LzyFischer/good-papers}}
+\newcommand{\demosite}{\url{https://www.goodpapers.org}}
+\newcommand{\sys}{Good Papers}
+
+\begin{document}
+
+\title{Good Papers: Telling Which Research Papers Are Worth Reading, with Readers and a 20-Persona AI Panel}
+
+\author{Zhenyu Lei}
+\affiliation{%
+  \institution{University of Virginia}
+  \city{Charlottesville}
+  \state{VA}
+  \country{USA}}
+\email{vjd5zr@virginia.edu}
+
+\author{Jundong Li}
+\affiliation{%
+  \institution{University of Virginia}
+  \city{Charlottesville}
+  \state{VA}
+  \country{USA}}
+\email{jundong@virginia.edu}
+
+\renewcommand{\shortauthors}{Lei et al.}
+
+\begin{abstract}
+Researchers face far more new papers than they can read, and the signals they use to choose are either slow (citations), hidden (peer review), or measure attention rather than quality (upvotes and social media).
+We present \sys, a live web system that gives every machine learning paper a ``worth reading'' score on the day it appears.
+The score starts from an AI panel of 20 reviewer personas, each a calibrated, typed judgment about one quality facet, and shifts toward reader votes as they arrive.
+Reader votes are weighted by reputation, exclude conflicts of interest, are pooled across camps with a bridging model, and are cast before the reader sees the score.
+AI reviewers with distinct voices also debate each paper in its comment thread.
+The deployed system covers 6.5K papers, including all 6,076 accepted papers of NeurIPS~2026 organized by poster session.
+Attendees can plan a conference visit, vote on papers they know and see how the crowd and the panel agree, and ask questions such as ``what's worth reading in RL at NeurIPS?''.
+The system is live at \demosite; a video is at \demovideo, and the code at \democode.
+\end{abstract}
+
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10002951.10003317</concept_id>
+       <concept_desc>Information systems~Information retrieval</concept_desc>
+       <concept_significance>500</concept_significance>
+   </concept>
+   <concept>
+       <concept_id>10002951.10003260.10003282</concept_id>
+       <concept_desc>Information systems~Web applications</concept_desc>
+       <concept_significance>300</concept_significance>
+   </concept>
+</ccs2012>
+\end{CCSXML}
+\ccsdesc[500]{Information systems~Information retrieval}
+\ccsdesc[300]{Information systems~Web applications}
+
+\keywords{scholarly recommendation, paper quality, LLM reviewers, crowd rating, bridging consensus}
+
+\maketitle
+
+\section{Introduction}
+Choosing what to read has become a bottleneck in machine learning research.
+NeurIPS~2026 alone accepted over six thousand papers, and arXiv adds hundreds of machine learning preprints every day~\cite{bornmann2015growth}.
+A researcher who wants to know whether a new paper deserves an afternoon has three kinds of signal, and none of them answers that question well.
+Citations arrive months or years late.
+Peer review is mostly private and reduces to accept or reject.
+Fast signals such as Hugging Face upvotes or social media reflect what is visible and exciting, which overlaps only loosely with what is careful, novel or useful.
+
+We built \sys{} around a narrower question than ``is this paper good'': \emph{is it worth reading?}
+The answer is a single 0--100\% score with a plain label (Must read, Highly rated, Worth a look, Niche pick, Specialist read), modeled on how a film site summarizes critics and audiences.
+Two difficulties shape the design.
+First, a new paper has no readers, so the score must be useful on day one without pretending to be a verdict.
+Second, once readers do arrive, their votes are easy to distort: authors and colleagues vote for their own work, groups vote as blocs, and people follow a visible score instead of their own reading~\cite{muchnik2013social,salganik2006experimental}.
+
+\sys{} addresses the first problem with an AI panel and the second with how votes are collected and pooled.
+Our contributions are:
+\begin{itemize}
+  \item A \textbf{20-persona AI panel} in which each persona answers one yes/no quality question about a paper with a calibrated probability. The panel's verdict serves as a prior worth five readers, so scores exist immediately and give way to readers as they vote.
+  \item A \textbf{reader layer} that weights votes by reputation, sets aside votes with conflicts of interest, pools votes across camps with a Community Notes style bridging model~\cite{wojcik2022birdwatch}, and asks readers to vote before showing them the score.
+  \item A \textbf{deployed system} with multi-agent AI discussions, a conference view for NeurIPS~2026, and a question box whose answers come only from the database, so it cannot name papers that do not exist.
+\end{itemize}
+
+\section{System Overview}
+Figure~\ref{fig:arch} shows the pipeline.
+Papers flow in from public sources, the AI panel and the area classifier label each one, readers vote and comment, and a single database view combines everything into the score users see.
+
+\begin{figure}[t]
+  \centering
+  \begin{tikzpicture}[
+    box/.style={draw, rounded corners=2pt, align=center, font=\scriptsize, minimum height=6mm, inner sep=3pt},
+    src/.style={box, fill=gray!8},
+    core/.style={box, fill=green!8},
+    out/.style={box, fill=yellow!20},
+    arr/.style={-{Stealth[length=1.6mm]}, thin}]
+    \node[src] (hf) {Hugging Face\\daily/weekly lists};
+    \node[src, right=1.5mm of hf] (ax) {arXiv + OpenAlex\\search, metadata};
+    \node[src, right=1.5mm of ax] (conf) {NeurIPS 2026\\program + sessions};
+    \node[core, below=5mm of ax, minimum width=6.6cm] (panel) {AI panel: 20 personas $\times$ calibrated yes/no (Jev) \;+\; area classifier};
+    \node[core, below=4mm of panel, xshift=-1.75cm] (read) {Reader votes\\reputation, COI, bridging};
+    \node[core, below=4mm of panel, xshift=1.75cm] (disc) {AI discussion\\personas debate (LLM)};
+    \node[out, below=4mm of read, xshift=1.75cm, minimum width=6.6cm] (score) {Score = AI prior (5 pseudo-readers) + weighted readers \;$\rightarrow$\; label};
+    \node[out, below=3mm of score, minimum width=6.6cm] (ui) {Shelves \;$\cdot$\; NeurIPS sessions \;$\cdot$\; vote-then-reveal \;$\cdot$\; Ask box};
+    \draw[arr] (hf) -- (panel); \draw[arr] (ax) -- (panel); \draw[arr] (conf) -- (panel);
+    \draw[arr] (panel) -- (read); \draw[arr] (panel) -- (disc);
+    \draw[arr] (read) -- (score); \draw[arr] (panel.east) to[bend left=35] (score.east);
+    \draw[arr] (score) -- (ui); \draw[arr] (disc.south) |- (ui.east);
+  \end{tikzpicture}
+  \caption{\sys{} pipeline. Papers are scored by the AI panel on arrival; reader votes take over as they accumulate.}
+  \Description{A flow diagram from paper sources, through the AI panel and the reader and discussion layers, to the combined score and the user interface.}
+  \label{fig:arch}
+\end{figure}
+
+\subsection{Paper Ingestion}
+A daily job reads the Hugging Face paper lists for the current day, week and month, plus a ``past year'' list built from each month's most upvoted papers, and rates any it has not seen.
+Search queries OpenAlex~\cite{priem2022openalex} and the arXiv API side by side, because OpenAlex indexes new preprints one to two weeks late; a paper found only on arXiv is stored under its arXiv identifier and merged with its OpenAlex record later.
+For NeurIPS~2026 we imported the official program, keeping each paper's track (oral, spotlight or poster) and its poster sessions, times and rooms.
+Abstracts were matched by exact title on OpenAlex and arXiv; the 2,637 papers with an abstract are rated from it, and the rest receive a provisional rating from title and venue that is redone once the abstract becomes public.
+
+\subsection{The AI Panel}
+Instead of asking one model for one overall grade, the panel asks 20 narrow questions, each from a reviewer persona: ``Is the idea new?'', ``Are the baselines and rigor adequate?'', ``Would a practitioner use it?'', ``Is it oral-worthy?'', and so on.
+Personas come in three strictness tiers (5 lenient, 10 medium, 5 strict), and a twenty-first persona that rewards a strong citation record is added only for papers at least six months old with ten or more citations per year, so new preprints are never penalized for having none.
+All questions go to Jev, a typed-judgment model service that returns a probability for each yes/no answer rather than free text.
+Probabilities from such models bunch near the extremes, so each persona has its own threshold, calibrated on a reference set of papers, that turns its probability into a vote.
+The same call classifies the paper into one of 20 area groups and then one of about 190 fine areas.
+
+Raw panel shares also bunch together, since most papers persuade most personas.
+We therefore grade on a curve: a paper's AI score is its percentile among all rated papers, mapped to 45--92\%, so the top quarter reads ``Must read'' and no paper is condemned by the panel alone.
+
+\subsection{Reader Votes}
+Signed-in readers vote ``worth reading'' or ``not for me'' on papers they have read.
+Three mechanisms keep these votes informative.
+\emph{Conflicts of interest}: the system links a reader's GitHub identity to OpenAlex authors and sets aside votes on their own papers, co-authors' papers and papers from their institution; a wrong guess only removes a vote, never doubles one.
+\emph{Reputation}: weights range from 0.1 to 2, start at 0.5, rise with participation and with agreement with other readers' conclusions, and fall for readers who upvote one institution while downvoting the rest.
+\emph{Bridging}: once a paper has eight raters, the reader share comes from a one-factor model, $v \approx \mu + b_u + b_p + f_u f_p$, fitted Community Notes style~\cite{wojcik2022birdwatch}; the factor absorbs bloc agreement, so the paper intercept $b_p$ measures approval across camps.
+
+Votes are collected \emph{before} the reader sees the exact score, the reader split and the panel's verdict; labels stay visible, and the numbers appear once the reader has voted, along with how many readers and AI reviewers agree with them.
+This counters the herding that visible ratings cause~\cite{muchnik2013social}, while the top half of each home page shelf stays open as a preview.
+
+\subsection{Combining the Signals}
+The headline score treats the AI panel as a prior worth five readers:
+\[
+  s = 0.1\,p + 0.9\,\frac{r\,W + 5p}{W + 5},
+\]
+where $p$ is the panel's curved score, $r$ the (bridged or weighted) reader share and $W$ the total reader weight.
+With no readers the score equals $p$; a handful of votes moves it without letting one vote swing it to 0 or 100\%.
+The formula runs inside a Postgres view, with the panel's percentile curve precomputed in a materialized view so a page loads in well under a second.
+
+\subsection{AI Discussion and Ask}
+Every rated paper gets a short discussion written by a small LLM (Inkling-Small, served through the Tinker API), one forum persona per voice: a skeptic who hunts for missing baselines, an enthusiast, a practitioner, and so on.
+A persona that voted yes and one that voted no open a thread, and replies continue until the panel model judges that a reply adds no new point, up to four turns.
+Each comment carries an AI badge and a stance label, and a one-sentence ``panel consensus'' summarizes the thread.
+Personas may be harsh about the work but never about people.
+For the 6K imported conference papers, discussions are generated only when someone opens a paper, which keeps cost proportional to interest.
+
+The Ask box parses a question into a typed intent (best, trending, most debated, newest, who works on it), a time window, an area and an optional venue, again with typed questions to Jev; the answer is a database query.
+The system can therefore answer ``who's working on agent memory?'' with authors and institutions counted over all matching papers, without generating any paper titles.
+
+\subsection{Implementation}
+The front end is a Next.js application on Vercel with Supabase (Postgres and GitHub sign-in).
+A daily cron job and on-demand triggers rate new papers; a GitHub Actions worker writes discussions, one-line summaries and thumbnails taken from each paper's arXiv HTML.
+Scores update in place when a reader votes, without reloading or reordering the page.
+
+\section{Demonstration Scenarios}
+\begin{figure}[t]
+  \centering
+  % \includegraphics[width=\linewidth]{figures/interface.pdf}
+  \fbox{\parbox[c][3.2cm][c]{0.92\linewidth}{\centering Screenshot: home page shelves with gauges, labels and vote buttons (left); a paper page with the scorecard and AI discussion (right)}}
+  \caption{The \sys{} interface. Shelf cards show the label and, after a vote, the score; a paper page shows the readers, the AI panel by strictness tier, and the AI discussion.}
+  \Description{Screenshot of the home page and of a paper page.}
+  \label{fig:ui}
+\end{figure}
+
+Attendees use the live site on a laptop or their own phone (Figure~\ref{fig:ui}).
+
+\paragraph{Scenario 1: plan a conference day.}
+The NeurIPS~2026 page lists every poster session in local time with its best-rated papers, and filters by oral, spotlight or poster.
+An attendee picks tomorrow afternoon's session, opens the top papers, and reads the one-line summary and the AI debate before walking to the poster.
+
+\paragraph{Scenario 2: vote, then compare.}
+An attendee votes on a paper they know.
+The hidden score, the reader split and the panel's per-persona verdicts are revealed together with a line such as ``9 of 23 votes agree with you,'' and the card updates in place.
+Opening the AI panel shows which strict personas disagreed and why the discussion pushed back.
+
+\paragraph{Scenario 3: ask.}
+The attendee types ``what's worth reading in RL at NeurIPS?'' or ``who's working on agent memory?'' and gets a ranked list, or the authors and institutions most active in that area, drawn only from rated papers.
+
+\section{Deployment and Analysis}
+\begin{table}[t]
+  \caption{Deployment statistics (October 2026).}
+  \label{tab:stats}
+  \small
+  \begin{tabular}{lr}
+    \toprule
+    Papers rated by the AI panel & 6,585 \\
+    \quad of which NeurIPS 2026 (all accepted papers) & 6,076 \\
+    \quad of which rated from an abstract & 2,637 \\
+    AI panel judgments (persona $\times$ paper) & 131,716 \\
+    Papers with an AI discussion & 609 \\
+    AI comments & 3,518 \\
+    Fine-grained areas in use & 166 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Table~\ref{tab:stats} summarizes the deployment at submission time.
+The site opened publicly in October 2026, so reader votes are still few, and we do not yet report reader-side results.
+Two checks on the AI panel are informative.
+
+\emph{Does the panel track expert selection?}
+On the 2,635 NeurIPS papers rated from an abstract, the share of personas recommending a paper is highest for orals (0.617), then spotlights (0.603), then posters (0.575).
+The ordering matches the program committee's, but the effect is small: the probability that a random oral or spotlight outscores a random poster is 0.554.
+From an abstract alone, the panel separates papers only slightly better than chance, which is why it serves as a prior that readers override rather than as a verdict.
+
+\emph{Is the score just popularity?}
+Across 833 papers with Hugging Face upvotes, the rank correlation between the panel share and the upvote count is $-0.03$.
+Popularity and the panel's quality judgment are nearly independent, which supports showing them side by side rather than folding them together.
+
+We also found that the discussion voices lean critical: 45\% of AI comments are labeled ``not convinced'', compared with 30\% labeled positive or enthusiastic.
+We report this rather than tune it away, and plan a fact-checking pass before comments are posted.
+
+\section{Related Work}
+\emph{Paper discovery.}
+Semantic Scholar~\cite{kinney2023semantic} adds TL;DRs~\cite{cachola2020tldr} and citation-based signals, OpenAlex~\cite{priem2022openalex} provides open metadata, and Hugging Face Papers and alphaXiv rank papers by upvotes and discussion.
+These tools organize and surface papers; \sys{} instead estimates whether a specific paper is worth reading and explains the estimate.
+\emph{Automated review.}
+Prior work predicts acceptance from paper text~\cite{kang2018peerread} and studies LLM feedback on manuscripts~\cite{liang2024can} and LLMs as judges~\cite{zheng2023judging}.
+We use model judgments only as a calibrated, multi-facet prior and keep humans as the final signal.
+\emph{Crowd rating.}
+Visible ratings cause herding~\cite{salganik2006experimental,muchnik2013social}, and bridging algorithms reward agreement across groups~\cite{wojcik2022birdwatch}; we combine both lessons with conflict-of-interest filtering specific to academia.
+
+\section{Conclusion}
+\sys{} gives each new paper an explainable ``worth reading'' score from day one and hands it over to readers through a voting design that resists self-promotion, blocs and herding.
+The demo covers all of NeurIPS~2026.
+Next we will measure how reader scores relate to the panel prior as votes accumulate, add a fact-checking gate for AI comments, and open an API so other tools can query the scores.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{refs}
+
+\end{document}
