@@ -48,11 +48,19 @@ export function Welcome({ next, edit }: { next: string; edit: boolean }) {
     const fine = Object.keys(AREA_GROUPS[g].areas);
     setAreas((a) => (a.includes(g) ? a.filter((x) => x !== g) : [...a.filter((x) => !fine.includes(x)), g]));
   };
+  // Unticking one topic of a fully followed group keeps the rest of it.
   const toggleArea = (g: string, k: string) => setAreas((a) => {
-    const without = a.filter((x) => x !== g);
-    return without.includes(k) ? without.filter((x) => x !== k) : [...without, k];
+    if (a.includes(g)) return [...a.filter((x) => x !== g), ...Object.keys(AREA_GROUPS[g].areas).filter((x) => x !== k)];
+    return a.includes(k) ? a.filter((x) => x !== k) : [...a, k];
   });
   const picked = (g: string) => areas.includes(g) || Object.keys(AREA_GROUPS[g].areas).some((k) => areas.includes(k));
+  // The group's name: the first tap on an untouched group follows all of it and opens it;
+  // after that it only opens and closes the list, so looking never changes what's picked.
+  const tapGroup = (g: string) => {
+    if (open === g) return setOpen(null);
+    if (!picked(g)) toggleGroup(g);
+    setOpen(g);
+  };
 
   async function finish() {
     setBusy(true);
@@ -79,15 +87,21 @@ export function Welcome({ next, edit }: { next: string; edit: boolean }) {
       {step === 0 && (
         <>
           <h1>{edit ? "Your topics" : "Welcome! What do you read?"}</h1>
-          <p className="welcome-sub">Pick a few areas. Your home page gets a <b>For you</b> shelf with the best new papers in them. Tap an area again to narrow it down.</p>
+          <p className="welcome-sub">Pick a few areas. Your home page gets a <b>For you</b> shelf with the best new papers in them. Open an area to narrow it down to the topics you want.</p>
           <div className="topic-grid">
             {GROUPS.map(([g, grp]) => (
               <div key={g} className={`topic ${picked(g) ? "topic--on" : ""}`}>
-                <button className="topic-main" aria-pressed={areas.includes(g)} onClick={() => { toggleGroup(g); setOpen(g); }}>
+                <button className="topic-main" aria-pressed={picked(g)} aria-expanded={open === g} onClick={() => tapGroup(g)}>
                   {grp.label}
+                  {picked(g) && !areas.includes(g) && (
+                    <span className="topic-count"> · {Object.keys(grp.areas).filter((k) => areas.includes(k)).length}</span>
+                  )}
                 </button>
                 {open === g && (
                   <div className="topic-fine">
+                    <button className="chip-toggle chip-all" aria-pressed={areas.includes(g)} onClick={() => toggleGroup(g)}>
+                      All of it
+                    </button>
                     {Object.entries(grp.areas).map(([k, label]) => (
                       <button key={k} className="chip-toggle" aria-pressed={areas.includes(k) || areas.includes(g)} onClick={() => toggleArea(g, k)}>
                         {label}

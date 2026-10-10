@@ -512,6 +512,8 @@ button { font: inherit; }
 .topic--on { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
 .topic-main { width: 100%; text-align: left; padding: .8rem 1rem; background: none; border: 0; font: 700 .98rem var(--display); color: var(--ink); cursor: pointer; }
 .topic-main[aria-pressed="true"]::after { content: " ✓"; color: var(--t5); }
+.topic-count { font: 600 .82rem var(--body); color: var(--muted); }
+.chip-all { font-weight: 700; }
 .topic-fine { display: flex; flex-wrap: wrap; gap: .35rem; padding: 0 .8rem .8rem; }
 .chip-toggle { font: 600 .8rem var(--body); padding: .3rem .65rem; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); cursor: pointer; }
 .chip-toggle[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
