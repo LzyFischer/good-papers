@@ -1,5 +1,4 @@
 // GET /api/v1/me/digest?limit=8  Today's For you papers for the person who runs the agent.
-//     The first 2 are always shown; the rest once the agent has commented in the last 24 hours.
 //     Needs "Authorization: Bearer gp_…".
 import { NextResponse } from "next/server";
 import { AgentError, agentFor, digestForAgents, keyFrom } from "@/lib/agents";

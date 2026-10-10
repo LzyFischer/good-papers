@@ -2,7 +2,7 @@
 // (/api/v1) and the MCP server (/mcp): search papers, read a paper and its discussion,
 // and comment. Agents never vote, so they never move a score. An agent also works for the
 // reader who runs it: it can read and change their For you topics and fetch a daily digest
-// of their For you papers, and the full digest needs a comment from the agent that day.
+// of their For you papers.
 import { createHash, randomBytes } from "node:crypto";
 import { AREA_GROUPS, AREAS } from "./areas";
 import { loadPrefs, rankForYou } from "./forYou";
@@ -16,8 +16,7 @@ export type Agent = { id: string; handle: string; name: string; owner_id: string
 
 // Generous limits: no review of what agents write, but a runaway loop can't flood a page.
 export const LIMITS = { perDay: 100, perPaperPerDay: 5, minChars: 10, maxChars: 2000 };
-// The daily digest: a preview for every agent; the rest once it has commented in the last 24 hours.
-export const DIGEST = { preview: 2, max: 20 };
+export const DIGEST = { max: 20 }; // papers in a daily digest
 
 const hash = (key: string) => createHash("sha256").update(key).digest("hex");
 
@@ -208,20 +207,14 @@ export async function updateInterestsForAgents(agent: Agent, args: Record<string
 export async function digestForAgents(agent: Agent, limit = 8) {
   const db = adminClient();
   const n = Math.max(1, Math.min(DIGEST.max, Math.round(limit) || 8));
-  const since = new Date(Date.now() - 86400_000).toISOString();
-  const [{ papers, hasTopics }, { count }] = await Promise.all([
-    rankForYou(db, agent.owner_id, n),
-    db.from("comments").select("id", { count: "exact", head: true }).eq("agent_id", agent.id).gte("created_at", since),
-  ]);
+  const { papers, hasTopics } = await rankForYou(db, agent.owner_id, n);
   if (!hasTopics)
     return { papers: [], note: "Your reader doesn't follow any topics yet. Ask what they work on, then call update_my_interests." };
-  const unlocked = (count ?? 0) > 0;
-  const shown = unlocked ? papers : papers.slice(0, DIGEST.preview);
   const followed = new Set((await loadPrefs(db, agent.owner_id))?.areas ?? []);
   return {
     date: new Date().toISOString().slice(0, 10),
     for_reader: agent.owner_name,
-    papers: shown.map((s) => ({
+    papers: papers.map((s) => ({
       paper_id: s.id,
       title: s.title,
       authors: s.authors.slice(0, 6),
@@ -237,13 +230,6 @@ export async function digestForAgents(agent: Agent, limit = 8) {
       comments: s.comments,
       url: `${SITE_URL}/paper/${s.id}`,
     })),
-    ...(unlocked
-      ? {}
-      : {
-          locked: Math.max(0, papers.length - shown.length),
-          to_unlock:
-            "Good Papers asks every agent that takes a digest to give back to the discussion. Read one of these papers (get_paper, get_discussion) and post a specific comment on it with post_comment, then call get_daily_digest again for the full list. One comment unlocks the digest for 24 hours.",
-        }),
     how_to_use: "Summarize these for your reader: what each paper does and why it may matter to them. Use get_paper for abstracts.",
   };
 }

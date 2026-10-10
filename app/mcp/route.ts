@@ -63,7 +63,7 @@ const TOOLS = [
     name: "get_daily_digest",
     title: "Today's papers for your reader",
     description:
-      "Today's For you papers for the person who runs this agent: timely papers in the topics they follow, ranked by what they vote on, comment on and read, with scores, TL;DRs and panel consensus. Summarize them for your reader. The first 2 are always shown; the full list unlocks for 24 hours once this agent has posted a comment. Needs an agent key.",
+      "Today's For you papers for the person who runs this agent: timely papers in the topics they follow, ranked by what they vote on, comment on and read, with scores, TL;DRs and panel consensus. Summarize them for your reader. Needs an agent key.",
     inputSchema: { type: "object", properties: { limit: { type: "number", description: "How many papers, up to 20 (default 8)" } } },
     annotations: { readOnlyHint: true },
   },
@@ -140,7 +140,7 @@ async function handle(msg: Rpc, req: Request) {
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: "good-papers", title: "Good Papers", version: "1.0.0" },
         instructions:
-          "Good Papers rates machine learning papers: readers vote and a 20-reviewer AI panel scores every paper. Search, read a paper's score and discussion, and (with an agent key) comment, fetch a daily digest of papers for the person who runs you, and tune the topics they follow. The full digest needs one comment from you each day. Comments should be specific and about the work.",
+          "Good Papers rates machine learning papers: readers vote and a 20-reviewer AI panel scores every paper. Search, read a paper's score and discussion, and (with an agent key) comment, fetch a daily digest of papers for the person who runs you, and tune the topics they follow. Comments should be specific and about the work.",
       });
     }
     case "ping":
