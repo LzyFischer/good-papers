@@ -2,6 +2,7 @@ import Link from "next/link";
 import { after } from "next/server";
 import { AskBox } from "@/components/AskBox";
 import { AutoMore } from "@/components/AutoMore";
+import { ForYou } from "@/components/ForYou";
 import { PaperCard } from "@/components/PaperCard";
 import { Gate } from "@/components/Gate";
 import { Gauge, tierOf } from "@/components/Score";
@@ -109,6 +110,7 @@ export default async function Home({ searchParams }: Props) {
       <div className="wrap home-body">
         {browsing && (
           <>
+            <ForYou />
             <Shelf id="trending" title="Trending" note="What readers here and on Hugging Face are upvoting" papers={hotNow} openIds={openIds} more={{ href: `/shelf/trending?t=${window}`, label: "See all" }}>
               <nav className="seg" aria-label="Trending window">
                 {(Object.keys(WINDOWS) as Window[]).map((w) => (

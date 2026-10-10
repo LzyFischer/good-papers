@@ -115,7 +115,7 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
               {!shown
                 ? `${reveal.readerTotal} reader${reveal.readerTotal === 1 ? "" : "s"} voted. Vote to see how they split.`
                 : `${reveal.readerFresh} of ${reveal.readerTotal} upvoted`}
-              {shown && reveal.coi ? ` · ${reveal.coi} from authors or colleagues not counted` : ""}
+              {shown && reveal.coi ? ` · ${reveal.coi} from authors or colleagues, counted at lower weight` : ""}
             </span>
           )}
           {voted && vote !== null && <YouVsEveryone vote={vote} reveal={reveal} />}

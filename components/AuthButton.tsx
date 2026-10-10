@@ -38,6 +38,7 @@ export function AuthButton() {
   }
   return (
     <span className="auth">
+      <Link href="/welcome?edit=1">Interests</Link>
       <Link href="/me">My papers</Link>
       <button className="auth-link" onClick={() => browserClient().auth.signOut()}>
         Sign out

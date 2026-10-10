@@ -220,7 +220,8 @@ def run(db, dry: bool) -> str:
     r = httpx.get(f"{url}/auth/v1/admin/users", params={"per_page": "1000"},
                   headers={"apikey": key, "Authorization": f"Bearer {key}"}, timeout=30)
     r.raise_for_status()
-    users = {u["id"]: (u.get("user_metadata") or {}) for u in r.json().get("users", [])}
+    # Email included: its domain (e.g. virginia.edu) hints at the reader's institution.
+    users = {u["id"]: {"email": u.get("email"), **(u.get("user_metadata") or {})} for u in r.json().get("users", [])}
 
     ratings = db.get_all("ratings", "user_id,paper_id", select="user_id,paper_id,worth_reading", worth_reading="not.is.null")
     voted_papers = sorted({x["paper_id"] for x in ratings})
@@ -237,15 +238,27 @@ def run(db, dry: bool) -> str:
     oa = OpenAlex()
     since = f"{__import__('datetime').date.today().year - 3}-01-01"
 
+    # The name and affiliation readers give on the welcome page (Google and email accounts
+    # have no GitHub profile to go on).
+    try:
+        prefs = {p["user_id"]: p for p in db.get_all("reader_prefs", "user_id", select="user_id,name,institution")}
+    except httpx.HTTPError:
+        prefs = {}  # before migration 014
+
     voters = sorted({x["user_id"] for x in ratings})
     idents, coi = {}, []
     for uid in voters:
-        meta = users.get(uid, {})
+        meta = dict(users.get(uid, {}))
+        pref = prefs.get(uid) or {}
+        if pref.get("name"):
+            meta["full_name"] = pref["name"]
         login = meta.get("user_name") or meta.get("preferred_username")
         gh = {}
         if login:
             g = httpx.get(f"https://api.github.com/users/{login}", headers=gh_headers, timeout=20)
             gh = g.json() if g.status_code == 200 else {}
+        if pref.get("institution") and not gh.get("company"):
+            gh = {**gh, "company": pref["institution"]}
         try:
             ident = infer_identity(meta, gh, oa, since)
         except httpx.HTTPError:

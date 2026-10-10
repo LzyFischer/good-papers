@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AuthButton } from "@/components/AuthButton";
 import { GateRevealer } from "@/components/GateRevealer";
 import { Notifications } from "@/components/Notifications";
+import { Onboarding } from "@/components/Onboarding";
 import { Icon, IconSprite } from "@/components/Icons";
 import { SearchForm } from "@/components/SearchForm";
 import { SITE_URL } from "@/lib/site";
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <SearchForm />
             <Notifications />
             <GateRevealer />
+            <Onboarding />
             <AuthButton />
           </div>
         </header>

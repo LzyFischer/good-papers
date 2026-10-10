@@ -221,7 +221,7 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
             id={paper.id}
             note={[
               score?.consensus ? "Cross-camp consensus" : null,
-              score?.reader_coi ? `${score.reader_coi} from authors or colleagues not counted` : null,
+              score?.reader_coi ? `${score.reader_coi} from authors or colleagues, counted at lower weight` : null,
             ].filter(Boolean).join(". ") || undefined}
           />
           <Table icon="ai" label="AI panel" fresh={score?.ai_fresh ?? 0} total={score?.ai_total ?? 0} ai />

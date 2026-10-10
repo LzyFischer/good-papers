@@ -39,9 +39,10 @@ export default function How() {
           the day show their scores to everyone, as a preview.
         </li>
         <li>
-          <b>Don&apos;t count when there is a conflict of interest.</b> Votes on your own papers, your recent
-          co-authors&apos; papers, or papers from your institution are shown separately and left out of the score. We
-          infer this from your GitHub profile and public bibliographic data (OpenAlex); we never display it.
+          <b>Count less when there is a conflict of interest.</b> Votes on your own papers, your recent co-authors&apos;
+          papers, or papers from your institution still count, at 30% of their usual weight. We infer this from your
+          profile (the name and affiliation you give us, your email domain, your GitHub profile if you sign in with it)
+          and public bibliographic data (OpenAlex); we never display it.
         </li>
         <li>
           <b>Are weighted by track record.</b> New accounts start at half weight. Votes that agree with where other

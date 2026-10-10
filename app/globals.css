@@ -499,3 +499,25 @@ button { font: inherit; }
 .signin-primary:disabled, .signin-btn:disabled { opacity: .6; cursor: wait; }
 .signin-error { color: #b4332c; margin: 0; font-size: .92rem; }
 .signin-fine { color: var(--muted); font-size: .82rem; margin: .5rem 0 0; }
+
+/* Welcome / interests */
+.welcome { max-width: 46rem; margin: 1rem auto 4rem; }
+.welcome h1 { font: 800 clamp(1.6rem, 3vw, 2.1rem)/1.15 var(--display); letter-spacing: -.02em; margin: .4rem 0 .5rem; }
+.welcome-sub { color: var(--muted); margin: 0 0 1.4rem; }
+.welcome-steps { display: flex; gap: 1rem; font-size: .82rem; color: var(--muted); margin: 0; }
+.welcome-steps .on { color: var(--ink); font-weight: 700; }
+.topic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: .6rem; }
+.topic { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.topic--on { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.topic-main { width: 100%; text-align: left; padding: .8rem 1rem; background: none; border: 0; font: 700 .98rem var(--display); color: var(--ink); cursor: pointer; }
+.topic-main[aria-pressed="true"]::after { content: " ✓"; color: var(--t5); }
+.topic-fine { display: flex; flex-wrap: wrap; gap: .35rem; padding: 0 .8rem .8rem; }
+.chip-toggle { font: 600 .8rem var(--body); padding: .3rem .65rem; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); cursor: pointer; }
+.chip-toggle[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.venue-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.venue-chips .chip-toggle { font-size: .92rem; padding: .45rem .9rem; }
+.welcome-field { display: flex; flex-direction: column; gap: .35rem; font-weight: 600; font-size: .9rem; margin-bottom: 1rem; max-width: 26rem; }
+.welcome-field input { padding: .7rem 1rem; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 400 1rem var(--body); }
+.welcome-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 1.8rem; }
+.welcome-right { display: flex; gap: 1rem; align-items: center; }
+.welcome-actions .signin-primary { padding: .7rem 1.6rem; }
