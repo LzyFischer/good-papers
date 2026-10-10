@@ -333,6 +333,7 @@ button { font: inherit; }
 .mini-thumb { border-radius: 10px; }
 .mini-title { font-size: 1rem; }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin: 1rem 0 1rem; padding-top: 1.5rem; border-top: 2px solid var(--ink); }
+.section-note { font-size: .85rem; color: var(--muted); }
 .all-papers .card { border-color: transparent; box-shadow: 0 0 0 1px var(--line); }
 
 /* Paper page */

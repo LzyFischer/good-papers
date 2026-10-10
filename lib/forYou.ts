@@ -81,7 +81,7 @@ export async function rankForYou(
   uid: string,
   limit: number,
   known: { prefs?: Prefs | null; voted?: Set<string> } = {},
-): Promise<{ papers: Score[]; hasTopics: boolean }> {
+): Promise<{ papers: Score[]; hasTopics: boolean; topics: string[] }> {
   const [prefs, learned] = await Promise.all([
     known.prefs !== undefined ? known.prefs : loadPrefs(db, uid),
     learnedAffinity(db, uid).catch(() => null),
@@ -89,7 +89,7 @@ export async function rankForYou(
   const picked = areaKeys(prefs?.areas ?? []);
   // Topics the reader picked, plus the ones their activity points to.
   const keys = [...new Set([...picked, ...(learned ? topLearnedAreas(learned) : [])])];
-  if (!keys.length) return { papers: [], hasTopics: false };
+  if (!keys.length) return { papers: [], hasTopics: false, topics: [] };
   const since = new Date(Date.now() - DAYS * 86400_000).toISOString().slice(0, 10);
   const venues = prefs?.venues ?? [];
   const [hot, mine, conf, voted] = await Promise.all([
@@ -125,5 +125,39 @@ export async function rankForYou(
     const venue = venues.some((v) => s.venue?.startsWith(v)) ? 0.15 : 0;
     return 0.45 * timely + 0.35 * interest + 0.2 * (s.score ?? 0) + venue;
   };
-  return { papers: [...all.values()].filter((s) => !voted.has(s.id)).sort((a, b) => rank(b) - rank(a)).slice(0, limit), hasTopics: true };
+  return { papers: [...all.values()].filter((s) => !voted.has(s.id)).sort((a, b) => rank(b) - rank(a)).slice(0, limit), hasTopics: true, topics: keys };
+}
+
+// The home page's "All papers" list, newest first, with papers in the reader's topics moved
+// up as if they were a week newer. The browser keeps those topics in a cookie (TOPICS_COOKIE,
+// set by components/ForYou.tsx) because sign-in lives in the browser, not on the server.
+export const TOPICS_COOKIE = "gp_topics";
+export const TOPIC_HEAD_START_DAYS = 7;
+
+export function topicsFromCookie(value: string | undefined): Set<string> {
+  return new Set((value ?? "").split(",").filter((k) => AREAS[k]).slice(0, 150));
+}
+
+const effectiveTime = (s: Score, topics: Set<string>) =>
+  (s.published_on ? Date.parse(s.published_on) : 0) + (s.area && topics.has(s.area) ? TOPIC_HEAD_START_DAYS * 86400_000 : 0);
+
+const activity = (s: Score) => {
+  const t = (s as Score & { last_activity?: string | null }).last_activity;
+  return t ? Date.parse(t) : 0;
+};
+
+// Merges the newest papers overall with the newest in the reader's topics. Exact for the
+// first `n`, and stable as the list grows: ties break the way the database orders both lists
+// (last activity, then id), so nothing outside them can rank higher.
+export function mergeByTopics(all: Score[], mine: Score[], topics: Set<string>, n: number): Score[] {
+  const seen = new Map<string, Score>();
+  for (const s of [...all, ...mine]) seen.set(s.id, s);
+  return [...seen.values()]
+    .sort(
+      (a, b) =>
+        effectiveTime(b, topics) - effectiveTime(a, topics) ||
+        activity(b) - activity(a) ||
+        (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    )
+    .slice(0, n);
 }

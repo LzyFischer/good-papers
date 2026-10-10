@@ -2,6 +2,7 @@
 // "For you": what's hot right now, tilted toward the topics the reader follows. Each paper
 // is ranked in lib/forYou.ts.
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { rankForYou } from "@/lib/forYou";
 import { browserClient } from "@/lib/supabase";
@@ -10,15 +11,17 @@ import { useSession } from "./AuthButton";
 import { getMyVotes } from "./myVotes";
 import { getPrefs } from "./prefs";
 import { Shelf } from "./Shelf";
+import { rememberTopics } from "./topicsCookie";
 
 // The ranked list, shared by the home shelf and the full For you page.
-export async function loadForYou(uid: string, limit: number): Promise<{ papers: Score[]; hasTopics: boolean }> {
+export async function loadForYou(uid: string, limit: number): Promise<{ papers: Score[]; hasTopics: boolean; topics: string[] }> {
   const [prefs, votes] = await Promise.all([getPrefs(uid), getMyVotes(uid)]);
   return rankForYou(browserClient(), uid, limit, { prefs, voted: new Set(votes.keys()) });
 }
 
 export function ForYou() {
   const { session } = useSession();
+  const router = useRouter();
   const [papers, setPapers] = useState<Score[] | null>(null);
   const [hasTopics, setHasTopics] = useState(false);
 
@@ -27,8 +30,9 @@ export function ForYou() {
     loadForYou(session.user.id, 24).then((r) => {
       setHasTopics(r.hasTopics);
       setPapers(r.papers);
+      if (rememberTopics(r.topics)) router.refresh();
     });
-  }, [session]);
+  }, [session, router]);
 
   if (!session || papers === null) return null;
   if (!hasTopics) {

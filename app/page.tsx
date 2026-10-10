@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { after } from "next/server";
 import { AskBox } from "@/components/AskBox";
 import { AutoMore } from "@/components/AutoMore";
@@ -8,6 +9,7 @@ import { Gate } from "@/components/Gate";
 import { Gauge, tierOf } from "@/components/Score";
 import { Shelf } from "@/components/Shelf";
 import { AREAS } from "@/lib/areas";
+import { mergeByTopics, topicsFromCookie, TOPICS_COOKIE } from "@/lib/forYou";
 import { topUpTrending } from "@/lib/ingest";
 import { NEURIPS } from "@/lib/neurips";
 import { getVerdicts } from "@/lib/papers";
@@ -60,22 +62,30 @@ export default async function Home({ searchParams }: Props) {
   const window: Window = t && t in WINDOWS ? (t as Window) : "week";
   const activeArea = area && AREAS[area] ? area : null;
 
-  let q = serverClient()
-    .from("paper_scores")
-    .select("*")
-    .not("score", "is", null)
-    .not("area", "is", null) // in-scope (ML) papers only; others can come in from author/institution pages
-    .order("published_on", { ascending: false, nullsFirst: false })
-    .order("last_activity", { ascending: false })
-    .order("id")
-    .limit(shown + 1); // one extra tells us whether there are more
+  const list = () =>
+    serverClient()
+      .from("paper_scores")
+      .select("*")
+      .not("score", "is", null)
+      .not("area", "is", null) // in-scope (ML) papers only; others can come in from author/institution pages
+      .order("published_on", { ascending: false, nullsFirst: false })
+      .order("last_activity", { ascending: false })
+      .order("id")
+      .limit(shown + 1); // one extra tells us whether there are more
+  let q = list();
   if (activeArea) q = q.eq("area", activeArea);
   if (org) q = q.filter("orgs", "cs", arrayHas(org));
   if (author) q = q.filter("authors", "cs", arrayHas(author));
   const filtered = activeArea ? AREAS[activeArea].label : org ? `papers from ${org}` : author ? `papers by ${author}` : null;
-  const { data } = await q;
-  const hasMore = (data ?? []).length > shown;
-  const papers = ((data ?? []) as Score[]).slice(0, shown);
+  // Signed-in readers: papers in their topics move up (lib/forYou.ts, mergeByTopics).
+  const topics = filtered ? new Set<string>() : topicsFromCookie((await cookies()).get(TOPICS_COOKIE)?.value);
+  const [{ data }, { data: mine }] = await Promise.all([
+    q,
+    topics.size ? list().in("area", [...topics]) : Promise.resolve({ data: [] as Score[] }),
+  ]);
+  const ranked = topics.size ? mergeByTopics((data ?? []) as Score[], (mine ?? []) as Score[], topics, shown + 1) : ((data ?? []) as Score[]);
+  const hasMore = ranked.length > shown;
+  const papers = ranked.slice(0, shown);
   const moreHref = (() => {
     const p = new URLSearchParams();
     for (const [k, v] of Object.entries({ area, org, author, t })) if (v) p.set(k, v);
@@ -125,7 +135,7 @@ export default async function Home({ searchParams }: Props) {
             <Shelf id="debated" title="Most debated" note="Where the reviewers can't agree" papers={debated} openIds={openIds} more={{ href: "/shelf/debated", label: "See all" }} />
             <div className="section-head">
               <h2 className="section-title">All papers</h2>
-              <Link href="/how">How scores work</Link>
+              {topics.size ? <span className="section-note">Newest first, your topics a little higher</span> : <Link href="/how">How scores work</Link>}
             </div>
           </>
         )}

@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 import { browserClient } from "@/lib/supabase";
+import { rememberTopics } from "./topicsCookie";
 
 // Sends readers to the sign-in page (Google, GitHub or an email code), then back here.
 export function signIn() {
@@ -41,6 +43,7 @@ export function AuthButton() {
 
 // Signed in: one avatar button with a menu, so the header stays one line.
 function AccountMenu({ session }: { session: Session }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
@@ -77,7 +80,12 @@ function AccountMenu({ session }: { session: Session }) {
           <Link role="menuitem" href="/welcome?edit=1" onClick={() => setOpen(false)}>Your interests</Link>
           <Link role="menuitem" href="/me" onClick={() => setOpen(false)}>My papers</Link>
           <Link role="menuitem" href="/agents" onClick={() => setOpen(false)}>Your agents</Link>
-          <button role="menuitem" onClick={() => browserClient().auth.signOut().then(() => setOpen(false))}>Sign out</button>
+          <button role="menuitem" onClick={() =>
+              browserClient().auth.signOut().then(() => {
+                setOpen(false);
+                if (rememberTopics([])) router.refresh();
+              })
+            }>Sign out</button>
         </span>
       )}
     </span>
