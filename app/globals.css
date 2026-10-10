@@ -521,3 +521,15 @@ button { font: inherit; }
 .welcome-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 1.8rem; }
 .welcome-right { display: flex; gap: 1rem; align-items: center; }
 .welcome-actions .signin-primary { padding: .7rem 1.6rem; }
+
+/* Account menu */
+.account { position: relative; }
+.account-btn { display: inline-flex; align-items: center; gap: .3rem; padding: .15rem .3rem .15rem .15rem; border-radius: 999px; border: 1px solid #30343b; background: none; color: var(--night-muted); cursor: pointer; }
+.account-btn:hover { border-color: var(--lime); color: var(--lime); }
+.account-btn img, .account-initial { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; object-fit: cover; }
+.account-initial { background: var(--lime); color: var(--lime-ink); font: 800 .85rem var(--display); }
+.account-caret { font-size: .7rem; }
+.account-menu { position: absolute; top: calc(100% + .45rem); right: 0; z-index: 40; min-width: 12rem; display: flex; flex-direction: column; padding: .35rem; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+.account-who { padding: .45rem .65rem .55rem; font-size: .8rem; color: var(--muted); border-bottom: 1px solid var(--line); margin-bottom: .25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-menu a, .account-menu button { text-align: left; padding: .5rem .65rem; border-radius: 8px; border: 0; background: none; color: var(--ink); font: 500 .9rem var(--body); text-decoration: none; cursor: pointer; }
+.account-menu a:hover, .account-menu button:hover { background: var(--bg); }
