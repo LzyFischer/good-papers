@@ -34,7 +34,7 @@ export default function MyPapers() {
         <h1 className="page-title">My papers</h1>
         <p className="empty">Sign in to see the papers you&apos;ve voted on and your notes.</p>
         <button className="button-primary" onClick={() => signIn()}>
-          Sign in with GitHub
+          Sign in
         </button>
       </main>
     );

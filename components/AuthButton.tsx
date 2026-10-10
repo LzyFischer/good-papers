@@ -5,11 +5,10 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { browserClient } from "@/lib/supabase";
 
+// Sends readers to the sign-in page (Google, GitHub or an email code), then back here.
 export function signIn() {
-  return browserClient().auth.signInWithOAuth({
-    provider: "github",
-    options: { redirectTo: window.location.href },
-  });
+  const here = window.location.pathname + window.location.search + window.location.hash;
+  window.location.href = `/signin?next=${encodeURIComponent(here)}`;
 }
 
 export function useSession() {
@@ -33,7 +32,7 @@ export function AuthButton() {
   if (!session) {
     return (
       <button className="auth auth-link" onClick={() => signIn()}>
-        Sign in with GitHub
+        Sign in
       </button>
     );
   }

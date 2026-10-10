@@ -1,0 +1,36 @@
+\definecolor{gpAI}{HTML}{E8F0FE}\definecolor{gpAIl}{HTML}{4A6FD6}
+\definecolor{gpHu}{HTML}{FDF0E3}\definecolor{gpHul}{HTML}{D9822B}
+\definecolor{gpSc}{HTML}{EAF7E4}\definecolor{gpScl}{HTML}{3E9B3A}
+\definecolor{gpSr}{HTML}{F3F3F3}\definecolor{gpSrl}{HTML}{9A9A9A}
+\begin{tikzpicture}[font=\footnotesize, >={Stealth[length=1.7mm]},
+  every node/.style={align=center, inner sep=3pt},
+  b/.style={draw, rounded corners=3pt, line width=0.6pt, minimum height=11mm},
+  src/.style={b, draw=gpSrl, fill=gpSr, text width=2.45cm, minimum height=8mm},
+  ai/.style={b, draw=gpAIl, fill=gpAI, text width=3.65cm},
+  hu/.style={b, draw=gpHul, fill=gpHu, text width=3.65cm},
+  sc/.style={b, draw=gpScl, fill=gpSc, text width=3.65cm},
+  ui/.style={b, draw=black!70, fill=white, text width=8.05cm, minimum height=9mm},
+  lab/.style={font=\scriptsize\itshape, text=black!65, inner sep=1.5pt},
+  ar/.style={->, line width=0.6pt, draw=black!70}]
+  % 1. ingest
+  \node[src] (hf) at (-2.8,0) {Hugging Face\\trending lists};
+  \node[src] (ax) at (0,0)    {arXiv + OpenAlex\\search};
+  \node[src] (nc) at (2.8,0)  {NeurIPS 2026\\full program};
+  % 2. two judges
+  \node[ai] (panel) at (-2.1,-1.75) {\textbf{AI panel}\\20 personas, each votes\\yes/no on one question};
+  \node[hu] (read)  at (2.1,-1.75)  {\textbf{Readers}\\Worth reading / Not for me\\weighted, conflicts removed};
+  % 3. outputs
+  \node[ai] (disc)  at (-2.1,-3.95) {\textbf{AI discussion}\\a yes and a no persona\\debate the paper};
+  \node[sc] (score) at (2.1,-3.95)  {\textbf{Score + label}\\AI score on day one,\\readers take over};
+  % 4. site
+  \node[ui] (site) at (0,-5.75) {\textbf{Website}: shelves, NeurIPS sessions, paper pages, Ask};
+  % arrows
+  \draw[line width=0.6pt, draw=black!70] (hf.south) -- ++(0,-0.3) coordinate(l) (ax.south) -- ++(0,-0.3) (nc.south) -- ++(0,-0.3) coordinate(r) (l) -- (r);
+  \draw[ar] (panel.north |- l) -- node[lab, right]{each new paper} (panel.north);
+  \draw[ar] (panel) -- node[lab, left]{reasons} (disc);
+  \draw[ar] ([xshift=-3mm]panel.south east) -- ([xshift=3mm]score.north west);
+  \draw[ar] (read) -- node[lab, right]{votes, over time} (score);
+  \draw[ar] (disc.south) -- (disc.south |- site.north);
+  \draw[ar] (score.south) -- (score.south |- site.north);
+  \draw[ar, dashed] (site.east) -- ++(0.3,0) |- node[lab, pos=0.25, sloped, below]{readers vote here} (read.east);
+\end{tikzpicture}

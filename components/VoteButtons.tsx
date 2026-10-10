@@ -132,7 +132,7 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
         </button>
       </div>
       <p className="hint">
-        Only vote on papers you&apos;ve read.{!session && " Sign in with GitHub to vote."}
+        Only vote on papers you&apos;ve read.{!session && " Sign in to vote."}
       </p>
       {error && (
         <p className="hint" role="status">

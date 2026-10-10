@@ -481,3 +481,21 @@ button { font: inherit; }
 .mini-meta { margin-top: auto; padding-top: .2rem; line-height: 1.45; min-height: calc(2 * 1.45em); }
 .card-anchor { display: flex; flex-direction: column; }
 .card-anchor > .mini { flex: 1; }
+
+/* Sign in */
+.signin-page { display: flex; justify-content: center; }
+.signin { width: 100%; max-width: 26rem; margin: 2rem 0 4rem; display: flex; flex-direction: column; gap: .75rem; }
+.signin h1 { font: 800 1.9rem/1.15 var(--display); letter-spacing: -.02em; margin: 0; }
+.signin-sub { color: var(--muted); margin: 0 0 .5rem; }
+.signin-btn { display: flex; align-items: center; justify-content: center; gap: .6rem; width: 100%; padding: .8rem 1rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 600 1rem var(--body); cursor: pointer; }
+.signin-btn:hover { border-color: var(--ink); }
+.signin-or { display: flex; align-items: center; gap: .8rem; color: var(--muted); font-size: .9rem; margin: .4rem 0; }
+.signin-or::before, .signin-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.signin-form { display: flex; flex-direction: column; gap: .6rem; }
+.signin-form input { padding: .8rem 1.1rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; }
+.signin-form input:focus { outline: none; border-color: var(--ink); }
+.signin-code { text-align: center; font: 700 1.5rem/1 var(--display) !important; letter-spacing: .4em; }
+.signin-primary { padding: .8rem 1rem; border-radius: 999px; border: 0; background: var(--ink); color: var(--bg); font: 700 1rem var(--body); cursor: pointer; }
+.signin-primary:disabled, .signin-btn:disabled { opacity: .6; cursor: wait; }
+.signin-error { color: #b4332c; margin: 0; font-size: .92rem; }
+.signin-fine { color: var(--muted); font-size: .82rem; margin: .5rem 0 0; }

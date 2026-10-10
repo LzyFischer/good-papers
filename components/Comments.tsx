@@ -246,7 +246,7 @@ export function Comments({ paper }: { paper: PaperStub }) {
       ) : (
         <p className="hint">
           <button className="link-button link-button--strong" onClick={() => signIn()}>
-            Sign in with GitHub
+            Sign in
           </button>{" "}
           to join the discussion. The AI reviewers reply within a few minutes.
         </p>
