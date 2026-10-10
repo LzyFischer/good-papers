@@ -54,13 +54,8 @@ export function Welcome({ next, edit }: { next: string; edit: boolean }) {
     return a.includes(k) ? a.filter((x) => x !== k) : [...a, k];
   });
   const picked = (g: string) => areas.includes(g) || Object.keys(AREA_GROUPS[g].areas).some((k) => areas.includes(k));
-  // The group's name: the first tap on an untouched group follows all of it and opens it;
-  // after that it only opens and closes the list, so looking never changes what's picked.
-  const tapGroup = (g: string) => {
-    if (open === g) return setOpen(null);
-    if (!picked(g)) toggleGroup(g);
-    setOpen(g);
-  };
+  // The group's name only opens and closes its list; picking happens on the chips.
+  const tapGroup = (g: string) => setOpen(open === g ? null : g);
 
   async function finish() {
     setBusy(true);
@@ -87,7 +82,7 @@ export function Welcome({ next, edit }: { next: string; edit: boolean }) {
       {step === 0 && (
         <>
           <h1>{edit ? "Your topics" : "Welcome! What do you read?"}</h1>
-          <p className="welcome-sub">Pick a few areas. Your home page gets a <b>For you</b> shelf with the best new papers in them. Open an area to narrow it down to the topics you want.</p>
+          <p className="welcome-sub">Pick a few areas. Your home page gets a <b>For you</b> shelf with the best new papers in them. Open an area, then pick all of it or just the topics you want.</p>
           <div className="topic-grid">
             {GROUPS.map(([g, grp]) => (
               <div key={g} className={`topic ${picked(g) ? "topic--on" : ""}`}>
