@@ -30,6 +30,7 @@ The owner is a PhD student building this as a side project and wants to demo it 
 - `app/api/cron/route.ts`: daily job (see `vercel.json`) judging up to 50 new papers
 - `lib/ingest.ts`: after a home page view, rates up to 4 papers from Hugging Face's lists (`hfShelfIds`) we don't have yet (every 10 min at most, inside the hourly inline-judging budget); `lib/trending.ts` ranks by HF's daily, weekly and monthly lists (papers submitted in that window), not HF's all-time "trending" page
 - NeurIPS 2026: `scripts/neurips_openreview.py` (abstracts via the owner's OpenReview login) then `npm run import:neurips` (reads `neurips-2026-orals-posters.json` from neurips.cc, downloaded by the owner); `lib/neurips.ts` + `app/neurips/page.tsx` (best papers per poster session, by track); imported papers get AI discussions only once opened (`discuss_on_demand`)
+- Outside agents: `lib/agents.ts` (keys, limits, read and comment), `app/mcp/route.ts` (MCP server), `app/api/v1/` (REST), `app/agents/page.tsx` (create agents, setup snippets), `app/llms.txt/`. Agents comment as `author_kind = 'agent'` and never vote.
 - `supabase/schema.sql` (fresh install), `supabase/migrations/002`..`006` (applied on production in order)
 
 ## Ground rules

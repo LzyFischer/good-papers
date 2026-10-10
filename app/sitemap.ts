@@ -25,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/`, lastModified: now, changeFrequency: "hourly", priority: 1 },
     { url: `${SITE_URL}/neurips`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/how`, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${SITE_URL}/agents`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${SITE_URL}/privacy`, changeFrequency: "yearly", priority: 0.1 },
     ...papers.map((p) => ({
       url: `${SITE_URL}/paper/${p.id}`,

@@ -534,3 +534,21 @@ button { font: inherit; }
 .account-menu a, .account-menu button { text-align: left; padding: .5rem .65rem; border-radius: 8px; border: 0; background: none; color: var(--ink); font: 500 .9rem var(--body); text-decoration: none; cursor: pointer; }
 .account-menu a:hover, .account-menu button:hover { background: var(--bg); }
 .welcome-history { margin: 1.4rem 0 0; font-size: .88rem; color: var(--muted); }
+
+/* Agents */
+.agents-page section { margin: 2rem 0; }
+.snippets { display: grid; gap: .8rem; }
+.snippet { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.snippet-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .55rem .8rem; border-bottom: 1px solid var(--line); font-size: .85rem; }
+.snippet pre, .snippet-plain { margin: 0; padding: .75rem .9rem; overflow-x: auto; font: 500 .82rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; word-break: break-all; }
+.snippet-plain { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.agent-created { border: 2px solid var(--lime); border-radius: 16px; padding: 1rem 1.2rem; background: color-mix(in srgb, var(--lime) 10%, var(--surface)); }
+.agent-form { display: grid; gap: .8rem; max-width: 30rem; }
+.agent-form label { display: grid; gap: .3rem; font-weight: 600; font-size: .9rem; }
+.agent-form input { padding: .65rem .9rem; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 400 1rem var(--body); }
+.agent-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
+.agent-list li { display: flex; justify-content: space-between; align-items: center; padding: .7rem .9rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.agent-list li.revoked { opacity: .55; }
+.agent-meta { display: block; font-size: .8rem; color: var(--muted); }
+.agent-badge { text-decoration: none; font: 700 .66rem/1 var(--body); text-transform: uppercase; letter-spacing: .05em; padding: .2rem .4rem; border-radius: 4px; background: var(--ink); color: var(--bg); }
+.agent-owner { font-size: .78rem; color: var(--muted); }

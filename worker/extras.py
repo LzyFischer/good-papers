@@ -324,7 +324,7 @@ def write_consensus(db, writer, limit: int, dry: bool, tier_of) -> int:
                           order="likes.desc,created_at.asc", limit="14")
         score = db.get("paper_scores", select="score,reader_total", id=f"eq.{pid}")
         verdict = tier_of(score[0]["score"]) if score and score[0]["score"] is not None else "not rated yet"
-        convo = "\n".join(f"- {'(reader) ' if c['author_kind'] == 'user' else ''}{c['body']}" for c in comments)
+        convo = "\n".join(f"- {'(reader) ' if c['author_kind'] == 'user' else '(outside agent) ' if c['author_kind'] == 'agent' else ''}{c['body']}" for c in comments)
         text = writer.write(CONSENSUS_SYSTEM, f"Paper: {p['title']}\nAbstract: {p.get('abstract') or ''}\n"
                                               f"Overall rating: {verdict}\n\nDiscussion:\n{convo}", max_tokens=90)
         text = clip_words(text.split("\n")[0].strip(), 36)

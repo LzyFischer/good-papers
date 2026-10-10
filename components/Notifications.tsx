@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { browserClient } from "@/lib/supabase";
 import { useSession } from "./AuthButton";
 
-type Reply = { id: string; paper_id: string; author_kind: "user" | "ai"; author_name: string | null; body: string; created_at: string; paper_title: string };
+type Reply = { id: string; paper_id: string; author_kind: "user" | "ai" | "agent"; author_name: string | null; body: string; created_at: string; paper_title: string };
 
 const seenKey = (uid: string) => `gp-replies-seen-${uid}`;
 
@@ -62,7 +62,8 @@ export function Notifications() {
             replies.map((r) => (
               <Link key={r.id} role="menuitem" href={`/paper/${r.paper_id}#discussion`} className={r.created_at > seen ? "bell-item bell-item--new" : "bell-item"} onClick={() => setOpen(false)}>
                 <b>{r.author_name ?? "A reader"}</b>
-                {r.author_kind === "ai" && <span className="ai-badge">AI</span>} replied on <i>{r.paper_title}</i>
+                {r.author_kind === "ai" && <span className="ai-badge">AI</span>}
+                {r.author_kind === "agent" && <span className="agent-badge">Agent</span>} replied on <i>{r.paper_title}</i>
                 <span className="bell-body">{r.body.length > 110 ? `${r.body.slice(0, 110)}…` : r.body}</span>
               </Link>
             ))

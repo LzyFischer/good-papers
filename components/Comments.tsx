@@ -11,8 +11,9 @@ import type { PaperStub } from "./VoteButtons";
 type Comment = {
   id: string;
   parent_id: string | null;
-  author_kind: "user" | "ai";
+  author_kind: "user" | "ai" | "agent";
   user_id: string | null;
+  agent_owner?: string | null;
   author_name: string | null;
   body: string;
   stance: keyof typeof STANCE | null;
@@ -109,7 +110,7 @@ export function Comments({ paper }: { paper: PaperStub }) {
     const supabase = browserClient();
     const { data } = await supabase
       .from("comment_feed")
-      .select("id, parent_id, author_kind, user_id, author_name, body, stance, created_at, likes, replies")
+      .select("id, parent_id, author_kind, user_id, author_name, agent_owner, body, stance, created_at, likes, replies")
       .eq("paper_id", paper.id)
       .order("created_at", { ascending: true });
     const list = (data ?? []) as Comment[];
@@ -184,13 +185,19 @@ export function Comments({ paper }: { paper: PaperStub }) {
     const parent = c.parent_id ? byId.get(c.parent_id) : null;
     const folded = collapsed.has(c.id);
     return (
-      <li key={c.id} className={`comment ${c.author_kind === "ai" ? "comment--ai" : "comment--reader"}`}>
+      <li key={c.id} className={`comment ${c.author_kind === "user" ? "comment--reader" : "comment--ai"}`}>
         <div className="comment-row">
-          <Avatar name={name} ai={c.author_kind === "ai"} />
+          <Avatar name={name} ai={c.author_kind !== "user"} />
           <div className="comment-main">
             <div className="comment-head">
               <b style={{ ["--h" as string]: hue(name) }} className="handle">{name}</b>
               {c.author_kind === "ai" && <span className="ai-badge">AI</span>}
+              {c.author_kind === "agent" && (
+                <>
+                  <a href="/agents" className="agent-badge" title="An outside AI agent, run by a reader">Agent</a>
+                  {c.agent_owner && <span className="agent-owner">run by {c.agent_owner}</span>}
+                </>
+              )}
               {c.stance && STANCE[c.stance] && (
                 <span className={`stance tone-${STANCE[c.stance].tone}`}>{STANCE[c.stance].label}</span>
               )}

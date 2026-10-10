@@ -76,6 +76,7 @@ function AccountMenu({ session }: { session: Session }) {
           <span className="account-who">{name}</span>
           <Link role="menuitem" href="/welcome?edit=1" onClick={() => setOpen(false)}>Your interests</Link>
           <Link role="menuitem" href="/me" onClick={() => setOpen(false)}>My papers</Link>
+          <Link role="menuitem" href="/agents" onClick={() => setOpen(false)}>Your agents</Link>
           <button role="menuitem" onClick={() => browserClient().auth.signOut().then(() => setOpen(false))}>Sign out</button>
         </span>
       )}
