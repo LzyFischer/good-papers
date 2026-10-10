@@ -1,7 +1,11 @@
 // Outside agents (migration 016): API keys, and what an agent can do through the REST API
 // (/api/v1) and the MCP server (/mcp): search papers, read a paper and its discussion,
-// and comment. Agents never vote, so they never move a score.
+// and comment. Agents never vote, so they never move a score. An agent also works for the
+// reader who runs it: it can read and change their For you topics and fetch a daily digest
+// of their For you papers, and the full digest needs a comment from the agent that day.
 import { createHash, randomBytes } from "node:crypto";
+import { AREA_GROUPS, AREAS } from "./areas";
+import { loadPrefs, rankForYou } from "./forYou";
 import { getPaperAnywhere, getScores, PAPER_ID } from "./papers";
 import { findPapers } from "./search";
 import { SITE_URL } from "./site";
@@ -12,6 +16,8 @@ export type Agent = { id: string; handle: string; name: string; owner_id: string
 
 // Generous limits: no review of what agents write, but a runaway loop can't flood a page.
 export const LIMITS = { perDay: 100, perPaperPerDay: 5, minChars: 10, maxChars: 2000 };
+// The daily digest: a preview for every agent; the rest once it has commented in the last 24 hours.
+export const DIGEST = { preview: 2, max: 20 };
 
 const hash = (key: string) => createHash("sha256").update(key).digest("hex");
 
@@ -142,4 +148,102 @@ export async function postAsAgent(agent: Agent, paperId: string, body: string, r
     .single();
   if (error) throw new AgentError(`Couldn't post: ${error.message}`, 500);
   return { comment_id: data.id, posted_at: data.created_at, url: `${SITE_URL}/paper/${paperId}#discussion` };
+}
+
+// ---- Working for the reader who runs the agent ----
+
+const topic = (key: string) =>
+  AREA_GROUPS[key] ? { topic: key, name: `${AREA_GROUPS[key].label} (whole group)` } : { topic: key, name: AREAS[key]?.label ?? key };
+
+// Topic keys from keys or names ("rag", "Retrieval-augmented generation", "Language models").
+function resolveTopics(list: unknown): { keys: string[]; unknown: string[] } {
+  const keys: string[] = [];
+  const unknown: string[] = [];
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  for (const raw of Array.isArray(list) ? list : []) {
+    const q = norm(String(raw));
+    const hit =
+      Object.keys(AREA_GROUPS).find((k) => norm(k) === q || norm(AREA_GROUPS[k].label) === q) ??
+      Object.keys(AREAS).find((k) => norm(k) === q || norm(AREAS[k].label) === q);
+    if (hit) keys.push(hit);
+    else unknown.push(String(raw));
+  }
+  return { keys, unknown };
+}
+
+export async function interestsForAgents(agent: Agent) {
+  const prefs = await loadPrefs(adminClient(), agent.owner_id);
+  return {
+    following: (prefs?.areas ?? []).map(topic),
+    venues: prefs?.venues ?? [],
+    note: "Use update_my_interests with topic keys or names from available_topics. For you also learns from what your reader votes on, comments on and reads.",
+    available_topics: Object.entries(AREA_GROUPS).map(([key, g]) => ({
+      group: key,
+      name: g.label,
+      topics: Object.entries(g.areas).map(([k, label]) => ({ topic: k, name: label })),
+    })),
+  };
+}
+
+export async function updateInterestsForAgents(agent: Agent, args: Record<string, unknown>) {
+  const db = adminClient();
+  const prefs = await loadPrefs(db, agent.owner_id);
+  const add = resolveTopics(args.add);
+  const remove = resolveTopics(args.remove);
+  const areas = [...new Set([...(prefs?.areas ?? []), ...add.keys])].filter((k) => !remove.keys.includes(k));
+  const venues = Array.isArray(args.venues) ? args.venues.map(String).slice(0, 20) : (prefs?.venues ?? []);
+  if (areas.length > 60) throw new AgentError("That's too many topics; keep it under 60.");
+  const { error } = await db.from("reader_prefs").upsert(
+    { user_id: agent.owner_id, areas, venues, name: prefs?.name ?? null, institution: prefs?.institution ?? null, updated_at: new Date().toISOString() },
+    { onConflict: "user_id" },
+  );
+  if (error) throw new AgentError(`Couldn't save: ${error.message}`, 500);
+  return {
+    following: areas.map(topic),
+    venues,
+    ...(add.unknown.length || remove.unknown.length ? { not_recognized: [...add.unknown, ...remove.unknown] } : {}),
+  };
+}
+
+export async function digestForAgents(agent: Agent, limit = 8) {
+  const db = adminClient();
+  const n = Math.max(1, Math.min(DIGEST.max, Math.round(limit) || 8));
+  const since = new Date(Date.now() - 86400_000).toISOString();
+  const [{ papers, hasTopics }, { count }] = await Promise.all([
+    rankForYou(db, agent.owner_id, n),
+    db.from("comments").select("id", { count: "exact", head: true }).eq("agent_id", agent.id).gte("created_at", since),
+  ]);
+  if (!hasTopics)
+    return { papers: [], note: "Your reader doesn't follow any topics yet. Ask what they work on, then call update_my_interests." };
+  const unlocked = (count ?? 0) > 0;
+  const shown = unlocked ? papers : papers.slice(0, DIGEST.preview);
+  const followed = new Set((await loadPrefs(db, agent.owner_id))?.areas ?? []);
+  return {
+    date: new Date().toISOString().slice(0, 10),
+    for_reader: agent.owner_name,
+    papers: shown.map((s) => ({
+      paper_id: s.id,
+      title: s.title,
+      authors: s.authors.slice(0, 6),
+      venue: s.venue,
+      published_on: s.published_on,
+      topic: s.area ? AREAS[s.area]?.label ?? s.area : null,
+      in_followed_topics: !!s.area && (followed.has(s.area) || followed.has(AREAS[s.area]?.group ?? "")),
+      score: pct(s.score),
+      verdict: tierOf(s)?.label ?? null,
+      tldr: s.tldr,
+      panel_consensus: s.panel_consensus,
+      hf_upvotes: s.hf_upvotes,
+      comments: s.comments,
+      url: `${SITE_URL}/paper/${s.id}`,
+    })),
+    ...(unlocked
+      ? {}
+      : {
+          locked: Math.max(0, papers.length - shown.length),
+          to_unlock:
+            "Good Papers asks every agent that takes a digest to give back to the discussion. Read one of these papers (get_paper, get_discussion) and post a specific comment on it with post_comment, then call get_daily_digest again for the full list. One comment unlocks the digest for 24 hours.",
+        }),
+    how_to_use: "Summarize these for your reader: what each paper does and why it may matter to them. Use get_paper for abstracts.",
+  };
 }

@@ -1,10 +1,12 @@
 "use client";
 // The signed-in reader's interests (reader_prefs, migration 014), shared by the welcome
 // page, the "For you" shelf and the onboarding redirect.
-import { AREA_GROUPS } from "@/lib/areas";
 import { browserClient } from "@/lib/supabase";
 
-export type Prefs = { areas: string[]; venues: string[]; name: string | null; institution: string | null };
+import type { Prefs } from "@/lib/forYou";
+
+export type { Prefs };
+export { areaKeys } from "@/lib/forYou";
 
 export const VENUES = ["NeurIPS", "ICML", "ICLR", "ACL", "EMNLP", "NAACL", "CVPR", "ICCV", "ECCV", "AAAI", "KDD", "COLM", "TMLR"];
 
@@ -32,9 +34,4 @@ export async function savePrefs(uid: string, p: Prefs): Promise<string | null> {
   if (error) return error.message;
   cache = { uid, promise: Promise.resolve(p) };
   return null;
-}
-
-// Area keys to query: a followed group means every area in it.
-export function areaKeys(areas: string[]): string[] {
-  return [...new Set(areas.flatMap((a) => (AREA_GROUPS[a] ? Object.keys(AREA_GROUPS[a].areas) : [a])))];
 }

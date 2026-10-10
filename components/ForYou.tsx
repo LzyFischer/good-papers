@@ -1,66 +1,20 @@
 "use client";
 // "For you": what's hot right now, tilted toward the topics the reader follows. Each paper
-// is ranked by timeliness (Hugging Face upvotes, discussion, how new it is), how well it
-// matches the reader's topics and venues (the ones they picked, refined by what they vote
-// on, comment on and read: components/affinity.ts), and its score. Papers they've voted on
-// are left out.
+// is ranked in lib/forYou.ts.
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AREAS } from "@/lib/areas";
+import { rankForYou } from "@/lib/forYou";
 import { browserClient } from "@/lib/supabase";
 import type { Score } from "@/lib/types";
-import { learnedAffinity, topLearnedAreas } from "./affinity";
 import { useSession } from "./AuthButton";
 import { getMyVotes } from "./myVotes";
-import { areaKeys, getPrefs } from "./prefs";
+import { getPrefs } from "./prefs";
 import { Shelf } from "./Shelf";
-
-const DAYS = 21; // "right now"
 
 // The ranked list, shared by the home shelf and the full For you page.
 export async function loadForYou(uid: string, limit: number): Promise<{ papers: Score[]; hasTopics: boolean }> {
-  const [prefs, learned] = await Promise.all([getPrefs(uid), learnedAffinity(uid).catch(() => null)]);
-  const picked = areaKeys(prefs?.areas ?? []);
-  // Topics the reader picked, plus the ones their activity points to.
-  const keys = [...new Set([...picked, ...(learned ? topLearnedAreas(learned) : [])])];
-  if (!keys.length) return { papers: [], hasTopics: false };
-  const since = new Date(Date.now() - DAYS * 86400_000).toISOString().slice(0, 10);
-  const db = browserClient();
-  const venues = prefs?.venues ?? [];
-  const [hot, mine, conf, voted] = await Promise.all([
-    // What's hot this month in any area: the timely part.
-    db.from("paper_scores").select("*").not("score", "is", null).not("area", "is", null).gte("published_on", since)
-      .order("hf_upvotes", { ascending: false, nullsFirst: false }).limit(Math.max(120, limit * 3)),
-    // Recent papers in the reader's topics, even if nobody is upvoting them yet.
-    db.from("paper_scores").select("*").in("area", keys).not("score", "is", null).gte("published_on", since)
-      .order("score", { ascending: false }).limit(Math.max(60, limit * 2)),
-    // Conference papers have no publication date yet: the venues the reader follows.
-    venues.length
-      ? db.from("paper_scores").select("*").in("area", keys).not("score", "is", null)
-          .or(venues.map((v) => `venue.ilike.${v}*`).join(",")).order("hf_upvotes", { ascending: false, nullsFirst: false }).limit(40)
-      : Promise.resolve({ data: [] }),
-    getMyVotes(uid),
-  ]);
-  const all = new Map<string, Score>();
-  for (const s of [...((hot.data ?? []) as Score[]), ...((mine.data ?? []) as Score[]), ...((conf.data ?? []) as Score[])]) all.set(s.id, s);
-  const fine = new Set(prefs?.areas ?? []);
-  const maxHf = Math.max(1, ...[...all.values()].map((s) => s.hf_upvotes ?? 0));
-  const now = Date.now();
-  const rank = (s: Score) => {
-    const age = s.published_on ? (now - Date.parse(s.published_on)) / 86400_000 : 10;
-    const timely =
-      0.6 * (Math.log1p(s.hf_upvotes ?? 0) / Math.log1p(maxHf)) + 0.25 * Math.max(0, 1 - age / DAYS) + 0.15 * Math.min(1, s.comments / 10);
-    // A topic picked by name beats a whole followed group; outside the reader's topics counts little.
-    const chosen = s.area && fine.has(s.area) ? 1 : s.area && picked.includes(s.area) ? 0.75 : 0;
-    const fromActivity = s.area && learned
-      ? 0.8 * (learned.area.get(s.area) ?? 0) + 0.4 * (learned.group.get(AREAS[s.area]?.group ?? "") ?? 0)
-      : 0;
-    // What they picked sets the floor; what they read and vote on can lift it, or pull it down.
-    const interest = Math.max(-0.5, Math.min(1, Math.max(chosen, fromActivity) + Math.min(0, fromActivity) * 0.5));
-    const venue = venues.some((v) => s.venue?.startsWith(v)) ? 0.15 : 0;
-    return 0.45 * timely + 0.35 * interest + 0.2 * (s.score ?? 0) + venue;
-  };
-  return { papers: [...all.values()].filter((s) => !voted.has(s.id)).sort((a, b) => rank(b) - rank(a)).slice(0, limit), hasTopics: true };
+  const [prefs, votes] = await Promise.all([getPrefs(uid), getMyVotes(uid)]);
+  return rankForYou(browserClient(), uid, limit, { prefs, voted: new Set(votes.keys()) });
 }
 
 export function ForYou() {

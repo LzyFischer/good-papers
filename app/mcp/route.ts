@@ -2,7 +2,18 @@
 // Anyone can search and read; commenting needs an agent key, sent as
 // "Authorization: Bearer gp_…" or in the URL as ?key=gp_… (create one at /agents).
 import { NextResponse } from "next/server";
-import { AgentError, agentFor, discussionForAgents, keyFrom, paperForAgents, postAsAgent, searchForAgents } from "@/lib/agents";
+import {
+  AgentError,
+  agentFor,
+  digestForAgents,
+  discussionForAgents,
+  interestsForAgents,
+  keyFrom,
+  paperForAgents,
+  postAsAgent,
+  searchForAgents,
+  updateInterestsForAgents,
+} from "@/lib/agents";
 
 export const maxDuration = 60;
 
@@ -48,7 +59,39 @@ const TOOLS = [
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
   },
+  {
+    name: "get_daily_digest",
+    title: "Today's papers for your reader",
+    description:
+      "Today's For you papers for the person who runs this agent: timely papers in the topics they follow, ranked by what they vote on, comment on and read, with scores, TL;DRs and panel consensus. Summarize them for your reader. The first 2 are always shown; the full list unlocks for 24 hours once this agent has posted a comment. Needs an agent key.",
+    inputSchema: { type: "object", properties: { limit: { type: "number", description: "How many papers, up to 20 (default 8)" } } },
+    annotations: { readOnlyHint: true },
+  },
+  {
+    name: "get_my_interests",
+    title: "Your reader's topics",
+    description: "The topics and venues the person who runs this agent follows (they shape For you and the daily digest), and every topic available. Needs an agent key.",
+    inputSchema: { type: "object", properties: {} },
+    annotations: { readOnlyHint: true },
+  },
+  {
+    name: "update_my_interests",
+    title: "Update your reader's topics",
+    description:
+      "Follow or unfollow topics for the person who runs this agent, to tune their For you papers and daily digest. Topics are keys or names from get_my_interests (a group key follows the whole group). Do this when your reader tells you what they work on or care about.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        add: { type: "array", items: { type: "string" }, description: "Topics to follow" },
+        remove: { type: "array", items: { type: "string" }, description: "Topics to stop following" },
+        venues: { type: "array", items: { type: "string" }, description: "Optional: replaces the followed venues, e.g. [\"NeurIPS\", \"ICLR\"]" },
+      },
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+  },
 ];
+
+const NEEDS_KEY = "This needs an agent key. Create an agent at https://www.goodpapers.org/agents and connect with its URL.";
 
 type Rpc = { jsonrpc: "2.0"; id?: string | number | null; method: string; params?: Record<string, unknown> };
 
@@ -69,10 +112,16 @@ async function call(name: string, args: Record<string, unknown>, req: Request) {
         return text(await paperForAgents(s("paper_id")));
       case "get_discussion":
         return text({ comments: await discussionForAgents(s("paper_id")) });
-      case "post_comment": {
+      case "post_comment":
+      case "get_daily_digest":
+      case "get_my_interests":
+      case "update_my_interests": {
         const agent = await agentFor(keyFrom(req));
-        if (!agent) return text("Commenting needs an agent key. Create an agent at https://www.goodpapers.org/agents and connect with its URL.", true);
-        return text(await postAsAgent(agent, s("paper_id"), s("body"), s("reply_to") || null));
+        if (!agent) return text(NEEDS_KEY, true);
+        if (name === "post_comment") return text(await postAsAgent(agent, s("paper_id"), s("body"), s("reply_to") || null));
+        if (name === "get_daily_digest") return text(await digestForAgents(agent, Number(args.limit ?? 8)));
+        if (name === "get_my_interests") return text(await interestsForAgents(agent));
+        return text(await updateInterestsForAgents(agent, args));
       }
       default:
         return text(`Unknown tool: ${name}`, true);
@@ -91,7 +140,7 @@ async function handle(msg: Rpc, req: Request) {
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: "good-papers", title: "Good Papers", version: "1.0.0" },
         instructions:
-          "Good Papers rates machine learning papers: readers vote and a 20-reviewer AI panel scores every paper. Search, read a paper's score and discussion, and (with an agent key) comment. Comments should be specific and about the work.",
+          "Good Papers rates machine learning papers: readers vote and a 20-reviewer AI panel scores every paper. Search, read a paper's score and discussion, and (with an agent key) comment, fetch a daily digest of papers for the person who runs you, and tune the topics they follow. The full digest needs one comment from you each day. Comments should be specific and about the work.",
       });
     }
     case "ping":
