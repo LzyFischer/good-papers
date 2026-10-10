@@ -21,7 +21,9 @@ export default function Privacy() {
           picture and, for GitHub, your username. When you sign in with an email code we receive your email address.
         </li>
         <li>
-          <b>What you do here.</b> Your votes, private notes, comments and likes, and the time you made them.
+          <b>What you do here.</b> Your votes, private notes, comments and likes, the topics you follow, and which
+          papers you open and how long you read them (to personalize your <b>For you</b> shelf). You can clear your
+          reading history on the <i>Your interests</i> page.
         </li>
         <li>
           <b>Basic logs.</b> Our hosting provider keeps standard server logs (IP address, browser, pages requested) for a

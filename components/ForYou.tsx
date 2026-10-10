@@ -1,11 +1,15 @@
 "use client";
 // "For you": what's hot right now, tilted toward the topics the reader follows. Each paper
 // is ranked by timeliness (Hugging Face upvotes, discussion, how new it is), how well it
-// matches the reader's topics and venues, and its score. Papers they've voted on are left out.
+// matches the reader's topics and venues (the ones they picked, refined by what they vote
+// on, comment on and read: components/affinity.ts), and its score. Papers they've voted on
+// are left out.
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AREAS } from "@/lib/areas";
 import { browserClient } from "@/lib/supabase";
 import type { Score } from "@/lib/types";
+import { learnedAffinity, topLearnedAreas } from "./affinity";
 import { useSession } from "./AuthButton";
 import { getMyVotes } from "./myVotes";
 import { areaKeys, getPrefs } from "./prefs";
@@ -21,8 +25,10 @@ export function ForYou() {
   useEffect(() => {
     if (!session) return;
     (async () => {
-      const prefs = await getPrefs(session.user.id);
-      const keys = areaKeys(prefs?.areas ?? []);
+      const [prefs, learned] = await Promise.all([getPrefs(session.user.id), learnedAffinity(session.user.id).catch(() => null)]);
+      const picked = areaKeys(prefs?.areas ?? []);
+      // Topics the reader picked, plus the ones their activity points to.
+      const keys = [...new Set([...picked, ...(learned ? topLearnedAreas(learned) : [])])];
       setHasTopics(keys.length > 0);
       if (!keys.length) return setPapers([]);
       const since = new Date(Date.now() - DAYS * 86400_000).toISOString().slice(0, 10);
@@ -52,7 +58,12 @@ export function ForYou() {
         const timely =
           0.6 * (Math.log1p(s.hf_upvotes ?? 0) / Math.log1p(maxHf)) + 0.25 * Math.max(0, 1 - age / DAYS) + 0.15 * Math.min(1, s.comments / 10);
         // A topic picked by name beats a whole followed group; outside the reader's topics counts little.
-        const interest = s.area && fine.has(s.area) ? 1 : s.area && keys.includes(s.area) ? 0.75 : 0;
+        const chosen = s.area && fine.has(s.area) ? 1 : s.area && picked.includes(s.area) ? 0.75 : 0;
+        const fromActivity = s.area && learned
+          ? 0.8 * (learned.area.get(s.area) ?? 0) + 0.4 * (learned.group.get(AREAS[s.area]?.group ?? "") ?? 0)
+          : 0;
+        // What they picked sets the floor; what they read and vote on can lift it, or pull it down.
+        const interest = Math.max(-0.5, Math.min(1, Math.max(chosen, fromActivity) + Math.min(0, fromActivity) * 0.5));
         const venue = venues.some((v) => s.venue?.startsWith(v)) ? 0.15 : 0;
         return 0.45 * timely + 0.35 * interest + 0.2 * (s.score ?? 0) + venue;
       };
@@ -75,5 +86,5 @@ export function ForYou() {
       </section>
     );
   }
-  return <Shelf id="for-you" title="For you" note="What's hot right now, picked for the topics you follow" papers={papers} more={edit} />;
+  return <Shelf id="for-you" title="For you" note="What's hot right now, picked for your topics and what you read" papers={papers} more={edit} />;
 }

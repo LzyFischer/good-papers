@@ -3,6 +3,7 @@
 // Every step can be skipped; "Interests" in the header brings you back here.
 import { useEffect, useState } from "react";
 import { AREA_GROUPS } from "@/lib/areas";
+import { browserClient } from "@/lib/supabase";
 import { signIn, useSession } from "./AuthButton";
 import { VENUES, getPrefs, savePrefs } from "./prefs";
 
@@ -121,6 +122,7 @@ export function Welcome({ next, edit }: { next: string; edit: boolean }) {
         </>
       )}
 
+      {step === 0 && edit && <ClearHistory uid={session.user.id} />}
       {error && <p className="signin-error" role="alert">{error}</p>}
       <div className="welcome-actions">
         {step > 0 ? <button className="link-button" onClick={() => setStep(step - 1)}>Back</button> : <span />}
@@ -132,5 +134,28 @@ export function Welcome({ next, edit }: { next: string; edit: boolean }) {
         </span>
       </div>
     </div>
+  );
+}
+
+// For you also learns from what you read; this forgets the reading history (votes stay).
+function ClearHistory({ uid }: { uid: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <p className="welcome-history">
+      <b>For you</b> also learns from the papers you vote on and read.{" "}
+      {done ? (
+        "Reading history cleared."
+      ) : (
+        <button
+          className="link-button"
+          onClick={async () => {
+            await browserClient().from("reader_views").delete().eq("user_id", uid);
+            setDone(true);
+          }}
+        >
+          Clear my reading history
+        </button>
+      )}
+    </p>
   );
 }

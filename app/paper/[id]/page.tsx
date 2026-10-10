@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { Comments } from "@/components/Comments";
 import { NoteBox } from "@/components/NoteBox";
+import { ReadTracker } from "@/components/ReadTracker";
 import { PaperHero } from "@/components/PaperHero";
 import { tierOf } from "@/components/Score";
 import { jevConfigured } from "@/lib/jev";
@@ -100,6 +101,7 @@ export default async function PaperPage({ params }: Props) {
         scoreOpen={(await openScoreIds().catch(() => [] as string[])).includes(id)}
       />
       <NoteBox paperId={paper.id} />
+      <ReadTracker paperId={paper.id} />
       <div className="paper-cols">
         {paper.abstract && (
           <section className="abstract">

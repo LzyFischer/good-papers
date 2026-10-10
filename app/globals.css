@@ -533,3 +533,4 @@ button { font: inherit; }
 .account-who { padding: .45rem .65rem .55rem; font-size: .8rem; color: var(--muted); border-bottom: 1px solid var(--line); margin-bottom: .25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account-menu a, .account-menu button { text-align: left; padding: .5rem .65rem; border-radius: 8px; border: 0; background: none; color: var(--ink); font: 500 .9rem var(--body); text-decoration: none; cursor: pointer; }
 .account-menu a:hover, .account-menu button:hover { background: var(--bg); }
+.welcome-history { margin: 1.4rem 0 0; font-size: .88rem; color: var(--muted); }
