@@ -85,13 +85,14 @@ export function SignIn({ next }: { next: string }) {
               autoComplete="email"
               aria-label="Email address"
             />
-            <button className="signin-primary" disabled={busy}>{busy ? "Sending…" : "Email me a code"}</button>
+            <button className="signin-primary" disabled={busy}>{busy ? "Sending…" : "Email me a sign-in link"}</button>
           </form>
         </>
       ) : (
         <form onSubmit={verify} className="signin-form">
           <p className="signin-sub">
-            We sent a 6-digit code to <b>{email}</b>. It expires in an hour.
+            We emailed <b>{email}</b>. Click the link in the email, or enter the 6-digit code here. It expires in an
+            hour.
           </p>
           <input
             inputMode="numeric"
