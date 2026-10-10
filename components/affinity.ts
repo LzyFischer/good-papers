@@ -20,7 +20,7 @@ export async function learnedAffinity(uid: string): Promise<Affinity> {
   const decay = (iso: string) => Math.pow(0.5, (Date.now() - Date.parse(iso)) / 86400_000 / HALF_LIFE_DAYS);
   const signals: { paper: string; w: number }[] = [];
   // Votes are one tap, so they count less than reading time or a comment.
-  for (const v of votes.data ?? []) signals.push({ paper: v.paper_id, w: (v.worth_reading === true ? 1.5 : v.worth_reading === false ? -1 : 0.5) * decay(v.updated_at) });
+  for (const v of votes.data ?? []) signals.push({ paper: v.paper_id, w: (v.worth_reading === true ? 0.3 : v.worth_reading === false ? -0.2 : 0.1) * decay(v.updated_at) });
   for (const c of comments.data ?? []) signals.push({ paper: c.paper_id, w: 2 * decay(c.created_at) });
   // Reading time: a glance counts little, five minutes or more counts most.
   for (const r of views.data ?? []) signals.push({ paper: r.paper_id, w: Math.min(5, r.seconds / 60) * decay(r.day) });
