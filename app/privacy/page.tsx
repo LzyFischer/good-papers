@@ -61,9 +61,8 @@ export default function Privacy() {
       <h2>Your choices</h2>
       <p>
         You can delete your comments and votes at any time. To delete your account and everything tied to it, or to ask
-        what we hold about you, open an issue on{" "}
-        <a href="https://github.com/LzyFischer/good-papers/issues">GitHub</a> or contact the maintainer listed there,
-        and we&apos;ll handle it within 30 days.
+        what we hold about you, email <a href="mailto:vjd5zr@outlook.com">vjd5zr@outlook.com</a> or open an issue on{" "}
+        <a href="https://github.com/LzyFischer/good-papers/issues">GitHub</a>, and we&apos;ll handle it within 30 days.
       </p>
 
       <p>
