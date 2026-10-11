@@ -83,7 +83,7 @@ function AccountMenu({ session }: { session: Session }) {
           <button role="menuitem" onClick={() =>
               browserClient().auth.signOut().then(() => {
                 setOpen(false);
-                if (rememberTopics([])) router.refresh();
+                if (rememberTopics(null)) router.refresh();
               })
             }>Sign out</button>
         </span>

@@ -14,7 +14,7 @@ import { Shelf } from "./Shelf";
 import { rememberTopics } from "./topicsCookie";
 
 // The ranked list, shared by the home shelf and the full For you page.
-export async function loadForYou(uid: string, limit: number): Promise<{ papers: Score[]; hasTopics: boolean; topics: string[] }> {
+export async function loadForYou(uid: string, limit: number): Promise<{ papers: Score[]; hasTopics: boolean; topics: { picked: string[]; learned: string[] } }> {
   const [prefs, votes] = await Promise.all([getPrefs(uid), getMyVotes(uid)]);
   return rankForYou(browserClient(), uid, limit, { prefs, voted: new Set(votes.keys()) });
 }

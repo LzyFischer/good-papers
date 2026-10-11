@@ -9,7 +9,7 @@ import { Gate } from "@/components/Gate";
 import { Gauge, tierOf } from "@/components/Score";
 import { Shelf } from "@/components/Shelf";
 import { AREAS } from "@/lib/areas";
-import { mergeByTopics, topicsFromCookie, TOPICS_COOKIE } from "@/lib/forYou";
+import { mergeByTopics, topicGroups, topicsFromCookie, TOPICS_COOKIE } from "@/lib/forYou";
 import { topUpTrending } from "@/lib/ingest";
 import { NEURIPS } from "@/lib/neurips";
 import { getVerdicts } from "@/lib/papers";
@@ -78,12 +78,11 @@ export default async function Home({ searchParams }: Props) {
   if (author) q = q.filter("authors", "cs", arrayHas(author));
   const filtered = activeArea ? AREAS[activeArea].label : org ? `papers from ${org}` : author ? `papers by ${author}` : null;
   // Signed-in readers: papers in their topics move up (lib/forYou.ts, mergeByTopics).
-  const topics = filtered ? new Set<string>() : topicsFromCookie((await cookies()).get(TOPICS_COOKIE)?.value);
-  const [{ data }, { data: mine }] = await Promise.all([
-    q,
-    topics.size ? list().in("area", [...topics]) : Promise.resolve({ data: [] as Score[] }),
-  ]);
-  const ranked = topics.size ? mergeByTopics((data ?? []) as Score[], (mine ?? []) as Score[], topics, shown + 1) : ((data ?? []) as Score[]);
+  const topics = filtered ? new Map<string, number>() : topicsFromCookie((await cookies()).get(TOPICS_COOKIE)?.value);
+  const [{ data }, ...mine] = await Promise.all([q, ...topicGroups(topics).map((keys) => list().in("area", keys))]);
+  const ranked = topics.size
+    ? mergeByTopics([(data ?? []) as Score[], ...mine.map((r) => (r.data ?? []) as Score[])], topics, shown + 1)
+    : ((data ?? []) as Score[]);
   const hasMore = ranked.length > shown;
   const papers = ranked.slice(0, shown);
   const moreHref = (() => {
