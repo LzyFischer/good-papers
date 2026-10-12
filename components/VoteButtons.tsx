@@ -149,5 +149,6 @@ function YouVsEveryone({ vote, reveal }: { vote: boolean; reveal: Reveal }) {
   const aiSame = vote ? reveal.aiYes : reveal.aiTotal - reveal.aiYes;
   const total = others + reveal.aiTotal;
   if (!total) return null;
-  return <p className="reveal">{readersSame + aiSame} of {total} votes agree with you</p>;
+  const same = readersSame + aiSame;
+  return <p className="reveal">{same === 0 ? "No other voters agree with you yet" : same === 1 ? "1 voter agrees with you" : `${same} voters agree with you`}</p>;
 }
