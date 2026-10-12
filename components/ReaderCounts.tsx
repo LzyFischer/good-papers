@@ -3,6 +3,10 @@
 // (shelves are cached, and reloading a list would reshuffle it under you).
 import { useEffect, useState } from "react";
 
+// Shelf cards show the readers' split only once a few have voted: "0% of 1 reader" says
+// nothing and makes a new paper look neglected.
+const MIN_READERS_ON_CARDS = 3;
+
 export type VoteEvent = { id: string; prev: boolean | null | undefined; next: boolean | null | undefined };
 
 export function ReaderCounts({ id, fresh, total, kind }: { id: string; fresh: number; total: number; kind: "mini" | "pct" | "text" }) {
@@ -34,5 +38,5 @@ export function ReaderCounts({ id, fresh, total, kind }: { id: string; fresh: nu
   const pct = c.total ? Math.round((c.fresh / c.total) * 100) : 0;
   if (kind === "pct") return <>{c.total ? `${pct}%` : "–"}</>;
   if (kind === "text") return <>{c.total ? `${c.fresh} of ${c.total} upvoted` : "No votes yet"}</>;
-  return <>{c.total ? ` · ${pct}% of ${c.total} reader${c.total === 1 ? "" : "s"} upvoted` : ""}</>;
+  return <>{c.total >= MIN_READERS_ON_CARDS ? ` · ${pct}% of ${c.total} readers upvoted` : ""}</>;
 }
