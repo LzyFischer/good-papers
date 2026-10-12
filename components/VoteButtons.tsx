@@ -110,11 +110,9 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
       {reveal && (
         <>
           <span className="sc-num">{pct === null ? "–" : !shown ? "?" : `${pct}%`}</span>
-          {reveal.readerTotal > 0 && (!shown || reveal.coi > 0) && (
+          {reveal.readerTotal > 0 && !shown && (
             <span className="sc-sub">
-              {!shown
-                ? `${reveal.readerTotal} reader${reveal.readerTotal === 1 ? "" : "s"} voted. Vote to see how they split.`
-                : `${reveal.coi} vote${reveal.coi === 1 ? "" : "s"} from authors or colleagues, counted at lower weight`}
+              {`${reveal.readerTotal} reader${reveal.readerTotal === 1 ? "" : "s"} voted. Vote to see how they split.`}
             </span>
           )}
           {voted && vote !== null && <YouVsEveryone vote={vote} reveal={reveal} />}

@@ -90,7 +90,7 @@ function Table({ icon, label, fresh, total, note, ai, open, id }: {
         {id && open && !ai ? <ReaderCounts id={id} fresh={fresh} total={total} /> : pct} <span className="l">{label}</span>
       </span>
       <span className="l">
-        {ai ? (total ? "reviewers recommend it" : "No votes yet") : !total ? "No votes yet" : open ? "" : "voted. Vote to see how they split"}
+        {ai ? (total ? "reviewers recommend it" : "") : total && !open ? "voted. Vote to see how they split" : ""}
         {note ? `. ${note}` : ""}
       </span>
     </div>
