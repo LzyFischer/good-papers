@@ -1,0 +1,37 @@
+# SPECTER2 embeddings for "For you" (worker/embed.py): runs after every worker run (the site
+# dispatches one after it rates new papers), so new papers get a vector within the hour.
+# The first run embeds every stored paper (~30 min on GitHub's CPUs).
+# Needs repository secrets: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+name: embed
+
+on:
+  workflow_run:
+    workflows: [worker]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: embed
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: worker/requirements-embed.txt
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-specter2-v1
+      - run: pip install -r worker/requirements-embed.txt
+      - run: python worker/embed.py
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TOKENIZERS_PARALLELISM: "false"

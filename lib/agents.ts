@@ -207,7 +207,7 @@ export async function updateInterestsForAgents(agent: Agent, args: Record<string
 export async function digestForAgents(agent: Agent, limit = 8) {
   const db = adminClient();
   const n = Math.max(1, Math.min(DIGEST.max, Math.round(limit) || 8));
-  const { papers, hasTopics } = await rankForYou(db, agent.owner_id, n);
+  const { papers, hasTopics, reasons } = await rankForYou(db, agent.owner_id, n);
   if (!hasTopics)
     return { papers: [], note: "Your reader doesn't follow any topics yet. Ask what they work on, then call update_my_interests." };
   const followed = new Set((await loadPrefs(db, agent.owner_id))?.areas ?? []);
@@ -221,6 +221,7 @@ export async function digestForAgents(agent: Agent, limit = 8) {
       venue: s.venue,
       published_on: s.published_on,
       topic: s.area ? AREAS[s.area]?.label ?? s.area : null,
+      why_recommended: reasons[s.id] ?? null,
       in_followed_topics: !!s.area && (followed.has(s.area) || followed.has(AREAS[s.area]?.group ?? "")),
       score: pct(s.score),
       verdict: tierOf(s)?.label ?? null,

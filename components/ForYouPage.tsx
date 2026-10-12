@@ -2,14 +2,14 @@
 // The full For you list (up to 100 papers), behind the home shelf's "See all".
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { Score } from "@/lib/types";
+import type { ForYou } from "@/lib/forYou";
 import { signIn, useSession } from "./AuthButton";
 import { loadForYou } from "./ForYou";
 import { MiniCard } from "./Shelf";
 
 export function ForYouPage() {
   const { session, ready } = useSession();
-  const [r, setR] = useState<{ papers: Score[]; hasTopics: boolean } | null>(null);
+  const [r, setR] = useState<ForYou | null>(null);
   useEffect(() => {
     if (session) loadForYou(session.user.id, 100).then(setR);
   }, [session]);
@@ -33,7 +33,7 @@ export function ForYouPage() {
     <div className="grid-cards">
       {r.papers.map((s) => (
         <div key={s.id} className="card-anchor">
-          <MiniCard s={s} />
+          <MiniCard s={s} why={r.reasons[s.id]} />
         </div>
       ))}
     </div>

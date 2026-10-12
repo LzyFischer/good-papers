@@ -9,7 +9,7 @@ import { VoteButtons } from "./VoteButtons";
 import { tierOf } from "./Score";
 
 // Compact card for horizontal shelves: thumbnail, score, title, TL;DR.
-export function MiniCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: boolean }) {
+export function MiniCard({ s, scoreOpen = false, why }: { s: Score; scoreOpen?: boolean; why?: string }) {
   const t = tierOf(s);
   const area = s.area ? AREAS[s.area]?.label : null;
   return (
@@ -31,6 +31,7 @@ export function MiniCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: boole
             </span>
           )}
         </span>
+        {why && <span className="mini-why">{why}</span>}
         <span className="mini-title">{s.title}</span>
         {s.tldr && <span className="mini-tldr">{s.tldr}</span>}
         <span className="mini-meta">
@@ -53,9 +54,10 @@ export function MiniCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: boole
   );
 }
 
-export function Shelf({ id, title, note, papers, children, more, openIds }: {
+export function Shelf({ id, title, note, papers, children, more, openIds, reasons }: {
   id?: string; title: string; note?: string; papers: Score[]; children?: React.ReactNode; more?: { href: string; label: string };
   openIds?: string[]; // papers whose score shows without voting (top of Trending)
+  reasons?: Record<string, string>; // For you: why each paper is here
 }) {
   if (papers.length === 0 && !children) return null;
   return (
@@ -74,7 +76,7 @@ export function Shelf({ id, title, note, papers, children, more, openIds }: {
         <div className="shelf-row">
           {papers.map((s, i) => (
             // The first half of every shelf shows its scores; the rest after you vote.
-            <MiniCard key={s.id} s={s} scoreOpen={i < Math.ceil(papers.length / 2) || openIds?.includes(s.id)} />
+            <MiniCard key={s.id} s={s} scoreOpen={i < Math.ceil(papers.length / 2) || openIds?.includes(s.id)} why={reasons?.[s.id]} />
           ))}
         </div>
       )}

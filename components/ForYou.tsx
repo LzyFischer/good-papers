@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { rankForYou } from "@/lib/forYou";
+import { rankForYou, type ForYou as ForYouList } from "@/lib/forYou";
 import { browserClient } from "@/lib/supabase";
 import type { Score } from "@/lib/types";
 import { useSession } from "./AuthButton";
@@ -14,7 +14,7 @@ import { Shelf } from "./Shelf";
 import { rememberTopics } from "./topicsCookie";
 
 // The ranked list, shared by the home shelf and the full For you page.
-export async function loadForYou(uid: string, limit: number): Promise<{ papers: Score[]; hasTopics: boolean; topics: { picked: string[]; learned: string[] } }> {
+export async function loadForYou(uid: string, limit: number): Promise<ForYouList> {
   const [prefs, votes] = await Promise.all([getPrefs(uid), getMyVotes(uid)]);
   return rankForYou(browserClient(), uid, limit, { prefs, voted: new Set(votes.keys()) });
 }
@@ -23,6 +23,7 @@ export function ForYou() {
   const { session } = useSession();
   const router = useRouter();
   const [papers, setPapers] = useState<Score[] | null>(null);
+  const [reasons, setReasons] = useState<Record<string, string>>({});
   const [hasTopics, setHasTopics] = useState(false);
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export function ForYou() {
     loadForYou(session.user.id, 24).then((r) => {
       setHasTopics(r.hasTopics);
       setPapers(r.papers);
+      setReasons(r.reasons);
       if (rememberTopics(r.topics)) router.refresh();
     });
   }, [session, router]);
@@ -52,8 +54,9 @@ export function ForYou() {
     <Shelf
       id="for-you"
       title="For you"
-      note="What's hot right now, picked for your topics and what you read"
+      note="Your topics first, then papers like the ones you read"
       papers={papers}
+      reasons={reasons}
       more={{ href: "/for-you", label: "See all" }}
     />
   );
