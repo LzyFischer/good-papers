@@ -1101,7 +1101,7 @@ create or replace function public.stage_paper_neighbors(rows jsonb, reset boolea
 returns int language plpgsql security definer set search_path = public as $$
 declare n int;
 begin
-  if reset then delete from paper_neighbors_next; end if;
+  if reset then delete from paper_neighbors_next where true; end if;
   insert into paper_neighbors_next (source, rank, neighbor_id, similarity)
   select x->>'s', (x->>'r')::smallint, x->>'n', (x->>'v')::real
   from jsonb_array_elements(rows) x
@@ -1116,9 +1116,9 @@ declare n int;
 begin
   select count(*) into n from paper_neighbors_next;
   if n = 0 then return 0; end if;
-  delete from paper_neighbors;
+  delete from paper_neighbors where true;
   insert into paper_neighbors select distinct on (source, rank) * from paper_neighbors_next;
-  delete from paper_neighbors_next;
+  delete from paper_neighbors_next where true;
   return n;
 end $$;
 revoke all on function public.stage_paper_neighbors(jsonb, boolean) from public, anon, authenticated;
