@@ -104,6 +104,13 @@ export async function refreshAiCurve() {
   if (error) console.warn("refresh_ai_curve failed:", error.message);
 }
 
+// Some records carry placeholder dates far ahead (a Zenodo deposit said 2030-12-31), which
+// would pin them to the top of "newest first" lists. Anything over a week ahead: no date.
+export function plausibleDate(d: string | null | undefined): string | null {
+  if (!d) return null;
+  return Date.parse(d) > Date.now() + 7 * 86400_000 ? null : d;
+}
+
 export async function storeJudgement(
   paper: Paper,
   j: Judgement,
@@ -122,7 +129,7 @@ export async function storeJudgement(
     tags: paper.tags,
     area: looksLikeNotAPaper(paper.title) ? null : j.area, // no area: kept out of lists and For you
     paper_type: j.paperType,
-    published_on: paper.publishedOn,
+    published_on: plausibleDate(paper.publishedOn),
     cited_by_count: paper.citedByCount,
   });
   if (pErr) throw pErr;

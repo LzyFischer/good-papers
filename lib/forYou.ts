@@ -269,11 +269,11 @@ export async function rankForYou(
 }
 
 // The home page's "All papers" list, newest first, with papers in the reader's topics moved
-// up as if they were newer: two weeks for topics picked by hand, three days for topics learned
-// from activity. The browser keeps those topics in a cookie (TOPICS_COOKIE, "picked|learned",
+// up as if they were newer: half a year for topics picked by hand (so their papers from the
+// last six months come first), a month for topics learned from activity. The browser keeps those topics in a cookie (TOPICS_COOKIE, "picked|learned",
 // set by components/topicsCookie.ts) because sign-in lives in the browser, not on the server.
 export const TOPICS_COOKIE = "gp_topics";
-const HEAD_START_DAYS = { picked: 14, learned: 3 };
+const HEAD_START_DAYS = { picked: 180, learned: 30 };
 
 export type Topics = Map<string, number>; // area key -> head start in days
 
@@ -285,15 +285,27 @@ export function topicsFromCookie(value: string | undefined): Topics {
   return out;
 }
 
-const effectiveTime = (s: Score, topics: Topics) =>
-  (s.published_on ? Date.parse(s.published_on) : 0) + (s.area ? (topics.get(s.area) ?? 0) * 86400_000 : 0);
+// Undated papers (conference papers before their proceedings) in the reader's topics count as
+// a month old, so they come up with the rest of the topic; elsewhere they stay at the end.
+// The day is fixed per calendar day, so the order holds while the list grows.
+const UNDATED_AGE_DAYS = 30;
+const effectiveTime = (s: Score, topics: Topics) => {
+  const head = s.area ? topics.get(s.area) : undefined;
+  if (!s.published_on) {
+    if (head === undefined) return 0;
+    const today = Date.parse(new Date().toISOString().slice(0, 10));
+    return today - UNDATED_AGE_DAYS * 86400_000 + head * 86400_000;
+  }
+  return Date.parse(s.published_on) + (head ?? 0) * 86400_000;
+};
 
 const activity = (s: Score) => {
   const t = (s as Score & { last_activity?: string | null }).last_activity;
   return t ? Date.parse(t) : 0;
 };
 
-// Topic keys by head start, one list query each (see mergeByTopics).
+// Topic keys by head start, one list query each, plus one for their undated papers (see
+// mergeByTopics).
 export function topicGroups(topics: Topics): string[][] {
   const by = new Map<number, string[]>();
   for (const [k, d] of topics) by.set(d, [...(by.get(d) ?? []), k]);
@@ -301,8 +313,9 @@ export function topicGroups(topics: Topics): string[][] {
 }
 
 // Merges the newest papers overall with the newest in each group of the reader's topics.
-// Exact for the first `n`, and stable as the list grows: within each list every paper gets
-// the same head start, and ties break the way the database orders them (last activity, then
+// Exact for the first `n`, and stable as the list grows: each list is in the same order as
+// this sort (one head start per list; a topic's undated papers get their own list, as they
+// all share one time), and ties break the way the database orders them (last activity, then
 // id), so nothing outside the lists can rank higher.
 export function mergeByTopics(lists: Score[][], topics: Topics, n: number): Score[] {
   const seen = new Map<string, Score>();

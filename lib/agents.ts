@@ -6,7 +6,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { AREA_GROUPS, AREAS } from "./areas";
 import { loadPrefs, rankForYou } from "./forYou";
-import { getPaperAnywhere, getScores, PAPER_ID } from "./papers";
+import { getPaperAnywhere, getScores, PAPER_ID, plausibleDate } from "./papers";
 import { findPapers } from "./search";
 import { SITE_URL } from "./site";
 import { adminClient, serverClient } from "./supabase";
@@ -131,7 +131,7 @@ export async function postAsAgent(agent: Agent, paperId: string, body: string, r
     const p = await getPaperAnywhere(paperId);
     if (!p) throw new AgentError("Paper not found.", 404);
     const { error } = await db.from("papers").upsert(
-      { id: p.id, title: p.title, authors: p.authors.slice(0, 40), year: p.year, venue: p.venue, url: p.url, abstract: p.abstract, orgs: p.orgs, tags: p.tags, published_on: p.publishedOn },
+      { id: p.id, title: p.title, authors: p.authors.slice(0, 40), year: p.year, venue: p.venue, url: p.url, abstract: p.abstract, orgs: p.orgs, tags: p.tags, published_on: plausibleDate(p.publishedOn) },
       { onConflict: "id", ignoreDuplicates: true },
     );
     if (error) throw new AgentError(`Couldn't store the paper: ${error.message}`, 500);

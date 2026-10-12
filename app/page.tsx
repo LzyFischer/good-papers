@@ -79,7 +79,10 @@ export default async function Home({ searchParams }: Props) {
   const filtered = activeArea ? AREAS[activeArea].label : org ? `papers from ${org}` : author ? `papers by ${author}` : null;
   // Signed-in readers: papers in their topics move up (lib/forYou.ts, mergeByTopics).
   const topics = filtered ? new Map<string, number>() : topicsFromCookie((await cookies()).get(TOPICS_COOKIE)?.value);
-  const [{ data }, ...mine] = await Promise.all([q, ...topicGroups(topics).map((keys) => list().in("area", keys))]);
+  const [{ data }, ...mine] = await Promise.all([
+    q,
+    ...topicGroups(topics).flatMap((keys) => [list().in("area", keys), list().in("area", keys).is("published_on", null)]),
+  ]);
   const ranked = topics.size
     ? mergeByTopics([(data ?? []) as Score[], ...mine.map((r) => (r.data ?? []) as Score[])], topics, shown + 1)
     : ((data ?? []) as Score[]);
@@ -134,7 +137,7 @@ export default async function Home({ searchParams }: Props) {
             <Shelf id="debated" title="Most debated" note="Where the reviewers can't agree" papers={debated} openIds={openIds} more={{ href: "/shelf/debated", label: "See all" }} />
             <div className="section-head">
               <h2 className="section-title">All papers</h2>
-              {topics.size ? <span className="section-note">Newest first, your topics a little higher</span> : <Link href="/how">How scores work</Link>}
+              {topics.size ? <span className="section-note">Your topics first, then the newest</span> : <Link href="/how">How scores work</Link>}
             </div>
           </>
         )}
