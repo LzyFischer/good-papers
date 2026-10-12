@@ -33,5 +33,9 @@ export async function savePrefs(uid: string, p: Prefs): Promise<string | null> {
     .upsert({ user_id: uid, ...p, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
   if (error) return error.message;
   cache = { uid, promise: Promise.resolve(p) };
+  // New topics: the saved For you lists are out of date.
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith("gp_foryou:")) localStorage.removeItem(k);
+  } catch {}
   return null;
 }

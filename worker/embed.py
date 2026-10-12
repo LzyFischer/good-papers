@@ -13,6 +13,8 @@ import argparse
 import json
 import os
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import time
 
 import httpx
@@ -59,14 +61,21 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true", help="compute but don't write")
     ap.add_argument("--limit", type=int, default=50_000)
     ap.add_argument("--any", action="store_true", help="take papers whether or not they have one (testing)")
+    ap.add_argument("--no-neighbors", action="store_true", help="skip recomputing neighbours")
     args = ap.parse_args()
 
     http = db()
     papers = missing(http, args.limit, args.any)
     print(f"{len(papers)} papers need an embedding", flush=True)
-    if not papers:
-        return
+    if papers:
+        embed(http, papers, args)
+    if not args.dry_run and not args.no_neighbors:
+        import neighbors  # worker/neighbors.py: recompute "For you" neighbours from all vectors
 
+        neighbors.run(http)
+
+
+def embed(http: httpx.Client, papers: list[dict], args: argparse.Namespace) -> None:
     torch.set_num_threads(os.cpu_count() or 2)
     tok = AutoTokenizer.from_pretrained("allenai/specter2_base")
     model = AutoAdapterModel.from_pretrained("allenai/specter2_base")

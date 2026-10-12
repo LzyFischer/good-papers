@@ -1,18 +1,13 @@
 "use client";
 // The full For you list (up to 100 papers), behind the home shelf's "See all".
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import type { ForYou } from "@/lib/forYou";
 import { signIn, useSession } from "./AuthButton";
-import { loadForYou } from "./ForYou";
+import { useForYou } from "./ForYou";
 import { MiniCard } from "./Shelf";
 
 export function ForYouPage() {
   const { session, ready } = useSession();
-  const [r, setR] = useState<ForYou | null>(null);
-  useEffect(() => {
-    if (session) loadForYou(session.user.id, 100).then(setR);
-  }, [session]);
+  const { list: r } = useForYou(100);
 
   if (!ready) return null;
   if (!session)

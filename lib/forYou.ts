@@ -11,8 +11,6 @@ export type Prefs = { areas: string[]; venues: string[]; name: string | null; in
 
 const DAYS = 21; // "right now"
 const SIMILAR_DAYS = 45; // how far back papers close to what you read can come from
-const TOPIC_NEAR_DAYS = 180; // ... and papers close to a topic you picked (quiet topics need room)
-const TOPIC_NEAR_TOP = 20; // neighbours per picked topic
 
 // Area keys to query: a followed group means every area in it.
 export function areaKeys(areas: string[]): string[] {
@@ -37,7 +35,7 @@ const WINDOW_DAYS = 120;
 export type Affinity = {
   area: Map<string, number>; // -1..1
   group: Map<string, number>; // -1..1
-  papers: Map<string, number>; // net weight per paper, for the embedding match (similar_papers)
+  papers: Map<string, number>; // net weight per paper: the seeds for papers close in content
 };
 
 export async function learnedAffinity(db: SupabaseClient, uid: string): Promise<Affinity> {
@@ -98,26 +96,17 @@ function seedPapers(learned: Affinity | null): { ids: string[]; weights: number[
   return { ids: top.map(([id]) => id), weights: top.map(([, w]) => w) };
 }
 
-type Similar = { id: string; similarity: number; like_id: string; like_title: string };
+type Neighbor = { source: string; rank: number; neighbor_id: string };
 
-// Similarity relative to the best and worst match of one query, 0..1.
-function relative(list: Similar[]): Map<string, number> {
-  const sims = list.map((n) => n.similarity);
-  const [lo, hi] = [Math.min(...sims), Math.max(...sims)];
-  return new Map(list.map((n) => [n.id, hi > lo ? (n.similarity - lo) / (hi - lo) : 1]));
-}
+// paper_neighbors (migration 018, worker/neighbors.py): the 20 papers closest in content to
+// each paper and to each topic ("area:<key>"), among recent ones. Rank 0 counts 1, rank 19 0.4.
+const NEIGHBORS = 20;
+const byRank = (rank: number) => 1 - rank / (NEIGHBORS * 1.6);
 
-// Papers close in content to a topic the reader picked, starting from that topic's newest
-// papers: a topic with one paper still finds its neighbours (audio synthesis -> speech, TTS).
-async function nearTopic(db: SupabaseClient, area: string): Promise<Similar[]> {
-  const { data } = await db.from("papers").select("id").eq("area", area).not("embedding", "is", null)
-    .order("published_on", { ascending: false, nullsFirst: false }).limit(30);
-  const ids = (data ?? []).map((r) => r.id as string);
-  if (!ids.length) return [];
-  const { data: near, error } = await db.rpc("similar_papers", {
-    p_ids: ids, p_weights: ids.map(() => 1), p_since: new Date(Date.now() - TOPIC_NEAR_DAYS * 86400_000).toISOString().slice(0, 10), p_limit: TOPIC_NEAR_TOP,
-  });
-  return error ? [] : ((near ?? []) as Similar[]);
+async function neighborsOf(db: SupabaseClient, sources: string[]): Promise<Neighbor[]> {
+  if (!sources.length) return [];
+  const { data, error } = await db.from("paper_neighbors").select("source, rank, neighbor_id").in("source", sources).limit(1000);
+  return error ? [] : ((data ?? []) as Neighbor[]);
 }
 
 export async function rankForYou(
@@ -142,7 +131,7 @@ export async function rankForYou(
   const venues = prefs?.venues ?? [];
   // Single topics picked by hand (not whole groups), at most 8.
   const pickedFine = (prefs?.areas ?? []).filter((a) => AREAS[a]).slice(0, 8);
-  const [hot, mine, chosenTopics, conf, voted, near, ...byTopic] = await Promise.all([
+  const [hot, mine, chosenTopics, conf, voted, near, byTopic, seedRows] = await Promise.all([
     // What's hot this month in any area: the timely part.
     db.from("paper_scores").select("*").not("score", "is", null).not("area", "is", null).gte("published_on", since)
       .order("hf_upvotes", { ascending: false, nullsFirst: false }).limit(Math.max(120, limit * 3)),
@@ -161,34 +150,53 @@ export async function rankForYou(
           .or(venues.map((v) => `venue.ilike.${v}*`).join(",")).order("hf_upvotes", { ascending: false, nullsFirst: false }).limit(40)
       : Promise.resolve({ data: [] }),
     known.voted ?? votedOn(db, uid),
-    // Papers closest in content to what they read, voted on and commented on (SPECTER2 vectors).
-    seeds.ids.length
-      ? db.rpc("similar_papers", { p_ids: seeds.ids, p_weights: seeds.weights, p_since: day(SIMILAR_DAYS), p_limit: Math.max(60, limit * 2) })
-          .then((r) => (r.error ? [] : ((r.data ?? []) as Similar[])))
-      : Promise.resolve([] as Similar[]),
-    ...pickedFine.map((a) => nearTopic(db, a)),
+    // Papers closest in content to each paper they read, voted on or commented on, and to
+    // each topic they picked: a topic with one paper still finds its neighbours.
+    neighborsOf(db, seeds.ids),
+    neighborsOf(db, pickedFine.map((a) => `area:${a}`)),
+    seeds.ids.length ? db.from("papers").select("id, title").in("id", seeds.ids) : Promise.resolve({ data: [] }),
   ]);
-  // How close each paper is to a picked topic (the closest one), by rank: SPECTER2 similarities
-  // bunch up (0.93-0.96), so the 1st neighbour gets 1 and the 20th 0.69.
+  // Close to a picked topic: the closest one, by rank.
   const topicNear = new Map<string, { closeness: number; topic: string }>();
-  byTopic.forEach((list, i) => {
-    (list as Similar[]).forEach((n, rank) => {
-      const c = 1 - rank / (TOPIC_NEAR_TOP * 1.6);
-      if (c > (topicNear.get(n.id)?.closeness ?? -1)) topicNear.set(n.id, { closeness: c, topic: pickedFine[i] });
-    });
-  });
-  // Their papers, as full rows.
-  const nearIds = [...new Set([...near.map((n) => n.id), ...topicNear.keys()])];
-  const nearRows: Score[] = [];
-  for (let i = 0; i < nearIds.length; i += 100) {
-    const { data } = await db.from("paper_scores").select("*").in("id", nearIds.slice(i, i + 100)).not("score", "is", null);
-    nearRows.push(...((data ?? []) as Score[]));
+  for (const n of byTopic) {
+    const c = byRank(n.rank);
+    if (c > (topicNear.get(n.neighbor_id)?.closeness ?? -1)) topicNear.set(n.neighbor_id, { closeness: c, topic: n.source.slice(5) });
   }
-  const closeness = relative(near);
-  const likeOf = new Map(near.map((n) => [n.id, n.like_title]));
+  // Close to what they read: each seed paper's neighbours on their own, so separate interests
+  // stay separate. A seed counts by how much they engaged with it (square root, so one
+  // long read doesn't drown the rest); the seed that adds most names the reason.
+  const topWeight = Math.max(1e-9, ...seeds.weights);
+  const seedWeight = new Map(seeds.ids.map((id, i) => [id, Math.sqrt(seeds.weights[i] / topWeight)]));
+  const fromSeeds = new Map<string, { sum: number; best: number; like: string }>();
+  for (const n of near) {
+    if (seedWeight.has(n.neighbor_id)) continue;
+    const c = (seedWeight.get(n.source) ?? 0) * byRank(n.rank);
+    const cur = fromSeeds.get(n.neighbor_id) ?? { sum: 0, best: 0, like: n.source };
+    cur.sum += c;
+    if (c > cur.best) Object.assign(cur, { best: c, like: n.source });
+    fromSeeds.set(n.neighbor_id, cur);
+  }
+  const titleOf = new Map(((seedRows.data ?? []) as { id: string; title: string }[]).map((r) => [r.id, r.title]));
+  // Their papers, as full rows (recent ones only for the reading-based part).
+  const nearIds = [...new Set([...fromSeeds.keys(), ...topicNear.keys()])];
+  const chunks: string[][] = [];
+  for (let i = 0; i < nearIds.length; i += 100) chunks.push(nearIds.slice(i, i + 100));
+  const nearRows = (
+    await Promise.all(chunks.map((ids) => db.from("paper_scores").select("*").in("id", ids).not("score", "is", null)))
+  ).flatMap((r) => (r.data ?? []) as Score[]);
+  const recent = day(SIMILAR_DAYS);
+  const closeness = new Map<string, number>();
+  const likeOf = new Map<string, string>();
+  for (const row of nearRows) {
+    const f = fromSeeds.get(row.id);
+    if (!f || (row.published_on && row.published_on < recent)) continue;
+    closeness.set(row.id, Math.min(1, f.sum));
+    const t = titleOf.get(f.like);
+    if (t) likeOf.set(row.id, t);
+  }
   const all = new Map<string, Score>();
   for (const r of [hot, mine, chosenTopics, conf]) for (const s of (r.data ?? []) as Score[]) all.set(s.id, s);
-  for (const s of nearRows) all.set(s.id, s);
+  for (const s of nearRows) if (closeness.has(s.id) || topicNear.has(s.id)) all.set(s.id, s);
   const fine = new Set(prefs?.areas ?? []);
   const maxHf = Math.max(1, ...[...all.values()].map((s) => s.hf_upvotes ?? 0));
   const now = Date.now();
