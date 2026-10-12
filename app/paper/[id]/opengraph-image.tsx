@@ -5,6 +5,7 @@ import { ImageResponse } from "next/og";
 import { tierOf } from "@/components/Score";
 import { getPaperAnywhere, getScores } from "@/lib/papers";
 import { isPreprint, venueLabel } from "@/lib/orgs";
+import { SITE_URL } from "@/lib/site";
 
 export const alt = "Good Papers rating";
 export const size = { width: 1200, height: 630 };
@@ -86,10 +87,9 @@ export default async function Image({ params }: { params: Promise<{ id: string }
 
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 24, color: "#a3a7ae" }}>
           <div style={{ display: "flex" }}>
-            {score?.reader_total ? `${score.reader_fresh} of ${score.reader_total} readers upvoted · ` : ""}
             {score?.ai_total ? `${score.ai_fresh} of ${score.ai_total} AI reviewers recommend it` : ""}
           </div>
-          <div style={{ display: "flex", color: "#d2f54a" }}>good-papers.vercel.app</div>
+          <div style={{ display: "flex", color: "#d2f54a" }}>{SITE_URL.replace(/^https?:\/\/(www\.)?/, "")}</div>
         </div>
       </div>
     ),

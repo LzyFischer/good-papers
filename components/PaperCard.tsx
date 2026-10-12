@@ -87,12 +87,10 @@ function Table({ icon, label, fresh, total, note, ai, open, id }: {
     <div className={ai ? "tbl tbl--ai" : "tbl"}>
       <Icon name={icon} />
       <span className="n">
-        {id && open && !ai ? <ReaderCounts id={id} fresh={fresh} total={total} kind="pct" /> : pct} <span className="l">{label}</span>
+        {id && open && !ai ? <ReaderCounts id={id} fresh={fresh} total={total} /> : pct} <span className="l">{label}</span>
       </span>
       <span className="l">
-        {id && open && !ai ? (
-          <ReaderCounts id={id} fresh={fresh} total={total} kind="text" />
-        ) : total ? (ai ? "reviewers recommend it" : open ? `${fresh} of ${total} upvoted` : "voted. Vote to see how they split") : "No votes yet"}
+        {ai ? (total ? "reviewers recommend it" : "No votes yet") : !total ? "No votes yet" : open ? "" : "voted. Vote to see how they split"}
         {note ? `. ${note}` : ""}
       </span>
     </div>

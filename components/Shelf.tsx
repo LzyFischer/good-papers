@@ -5,7 +5,6 @@ import type { Score } from "@/lib/types";
 import { Gate } from "./Gate";
 import { Thumb } from "./Thumb";
 import { LiveGauge, LiveLabel } from "./LiveScore";
-import { ReaderCounts } from "./ReaderCounts";
 import { VoteButtons } from "./VoteButtons";
 import { tierOf } from "./Score";
 
@@ -42,7 +41,7 @@ export function MiniCard({ s, scoreOpen = false, why }: { s: Score; scoreOpen?: 
           )}
           {t && <LiveLabel id={s.id} score={s.score!} />}
           <Gate id={s.id} open={scoreOpen || !t} mask={<span className="vote-to-see"> · vote to see score</span>}>
-            <ReaderCounts id={s.id} fresh={s.reader_fresh} total={s.reader_total} kind="mini" />
+            {""}
           </Gate>
           {s.hf_upvotes ? ` · ▲ ${s.hf_upvotes} on HF` : ""}
           {s.comments ? ` · ${s.comments} comments` : ""}
