@@ -10,7 +10,7 @@ import { adminClient } from "../lib/supabase";
 import type { Paper } from "../lib/types";
 
 async function main() {
-  const { data, error } = await adminClient().from("papers").select("*").not("abstract", "is", null);
+  const { data, error } = await adminClient().from("papers").select("id, title, authors, year, venue, url, abstract, orgs, tags, published_on, cited_by_count").not("abstract", "is", null);
   if (error) throw error;
   const papers: Paper[] = (data ?? []).map((r) => ({
     id: r.id,
