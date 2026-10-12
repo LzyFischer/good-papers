@@ -46,13 +46,27 @@ export async function learnedAffinity(db: SupabaseClient, uid: string): Promise<
     db.from("reader_views").select("paper_id, seconds, day").eq("user_id", uid).gte("day", since.slice(0, 10)).limit(2000),
   ]);
   const decay = (iso: string) => Math.pow(0.5, (Date.now() - Date.parse(iso)) / 86400_000 / HALF_LIFE_DAYS);
-  const signals: { paper: string; w: number }[] = [];
+  const signals: Signal[] = [];
   // Votes are one tap, so they count less than reading time or a comment.
   for (const v of votes.data ?? []) signals.push({ paper: v.paper_id, w: (v.worth_reading === true ? 0.3 : v.worth_reading === false ? -0.2 : 0.1) * decay(v.updated_at) });
   for (const c of comments.data ?? []) signals.push({ paper: c.paper_id, w: 2 * decay(c.created_at) });
   // Reading time: a glance counts little, five minutes or more counts most.
   for (const r of views.data ?? []) signals.push({ paper: r.paper_id, w: Math.min(5, r.seconds / 60) * decay(r.day) });
+  return affinityFromSignals(db, signals);
+}
 
+export type Signal = { paper: string; w: number };
+
+// Visitors who aren't signed in: the papers they opened on this browser (components/
+// guestHistory.ts), weighted like reading time, with a little for just opening one.
+export function guestSignals(history: { id: string; s: number; t: number }[]): Signal[] {
+  return history.map((h) => ({
+    paper: h.id,
+    w: (0.3 + Math.min(5, h.s / 60)) * Math.pow(0.5, (Date.now() - h.t) / 86400_000 / HALF_LIFE_DAYS),
+  }));
+}
+
+export async function affinityFromSignals(db: SupabaseClient, signals: Signal[]): Promise<Affinity> {
   const ids = [...new Set(signals.map((s) => s.paper))];
   const areaOf = new Map<string, string>();
   for (let i = 0; i < ids.length; i += 200) {
@@ -109,15 +123,17 @@ async function neighborsOf(db: SupabaseClient, sources: string[]): Promise<Neigh
   return error ? [] : ((data ?? []) as Neighbor[]);
 }
 
+// uid null: a visitor who isn't signed in; pass what we know about them in `known`
+// (their affinity from guestSignals, and the papers they've opened as `voted` to skip).
 export async function rankForYou(
   db: SupabaseClient,
-  uid: string,
+  uid: string | null,
   limit: number,
-  known: { prefs?: Prefs | null; voted?: Set<string> } = {},
+  known: { prefs?: Prefs | null; voted?: Set<string>; learned?: Affinity | null } = {},
 ): Promise<ForYou> {
   const [prefs, learned] = await Promise.all([
-    known.prefs !== undefined ? known.prefs : loadPrefs(db, uid),
-    learnedAffinity(db, uid).catch(() => null),
+    known.prefs !== undefined ? known.prefs : uid ? loadPrefs(db, uid) : null,
+    known.learned !== undefined ? known.learned : uid ? learnedAffinity(db, uid).catch(() => null) : null,
   ]);
   const picked = areaKeys(prefs?.areas ?? []);
   // Topics the reader picked come first; the ones their activity points to add a little.
@@ -149,7 +165,7 @@ export async function rankForYou(
       ? db.from("paper_scores").select("*").in("area", keys).not("score", "is", null)
           .or(venues.map((v) => `venue.ilike.${v}*`).join(",")).order("hf_upvotes", { ascending: false, nullsFirst: false }).limit(40)
       : Promise.resolve({ data: [] }),
-    known.voted ?? votedOn(db, uid),
+    known.voted ?? (uid ? votedOn(db, uid) : new Set<string>()),
     // Papers closest in content to each paper they read, voted on or commented on, and to
     // each topic they picked: a topic with one paper still finds its neighbours.
     neighborsOf(db, seeds.ids),

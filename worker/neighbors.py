@@ -1,10 +1,12 @@
 """Nearest neighbours for "For you" (migration 018), from the SPECTER2 vectors.
 
-For every paper a reader engaged with in the last 120 days (voted on, commented on or read:
-the only papers "For you" starts from, lib/forYou.ts) and for every topic (the average of
-its papers), the 20 closest papers that are recent (published in the last 180 days, or
-undated like conference papers) and in scope (have an area). So the table grows with reader
-activity, not with the number of papers. Written to paper_neighbors_next, then swapped in.
+For every paper "For you" can start from (one a signed-in reader engaged with in the last
+120 days, or any recent one, since visitors who aren't signed in mostly open recent papers
+and their history stays in the browser) and for every topic (the average of its papers),
+the 20 closest papers that are recent (published in the last 180 days, or undated like
+conference papers) and in scope (have an area). So the table grows with reader activity and
+the recent window, not with the number of papers. Written to paper_neighbors_next, then
+swapped in at once.
 Run at the end of worker/embed.py; `--dry-run` computes without writing.
 """
 import datetime as dt
@@ -69,7 +71,7 @@ def compute(ids, areas, dates, m, sources_of_interest: set[str] | None = None) -
     cand_idx = np.flatnonzero(cand)
     cm = m[cand_idx]
 
-    keep = [i for i, pid in enumerate(ids) if sources_of_interest is None or pid in sources_of_interest]
+    keep = [i for i, pid in enumerate(ids) if sources_of_interest is None or pid in sources_of_interest or cand[i]]
     sources: list[str] = [ids[i] for i in keep]
     svecs = [m[keep]]
     by_area: dict[str, list[int]] = {}
@@ -106,7 +108,7 @@ def run(http: httpx.Client, dry_run: bool = False) -> None:
     ids, areas, dates, m = load(http)
     seen = engaged(http)
     rows = compute(ids, areas, dates, m, seen)
-    print(f"neighbours: {len(ids)} papers, {len(seen)} with reader activity, {len(rows)} rows", flush=True)
+    print(f"neighbours: {len(ids)} papers, {len(seen)} with reader activity, {len({r['s'] for r in rows})} sources, {len(rows)} rows", flush=True)
     if dry_run:
         by_id = dict(zip(ids, areas))
         for src in [s for s in {r["s"] for r in rows} if s.startswith("area:")][:2]:

@@ -57,7 +57,9 @@ export default function Privacy() {
       <h2>Cookies and storage</h2>
       <p>
         We use your browser&apos;s storage to keep you signed in and to remember small things like which replies you&apos;ve
-        seen. No advertising or analytics cookies.
+        seen. If you aren&apos;t signed in, the papers you open are remembered in your browser only, to pick your For you
+        papers; clearing your browser data removes them, and signing in moves them into your account. No advertising or
+        analytics cookies.
       </p>
 
       <h2>Your choices</h2>
