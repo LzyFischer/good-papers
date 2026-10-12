@@ -112,15 +112,19 @@ function seedPapers(learned: Affinity | null): { ids: string[]; weights: number[
 
 type Neighbor = { source: string; rank: number; neighbor_id: string };
 
-// paper_neighbors (migration 018, worker/neighbors.py): the 20 papers closest in content to
-// each paper and to each topic ("area:<key>"), among recent ones. Rank 0 counts 1, rank 19 0.4.
+// paper_neighbors (migration 019, worker/neighbors.py): the 20 papers closest in content to
+// each paper and to each topic ("area:<key>"), among recent ones, one row per source.
+// Rank 0 counts 1, rank 19 0.4.
 const NEIGHBORS = 20;
 const byRank = (rank: number) => 1 - rank / (NEIGHBORS * 1.6);
 
 async function neighborsOf(db: SupabaseClient, sources: string[]): Promise<Neighbor[]> {
   if (!sources.length) return [];
-  const { data, error } = await db.from("paper_neighbors").select("source, rank, neighbor_id").in("source", sources).limit(1000);
-  return error ? [] : ((data ?? []) as Neighbor[]);
+  const { data, error } = await db.from("paper_neighbors").select("source, neighbor_ids").in("source", sources);
+  if (error) return [];
+  return ((data ?? []) as { source: string; neighbor_ids: string[] }[]).flatMap((row) =>
+    row.neighbor_ids.map((neighbor_id, rank) => ({ source: row.source, rank, neighbor_id })),
+  );
 }
 
 // uid null: a visitor who isn't signed in; pass what we know about them in `known`

@@ -1,8 +1,9 @@
-"""Nearest neighbours for "For you" (migration 018), from the SPECTER2 vectors.
+"""Nearest neighbours for "For you" (migrations 018-019), from the SPECTER2 vectors.
 
 For every paper on the site and for every topic (the average of its papers), the 20 closest
 papers that are recent (published in the last 180 days, or undated like conference papers)
-and in scope (have an area). Written to paper_neighbors_next, then swapped in at once.
+and in scope (have an area). One row per source, upserted in small batches; sources this
+run didn't touch (deleted papers, retired topics) are removed at the end.
 Run at the end of worker/embed.py; `--dry-run` computes without writing.
 """
 import datetime as dt
@@ -14,7 +15,7 @@ import numpy as np
 
 TOP = 20
 RECENT_DAYS = 180
-BATCH_ROWS = 5000
+BATCH_ROWS = 1000
 
 
 def load(http: httpx.Client) -> tuple[list[str], list[str | None], list[str | None], np.ndarray]:
@@ -65,34 +66,33 @@ def compute(ids, areas, dates, m) -> list[dict]:
         top = np.argpartition(-sims, k - 1, axis=1)[:, :k]
         for b in range(sims.shape[0]):
             src = sources[start + b]
-            order = top[b][np.argsort(-sims[b, top[b]])]
-            rank = 0
-            for j in order:
-                nid = ids[cand_idx[j]]
-                if nid == src:
-                    continue
-                rows.append({"s": src, "r": rank, "n": nid, "v": round(float(sims[b, j]), 4)})
-                rank += 1
-                if rank == TOP:
-                    break
+            order = [j for j in top[b][np.argsort(-sims[b, top[b]])] if ids[cand_idx[j]] != src][:TOP]
+            rows.append({
+                "source": src,
+                "neighbor_ids": [ids[cand_idx[j]] for j in order],
+                "similarities": [round(float(sims[b, j]), 4) for j in order],
+            })
     return rows
 
 
 def run(http: httpx.Client, dry_run: bool = False) -> None:
     ids, areas, dates, m = load(http)
+    started = dt.datetime.now(dt.timezone.utc).isoformat()
     rows = compute(ids, areas, dates, m)
-    print(f"neighbours: {len(ids)} papers, {len(rows)} rows", flush=True)
+    print(f"neighbours: {len(ids)} papers, {len(rows)} sources", flush=True)
     if dry_run:
         by_id = dict(zip(ids, areas))
-        for src in [s for s in {r["s"] for r in rows} if s.startswith("area:")][:2]:
-            print(f"  {src}:", [by_id[r["n"]] for r in rows if r["s"] == src][:8])
+        for row in [r for r in rows if r["source"].startswith("area:")][:2]:
+            print(f"  {row['source']}:", [by_id[n] for n in row["neighbor_ids"]][:8])
         return
     for i in range(0, len(rows), BATCH_ROWS):
-        r = http.post("/rpc/stage_paper_neighbors", json={"rows": rows[i : i + BATCH_ROWS], "reset": i == 0}, timeout=120)
+        batch = [{**r, "updated_at": started} for r in rows[i : i + BATCH_ROWS]]
+        r = http.post("/paper_neighbors", json=batch, headers={"Prefer": "resolution=merge-duplicates"}, timeout=60)
         r.raise_for_status()
-    r = http.post("/rpc/publish_paper_neighbors", json={}, timeout=120)
+    # Sources this run didn't write: papers deleted since, topics no longer used.
+    r = http.delete("/paper_neighbors", params={"updated_at": f"lt.{started}"}, timeout=60)
     r.raise_for_status()
-    print(f"published {r.json()} neighbour rows", flush=True)
+    print(f"wrote {len(rows)} neighbour rows", flush=True)
 
 
 if __name__ == "__main__":
