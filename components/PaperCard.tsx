@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Thumb } from "./Thumb";
 import { AREAS } from "@/lib/areas";
 import { arxivIdOf } from "@/lib/arxiv";
 import { sessionWhen } from "@/lib/sessions";
@@ -167,11 +168,7 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
             </Link>
           )}
         </div>
-        {score?.thumbnail && (
-          // Hotlinked arXiv figure; plain img keeps it out of Next's image proxy.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className="thumb" src={score.thumbnail} alt="" loading="lazy" />
-        )}
+        {score?.thumbnail && <Thumb className="thumb" src={score.thumbnail} />}
         <h2 className="title">{title}</h2>
         {score?.tldr && <p className="tldr">{score.tldr}</p>}
         <p className="authors">

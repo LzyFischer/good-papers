@@ -3,6 +3,7 @@ import { AREAS } from "@/lib/areas";
 import { isPreprint, venueLabel } from "@/lib/orgs";
 import type { Score } from "@/lib/types";
 import { Gate } from "./Gate";
+import { Thumb } from "./Thumb";
 import { LiveGauge, LiveLabel } from "./LiveScore";
 import { ReaderCounts } from "./ReaderCounts";
 import { VoteButtons } from "./VoteButtons";
@@ -17,9 +18,7 @@ export function MiniCard({ s, scoreOpen = false, why }: { s: Score; scoreOpen?: 
       <Link href={`/paper/${s.id}`} className="mini-link">
         <span className="mini-thumb">
           {s.thumbnail ? (
-            // Figures are hotlinked from arXiv; plain img keeps them out of Next's image proxy.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={s.thumbnail} alt="" loading="lazy" />
+            <Thumb src={s.thumbnail} fallback={<span className="mini-thumb-empty">{area ?? "Paper"}</span>} />
           ) : (
             <span className="mini-thumb-empty">{area ?? "Paper"}</span>
           )}
