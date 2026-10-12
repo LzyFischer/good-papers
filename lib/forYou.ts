@@ -11,6 +11,8 @@ export type Prefs = { areas: string[]; venues: string[]; name: string | null; in
 
 const DAYS = 21; // "right now"
 const SIMILAR_DAYS = 45; // how far back papers close to what you read can come from
+const TOPIC_NEAR_DAYS = 180; // ... and papers close to a topic you picked (quiet topics need room)
+const TOPIC_NEAR_TOP = 20; // neighbours per picked topic
 
 // Area keys to query: a followed group means every area in it.
 export function areaKeys(areas: string[]): string[] {
@@ -98,6 +100,26 @@ function seedPapers(learned: Affinity | null): { ids: string[]; weights: number[
 
 type Similar = { id: string; similarity: number; like_id: string; like_title: string };
 
+// Similarity relative to the best and worst match of one query, 0..1.
+function relative(list: Similar[]): Map<string, number> {
+  const sims = list.map((n) => n.similarity);
+  const [lo, hi] = [Math.min(...sims), Math.max(...sims)];
+  return new Map(list.map((n) => [n.id, hi > lo ? (n.similarity - lo) / (hi - lo) : 1]));
+}
+
+// Papers close in content to a topic the reader picked, starting from that topic's newest
+// papers: a topic with one paper still finds its neighbours (audio synthesis -> speech, TTS).
+async function nearTopic(db: SupabaseClient, area: string): Promise<Similar[]> {
+  const { data } = await db.from("papers").select("id").eq("area", area).not("embedding", "is", null)
+    .order("published_on", { ascending: false, nullsFirst: false }).limit(30);
+  const ids = (data ?? []).map((r) => r.id as string);
+  if (!ids.length) return [];
+  const { data: near, error } = await db.rpc("similar_papers", {
+    p_ids: ids, p_weights: ids.map(() => 1), p_since: new Date(Date.now() - TOPIC_NEAR_DAYS * 86400_000).toISOString().slice(0, 10), p_limit: TOPIC_NEAR_TOP,
+  });
+  return error ? [] : ((near ?? []) as Similar[]);
+}
+
 export async function rankForYou(
   db: SupabaseClient,
   uid: string,
@@ -118,7 +140,9 @@ export async function rankForYou(
   const day = (n: number) => new Date(Date.now() - n * 86400_000).toISOString().slice(0, 10);
   const since = day(DAYS);
   const venues = prefs?.venues ?? [];
-  const [hot, mine, chosenTopics, conf, voted, near] = await Promise.all([
+  // Single topics picked by hand (not whole groups), at most 8.
+  const pickedFine = (prefs?.areas ?? []).filter((a) => AREAS[a]).slice(0, 8);
+  const [hot, mine, chosenTopics, conf, voted, near, ...byTopic] = await Promise.all([
     // What's hot this month in any area: the timely part.
     db.from("paper_scores").select("*").not("score", "is", null).not("area", "is", null).gte("published_on", since)
       .order("hf_upvotes", { ascending: false, nullsFirst: false }).limit(Math.max(120, limit * 3)),
@@ -142,18 +166,25 @@ export async function rankForYou(
       ? db.rpc("similar_papers", { p_ids: seeds.ids, p_weights: seeds.weights, p_since: day(SIMILAR_DAYS), p_limit: Math.max(60, limit * 2) })
           .then((r) => (r.error ? [] : ((r.data ?? []) as Similar[])))
       : Promise.resolve([] as Similar[]),
+    ...pickedFine.map((a) => nearTopic(db, a)),
   ]);
+  // How close each paper is to a picked topic (the closest one), by rank: SPECTER2 similarities
+  // bunch up (0.93-0.96), so the 1st neighbour gets 1 and the 20th 0.69.
+  const topicNear = new Map<string, { closeness: number; topic: string }>();
+  byTopic.forEach((list, i) => {
+    (list as Similar[]).forEach((n, rank) => {
+      const c = 1 - rank / (TOPIC_NEAR_TOP * 1.6);
+      if (c > (topicNear.get(n.id)?.closeness ?? -1)) topicNear.set(n.id, { closeness: c, topic: pickedFine[i] });
+    });
+  });
   // Their papers, as full rows.
-  const nearIds = near.map((n) => n.id);
+  const nearIds = [...new Set([...near.map((n) => n.id), ...topicNear.keys()])];
   const nearRows: Score[] = [];
   for (let i = 0; i < nearIds.length; i += 100) {
     const { data } = await db.from("paper_scores").select("*").in("id", nearIds.slice(i, i + 100)).not("score", "is", null);
     nearRows.push(...((data ?? []) as Score[]));
   }
-  // Similarity relative to the best and worst match, 0..1.
-  const sims = near.map((n) => n.similarity);
-  const [lo, hi] = [Math.min(...sims), Math.max(...sims)];
-  const closeness = new Map(near.map((n) => [n.id, hi > lo ? (n.similarity - lo) / (hi - lo) : 1]));
+  const closeness = relative(near);
   const likeOf = new Map(near.map((n) => [n.id, n.like_title]));
   const all = new Map<string, Score>();
   for (const r of [hot, mine, chosenTopics, conf]) for (const s of (r.data ?? []) as Score[]) all.set(s.id, s);
@@ -173,14 +204,18 @@ export async function rankForYou(
       ? 0.4 * (learned.area.get(s.area) ?? 0) + 0.15 * (learned.group.get(AREAS[s.area]?.group ?? "") ?? 0)
       : 0;
     const similar = 0.6 * (closeness.get(s.id) ?? 0);
-    const interest = Math.max(-0.5, Math.min(1, Math.max(chosen, similar, Math.min(0.5, activity)) + Math.min(0, activity) * 0.5));
+    // Close to a picked topic: between the topic itself (1) and what activity suggests (<= 0.6).
+    const nearPicked = 0.9 * (topicNear.get(s.id)?.closeness ?? 0);
+    const interest = Math.max(-0.5, Math.min(1, Math.max(chosen, nearPicked, similar, Math.min(0.5, activity)) + Math.min(0, activity) * 0.5));
     const venue = venues.some((v) => s.venue?.startsWith(v)) ? 0.1 : 0;
-    return 0.5 * interest + 0.3 * timely + 0.2 * (s.score ?? 0) + venue;
+    return 0.6 * interest + 0.25 * timely + 0.15 * (s.score ?? 0) + venue;
   };
   // Why each paper is here, strongest reason first.
   const reason = (s: Score): string => {
     const label = s.area ? AREAS[s.area]?.label : null;
     if (s.area && (fine.has(s.area) || picked.includes(s.area)) && label) return `In ${label}`;
+    const tn = topicNear.get(s.id);
+    if (tn && 0.9 * tn.closeness >= 0.6 * (closeness.get(s.id) ?? 0)) return `Close to ${AREAS[tn.topic]?.label ?? tn.topic}`;
     const like = likeOf.get(s.id);
     if (like && (closeness.get(s.id) ?? 0) > 0.25) return `Like “${like.length > 60 ? `${like.slice(0, 57)}…` : like}”`;
     if (s.area && label && (learned?.area.get(s.area) ?? 0) > 0.2) return `You read about ${label}`;
