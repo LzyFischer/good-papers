@@ -34,7 +34,18 @@ function rebuildAbstract(inv?: Record<string, number[]> | null): string | null {
   return words.join(" ").replace(/\s+/g, " ").trim() || null;
 }
 
+// Not papers: code and data deposits (e.g. Zenodo's "Code for the manuscript titled ..."),
+// peer reviews, errata. Checked by OpenAlex type and by title.
+const NOT_PAPER_TYPES = new Set(["dataset", "software", "peer-review", "paratext", "erratum", "retraction", "supplementary-materials"]);
+const NOT_PAPER_TITLE = /^(?:(?:source )?code|data(?:set)?|software|supplementary (?:material|data|information)|replication (?:package|data))(?: and (?:code|data))? (?:for|of|accompanying|associated with|supporting)\b/i;
+
+export function looksLikeNotAPaper(title: string): boolean {
+  return NOT_PAPER_TITLE.test(title.trim());
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
+const isPaper = (w: any) => !NOT_PAPER_TYPES.has(w.type) && !looksLikeNotAPaper(w.display_name ?? "");
+
 function toPaper(w: any): Paper {
   const orgs = new Set<string>();
   for (const a of w.authorships ?? []) {
@@ -62,7 +73,7 @@ export async function searchPapers(query: string): Promise<Paper[]> {
   });
   if (!res.ok) throw new Error(`OpenAlex search failed (${res.status})`);
   const data = await res.json();
-  return (data.results ?? []).map(toPaper);
+  return (data.results ?? []).filter(isPaper).map(toPaper);
 }
 
 export async function getPaper(id: string): Promise<Paper | null> {
@@ -82,7 +93,7 @@ export async function getNewestPapers(days = 3, limit = 25): Promise<Paper[]> {
   );
   if (!res.ok) throw new Error(`OpenAlex newest failed (${res.status}): ${await res.text()}`);
   const data = await res.json();
-  return (data.results ?? []).map(toPaper);
+  return (data.results ?? []).filter(isPaper).map(toPaper);
 }
 
 // Current citation counts for OpenAlex ids (50 per request).
@@ -121,7 +132,7 @@ async function oa(path: string, extra: Record<string, string>, select?: string):
 
 async function works(filter: string, page: number, extra: Record<string, string> = {}) {
   const data = await oa("/works", { filter, per_page: String(PAGE_SIZE), page: String(page), ...extra });
-  return { papers: (data.results ?? []).map(toPaper) as Paper[], total: (data.meta?.count as number) ?? 0 };
+  return { papers: (data.results ?? []).filter(isPaper).map(toPaper) as Paper[], total: (data.meta?.count as number) ?? 0 };
 }
 
 // arXiv and published versions are separate OpenAlex works; keep the first (newest) of each title.
@@ -203,7 +214,7 @@ export async function getAuthorWorks(name: string, fromWork: string | null, page
     kept = all.filter((w) => inCircle.has(shortId(w.id)));
   }
   kept = dedupeByTitle(kept, (w) => w.display_name ?? "");
-  const papers = kept.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(toPaper) as Paper[];
+  const papers = kept.filter(isPaper).slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(toPaper) as Paper[];
   return { name: main.display_name ?? name, institutions, records: ids.length, papers, total: kept.length };
 }
 
@@ -237,7 +248,7 @@ export async function getPapersByArxivIds(ids: string[]): Promise<Paper[]> {
     const dois = ids.slice(i, i + 50).map((id) => `10.48550/arxiv.${id}`).join("|");
     const res = await oaFetch(`${BASE}/works?${params({ filter: `doi:${dois}`, per_page: "50" })}`, { cache: "no-store" });
     if (!res.ok) throw new Error(`OpenAlex arXiv lookup failed (${res.status})`);
-    out.push(...((await res.json()).results ?? []).map(toPaper));
+    out.push(...((await res.json()).results ?? []).filter(isPaper).map(toPaper));
   }
   return out;
 }

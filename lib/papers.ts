@@ -1,5 +1,5 @@
 import { ARXIV_PAPER, arxivIdOf, arxivPaperId, getArxivPapers } from "./arxiv";
-import { getCitationCounts, getPaper } from "./openalex";
+import { getCitationCounts, getPaper, looksLikeNotAPaper } from "./openalex";
 import { adminClient, serverClient } from "./supabase";
 import { writeTakes } from "./takes";
 import type { Judgement } from "./judge";
@@ -120,7 +120,7 @@ export async function storeJudgement(
     abstract: paper.abstract,
     orgs: paper.orgs,
     tags: paper.tags,
-    area: j.area,
+    area: looksLikeNotAPaper(paper.title) ? null : j.area, // no area: kept out of lists and For you
     paper_type: j.paperType,
     published_on: paper.publishedOn,
     cited_by_count: paper.citedByCount,
