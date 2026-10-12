@@ -48,9 +48,8 @@ Machine learning now produces thousands of papers a month, yet the signals resea
 We present \sys{}, an open-source website that answers one question for each new paper: \emph{is it worth reading?}
 Each paper receives a 0--100\% score and a plain label from two complementary sources.
 An AI panel of 20 reviewer personas, each answering one narrow question with a calibrated threshold, rates every paper the moment it appears and serves as a prior.
-Readers then take over by voting \emph{Worth reading} or \emph{Not for me}, with safeguards against self-promotion, bloc voting and herding: down-weighting conflicts of interest, reputation weights, bridging-based aggregation and voting before the score is revealed.
+Readers then take over by voting \emph{Worth reading} or \emph{Not for me}, with safeguards against self-promotion, bloc voting and herding: conflict-of-interest filtering, reputation weights, bridging-based aggregation and voting before the score is revealed.
 A multi-agent discussion, in which personas with opposing verdicts debate each paper, explains every score.
-A personal feed ranks papers for each reader by the areas they follow and by papers close in content to what they have read, and an MCP server lets readers' own AI agents search the ratings, join the discussion and fetch a daily digest, without ever voting.
 The live system rates trending preprints daily and covers all accepted papers at NeurIPS~2026; an early analysis shows that the panel's judgments are nearly independent of popularity.
 The site is at \demosite, and the code at \democode.
 \end{abstract}
@@ -72,7 +71,7 @@ The site is at \demosite, and the code at \democode.
 \ccsdesc[500]{Information systems~Information retrieval}
 \ccsdesc[300]{Information systems~Web applications}
 
-\keywords{scholarly recommendation, paper quality, LLM reviewers, crowd rating, bridging consensus, personalization, LLM agents}
+\keywords{scholarly recommendation, paper quality, LLM reviewers, crowd rating, bridging consensus}
 
 %% Teaser: real screenshots of the live site (figures/ui-*.jpg).
 \begin{teaserfigure}
@@ -110,15 +109,12 @@ The answer comes from two complementary sources: readers, who judge a paper afte
 Readers mark a paper they have read as \emph{Worth reading} or \emph{Not for me}, and the design of this vote targets one risk: that the score reflects something other than the paper.
 Part of the risk comes from outside the vote. On upvote-only sites a heavily promoted paper can only gain, so the \emph{Not for me} button gives readers a way to push back on a paper that is popular for reasons other than its content.
 The rest comes from the voters themselves: authors vote for their own work, groups vote as blocs, and people follow a visible score instead of their own reading~\cite{muchnik2013social,salganik2006experimental}.
-\sys{} therefore down-weights votes with conflicts of interest, weights readers by reputation, counts only agreement that spans different camps of readers~\cite{wojcik2022birdwatch}, and asks readers to vote before they see the score.
+\sys{} therefore sets aside votes with conflicts of interest, weights readers by reputation, counts only agreement that spans different camps of readers~\cite{wojcik2022birdwatch}, and asks readers to vote before they see the score.
 
 
 The AI panel consists of 20 reviewer personas, each asking one narrow question about a paper, such as whether its idea is new, its experiments are rigorous, or its method is practically useful.
 No single verdict from the panel is reliable, but the panel is available on day one, applies the same criteria to every paper, and looks at each paper from many angles at once.
 \sys{} therefore treats the panel's verdict as a prior: a new paper starts from the panel's score, and readers take over as their votes accumulate.
-
-A score says whether a paper is worth reading in general, but each reader also needs the papers worth reading \emph{for them}, and many now read through AI assistants.
-\sys{} therefore ranks a personal feed from the areas a reader follows and the papers they read, without changing any paper's score, and opens its ratings to readers' own AI agents, which can read and comment but never vote.
 % Our contributions are:
 % \begin{itemize}
 %   \item An \textbf{open-source, deployed website} that rates new machine learning papers daily and covers all of NeurIPS~2026.
@@ -133,13 +129,13 @@ The ratings and discussions are public and the code is open, so other researcher
 
 \section{System Overview}
 Figure~\ref{fig:arch} shows the pipeline.
-Papers flow in from public sources, the AI panel and the area classifier label each one, readers vote and comment, and a single database view combines everything into the score users see; each reader's feed and their agents build on the same data.
+Papers flow in from public sources, the AI panel and the area classifier label each one, readers vote and comment, and a single database view combines everything into the score users see.
 
 \begin{figure}[t]
   \centering
-  \resizebox{\linewidth}{!}{\input{figures/arch}}
-  \caption{\sys{} pipeline. Every new paper is scored by the AI panel on arrival; personas that split on it debate in the comments, and reader votes take over the score as they accumulate. Each reader's \emph{For you} feed is ranked from their interests and the scores, and readers' own agents read the site and join the discussion but never vote.}
-  \Description{A flow diagram. Three paper sources feed the AI panel, which gives a prior p to the score and passes reasons to the discussion. Readers' votes feed the score and their interests feed the For you feed, which also uses the score. Readers' agents read the website through MCP and post comments to the discussion. The feed, the score and the discussion all appear on the website.}
+  \input{figures/arch}
+  \caption{\sys{} pipeline. Every new paper is scored by the AI panel on arrival; personas that split on it debate in the comments, and reader votes from the interface take over the score as they accumulate.}
+  \Description{A flow diagram. Three paper sources feed the AI panel. The panel gives a prior p to the score and passes papers it split on to the AI discussion. Readers vote through the interface; their share r and weight W also feed the score, which the interface shows together with the discussion threads.}
   \label{fig:arch}
 \end{figure}
 
@@ -162,10 +158,10 @@ Such probabilities cluster near 0 and 1, so a single shared cutoff separates pap
 The same Jev call also places each paper in one of 20 area groups and one of about 190 fine areas, which are used for topic filtering and the Ask box.
 
 \subsection{Reader Votes}
-Readers sign in with Google, GitHub or an email code and mark papers they have read as \emph{Worth reading} or \emph{Not for me}.
+Signed-in readers mark papers they have read as \emph{Worth reading} or \emph{Not for me}.
 Unlike an upvote, \emph{Not for me} lets readers lower the score of a paper that is popular for reasons other than its content.
 Four further mechanisms each target one way that voters themselves can distort a score.
-\emph{Self-promotion}: \sys{} matches a reader's profile (the name and affiliation they give, their email domain and, if linked, their GitHub account) to OpenAlex author records, and counts votes on their own papers, their recent co-authors' papers and papers from their institution at 30\% of their usual weight; a wrong match can only shrink a vote, never add one.
+\emph{Self-promotion}: \sys{} links a reader's GitHub account to their OpenAlex author record and sets aside votes on their own papers, their co-authors' papers and papers from their institution; a wrong match can only remove a vote, never add one.
 \emph{Unreliable voters}: each reader carries a weight between 0.1 and 2, starting at 0.5, which rises as the reader votes more and agrees with other readers' conclusions, and falls for readers who favor one institution while voting down the rest.
 \emph{Bloc voting}: once a paper has eight raters, its reader share is estimated Community Notes style~\cite{wojcik2022birdwatch} with the model $v_{up} \approx \mu + b_u + b_p + f_u f_p$, where $v_{up}$ is reader $u$'s vote on paper $p$; the term $f_u f_p$ absorbs agreement within like-minded groups, so the paper intercept $b_p$ rises only when readers from different groups agree.
 \emph{Herding}: because visible ratings pull later votes toward them~\cite{muchnik2013social}, the exact score, the reader split and the panel's verdict stay hidden until the reader votes, and only the label is shown beforehand; after voting, the reader sees the numbers and how many readers and AI reviewers agree with them.
@@ -190,20 +186,18 @@ Each thread opens with one persona that voted yes and one that voted no, and rep
 Every comment carries an AI badge and a stance label, and personas may criticize the work but never the people behind it.
 
 \subsection{Personalized Feed}
-\label{sec:foryou}
-A \emph{For you} shelf orders papers for each reader; it never changes a paper's score.
-It combines \emph{stated} interests, the fine areas, area groups and venues a reader picks, with \emph{observed} interests: votes, comments and reading time on paper pages, decayed with a 30-day half-life, where a comment or a long read counts far more than a one-tap vote.
-To match papers by content rather than by area labels, each paper is embedded from its title and abstract with SPECTER2~\cite{singh2023scirepeval}, and an offline job stores the 20 nearest recent papers for every paper and for the centroid of every area.
-Each paper a reader engaged with contributes its own neighbors, weighted by engagement, so a reader interested in both agents and speech is shown papers near each interest rather than near their average; likewise, a picked area with few papers draws in its nearest papers from adjacent areas.
-A paper's interest term is the strongest of these signals, ordered so that stated interests lead: a picked area, then papers close to a picked area, then papers close to what the reader engaged with, then areas inferred from activity.
-The feed ranks by $0.6$ interest $+\,0.25$ timeliness (Hugging Face upvotes, recency and discussion) $+\,0.15$ score, lightly penalizing repeats of an inferred area, and each card states why it appears, such as ``In Speech enhancement'' or ``Like \emph{[title]}''.
-Visitors who have not signed in get the same feed once they have opened two papers; their history stays in the browser and moves into their account if they sign in.
+A \emph{For you} shelf ranks papers for each reader without changing any score.
+It combines the areas and venues a reader picks with what they do on the site: votes, comments and reading time, decayed over 30 days.
+Each paper is embedded from its title and abstract with SPECTER2~\cite{singh2023scirepeval}, and an offline job stores the 20 nearest recent papers for every paper and every area.
+Each paper a reader engaged with brings in its own neighbors, so separate interests stay separate rather than being averaged, and a picked area with few papers draws in close papers from nearby areas.
+Picked areas rank first, then papers close to them, then papers close to what the reader read, and each card says why it appears (e.g., ``Like \emph{[title]}'').
+Visitors who are not signed in get the same feed from the papers they open, kept only in their browser.
 
 \subsection{Bring Your Own Agent}
-\sys{} exposes its ratings to AI agents through a Model Context Protocol (MCP) server~\cite{anthropic2024mcp} and an equivalent REST API.
-Seven tools let an agent search papers; read a paper's score, vote tallies and panel consensus; read its discussion; post a comment; and, on behalf of the reader who runs it, fetch a daily digest of their \emph{For you} papers and read or update the areas they follow.
-Reading needs no account. Any signed-in reader can register agents and receives a key, shown once and stored only as a hash, to paste into an MCP client such as Claude or Cursor.
-Agents never vote, so they cannot move a score. Their comments carry an Agent badge and the name of the reader who runs them, and rate limits (100 comments a day, 5 per paper) stop runaway loops.
+\sys{} opens its ratings to readers' own AI agents through a Model Context Protocol (MCP) server~\cite{anthropic2024mcp} and a REST API.
+Agents can search papers, read scores and discussions, post comments, and, for the reader who runs them, fetch a daily digest of their \emph{For you} papers and update the areas they follow.
+Any signed-in reader can register an agent and connect it from a client such as Claude or Cursor.
+Agents never vote, so they cannot move a score; their comments carry an Agent badge and the name of the reader who runs them.
 
 \subsection{Natural-Language Search: the Ask Box}
 Readers can also ask questions about the ratings in plain language, such as ``what's worth reading in RL at NeurIPS?'' or ``who's working on agent memory?''.
@@ -211,20 +205,18 @@ Rather than letting a model write the answer, \sys{} uses Jev only to parse the 
 These fields form a database query over rated papers, so every answer comes from real data: the second question above returns the authors and institutions most active in agent memory, counted over all matching papers.
 
 \subsection{Implementation}
-\sys{} is a Next.js web application hosted on Vercel, with Supabase providing the Postgres database and sign-in with Google, GitHub or email.
+\sys{} is a Next.js web application hosted on Vercel, with Supabase providing the Postgres database and GitHub sign-in.
 Background work runs in two places: a daily cron job, together with on-demand triggers, rates new papers with the AI panel, and a GitHub Actions worker produces the slower content, namely discussions, one-line summaries and thumbnails taken from each paper's arXiv HTML.
-After each worker run, a second job embeds new papers with SPECTER2 and refreshes the neighbor lists, so the feed is ranked on the server from precomputed neighbors in a single request of about 0.4\,s.
 When a reader votes, the score is recomputed and updated in place, without reloading or reordering the page.
 
 \section{Demonstration Scenarios}
 Attendees use the live site on a laptop or on their own phones (Figure~\ref{fig:ui}).
-The four scenarios follow how a reader uses \sys{}: finding papers worth reading, planning a conference day, adding their own judgment, and reading through their own agent.
+The three scenarios follow how a reader uses \sys{}: finding papers worth reading, planning a conference day, and adding their own judgment.
 
 \paragraph{Scenario 1: find papers worth reading.}
 The home page groups papers into shelves, such as today's and this week's trending papers, and each card shows a label and a one-line summary.
 An attendee narrows the shelves to their area, or asks a question such as ``what's worth reading in RL this month?'' or ``who's working on agent memory?'' and gets a ranked list of papers, or the most active authors and institutions, drawn only from rated papers.
 Opening a paper, they read the multi-agent discussion and its panel consensus to decide whether the paper deserves their time.
-Even before signing in, after opening two papers the attendee sees a \emph{For you} shelf whose cards say why each paper was picked.
 
 \paragraph{Scenario 2: plan a conference day.}
 The NeurIPS~2026 page lists every poster session with its best-rated papers and filters by oral, spotlight or poster.
@@ -234,10 +226,6 @@ A NeurIPS attendee picks an afternoon session, skims the top papers, and leaves 
 An attendee votes \emph{Worth reading} or \emph{Not for me} on a paper.
 Only then are the exact score, the reader split and the panel's per-persona verdicts revealed, together with a line such as ``9 of 23 votes agree with you,'' and the card updates in place.
 The attendee can then see which strict personas disagreed with them and how the discussion argued each side.
-
-\paragraph{Scenario 4: read with your own agent.}
-An attendee creates an agent on the site, adds its MCP address to Claude, and asks for today's papers in their areas.
-The agent fetches the digest, summarizes it, and after reading a paper and its discussion posts a comment that appears on the site under an Agent badge, without affecting the score.
 
 \section{Deployment and Analysis}
 \sys{} opened to the public in October 2026.
@@ -275,7 +263,7 @@ We report this rather than tune it away, and plan a fact-checking pass before co
 \section{Conclusion}
 \sys{} gives each new paper an explainable ``worth reading'' score from day one and hands it over to readers through a voting design that resists self-promotion, blocs and herding.
 The demo covers all of NeurIPS~2026.
-Next we will measure how reader scores relate to the panel prior as votes accumulate, add a fact-checking gate for AI comments, and study how personalized ranking and outside agents change what readers choose to read.
+Next we will measure how reader scores relate to the panel prior as votes accumulate, add a fact-checking gate for AI comments, and open an API so other tools can query the scores.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{refs}
