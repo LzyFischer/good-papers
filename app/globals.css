@@ -1,9 +1,9 @@
 /* Good Papers. Scores run through five tones, green to slate: a low score reads as niche, not as a failure. */
 :root {
-  --bg: #f4f1ea; --surface: #ffffff; --ink: #14161a; --muted: #5e636b; --line: #e1dbcf;
-  --night: #111316; --night-2: #1b1e23; --night-ink: #f4f1ea; --night-muted: #a3a7ae; --lime: #d2f54a; --lime-ink: #14161a;
+  --bg: #f6f5f2; --surface: #fdfdfb; --ink: #14161a; --muted: #5e636b; --line: #e9e7e1;
+  --night: #111316; --night-2: #1b1e23; --night-ink: #f6f5f2; --night-muted: #a3a7ae; --lime: #d2f54a; --lime-ink: #14161a;
   --fresh: #2f8a3e; --fresh-soft: #e3f2e5; --rotten: #8a6a2e; --rotten-soft: #f3ecdc;
-  --mold: #7c8a3a; --head: #111316; --head-ink: #f4f1ea; --ai: #4a5bd4; --ai-soft: #e7eafb;
+  --mold: #7c8a3a; --head: #111316; --head-ink: #f6f5f2; --ai: #4a5bd4; --ai-soft: #e7eafb;
   --t5: #2f8a3e; --t4: #3f9a6b; --t3: #2f8c99; --t2: #5a77a8; --t1: #7a7f99;
   --t5-soft: #e3f2e5; --t4-soft: #e2f3ea; --t3-soft: #e0f1f3; --t2-soft: #e6ecf6; --t1-soft: #eceef3;
   --pick: #eef7cf; --pick-ink: #3b5208; --pick-line: #c9e27a;
