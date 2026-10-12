@@ -10,7 +10,6 @@ import type { Score } from "./types";
 export type Prefs = { areas: string[]; venues: string[]; name: string | null; institution: string | null };
 
 const DAYS = 21; // "right now"
-const PICKED_DAYS = 60; // topics picked by hand can be quieter, so look further back for them
 
 // Area keys to query: a followed group means every area in it.
 export function areaKeys(areas: string[]): string[] {
@@ -103,10 +102,11 @@ export async function rankForYou(
     // Recent papers in the reader's topics, even if nobody is upvoting them yet.
     db.from("paper_scores").select("*").in("area", keys).not("score", "is", null).gte("published_on", since)
       .order("score", { ascending: false }).limit(Math.max(60, limit * 2)),
-    // The topics they picked, over a longer stretch.
+    // The newest papers in the topics they picked, however far back that takes: a quiet
+    // topic still fills the list, with its older papers below the fresh ones.
     picked.length
-      ? db.from("paper_scores").select("*").in("area", picked).not("score", "is", null).gte("published_on", day(PICKED_DAYS))
-          .order("published_on", { ascending: false }).limit(Math.max(60, limit * 2))
+      ? db.from("paper_scores").select("*").in("area", picked).not("score", "is", null)
+          .order("published_on", { ascending: false, nullsFirst: false }).limit(Math.max(60, limit * 2))
       : Promise.resolve({ data: [] }),
     // Conference papers have no publication date yet: the venues the reader follows.
     venues.length
