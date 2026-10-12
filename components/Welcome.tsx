@@ -17,6 +17,7 @@ export function Welcome({ next, edit }: { next: string; edit: boolean }) {
   const [name, setName] = useState("");
   const [institution, setInstitution] = useState("");
   const [open, setOpen] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +54,11 @@ export function Welcome({ next, edit }: { next: string; edit: boolean }) {
     if (a.includes(g)) return [...a.filter((x) => x !== g), ...Object.keys(AREA_GROUPS[g].areas).filter((x) => x !== k)];
     return a.includes(k) ? a.filter((x) => x !== k) : [...a, k];
   });
-  const picked = (g: string) => areas.includes(g) || Object.keys(AREA_GROUPS[g].areas).some((k) => areas.includes(k));
+  // Topics picked, counting a whole group as all of its topics.
+  const selectedCount = GROUPS.reduce(
+    (sum, [g, grp]) => sum + (areas.includes(g) ? Object.keys(grp.areas).length : Object.keys(grp.areas).filter((k) => areas.includes(k)).length),
+    0,
+  );
   // The group's name only opens and closes its list; picking happens on the chips.
   const tapGroup = (g: string) => setOpen(open === g ? null : g);
 
@@ -83,29 +88,46 @@ export function Welcome({ next, edit }: { next: string; edit: boolean }) {
         <>
           <h1>{edit ? "Your topics" : "Welcome! What do you read?"}</h1>
           <p className="welcome-sub">Pick a few areas. Your home page gets a <b>For you</b> shelf with the best new papers in them. Open an area, then pick all of it or just the topics you want.</p>
+          <input
+            className="topic-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search topics: quantization, RAG, diffusion…"
+            aria-label="Search topics"
+          />
           <div className="topic-grid">
-            {GROUPS.map(([g, grp]) => (
-              <div key={g} className={`topic ${picked(g) ? "topic--on" : ""}`}>
-                <button className="topic-main" aria-pressed={picked(g)} aria-expanded={open === g} onClick={() => tapGroup(g)}>
-                  {grp.label}
-                  {picked(g) && !areas.includes(g) && (
-                    <span className="topic-count"> · {Object.keys(grp.areas).filter((k) => areas.includes(k)).length}</span>
+            {GROUPS.map(([g, grp]) => {
+              const q = query.trim().toLowerCase();
+              const groupHit = !q || grp.label.toLowerCase().includes(q);
+              const fine = Object.entries(grp.areas).filter(([, label]) => groupHit || label.toLowerCase().includes(q));
+              if (!fine.length) return null;
+              const total = Object.keys(grp.areas).length;
+              const n = areas.includes(g) ? total : Object.keys(grp.areas).filter((k) => areas.includes(k)).length;
+              const shown = open === g || (!!q && !groupHit);
+              return (
+                <div key={g} className={`topic${n ? " topic--on" : ""}${shown ? " topic--open" : ""}`}>
+                  <button className="topic-main" aria-expanded={shown} onClick={() => tapGroup(g)}>
+                    <span>{grp.label}</span>
+                    <span className="topic-count">{n ? `${n} of ${total}` : total}</span>
+                  </button>
+                  {shown && (
+                    <div className="topic-fine">
+                      {!q && (
+                        <button className="chip-toggle chip-all" aria-pressed={areas.includes(g)} onClick={() => toggleGroup(g)}>
+                          All of it
+                        </button>
+                      )}
+                      {fine.map(([k, label]) => (
+                        <button key={k} className="chip-toggle" aria-pressed={areas.includes(k) || areas.includes(g)} onClick={() => toggleArea(g, k)}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                   )}
-                </button>
-                {open === g && (
-                  <div className="topic-fine">
-                    <button className="chip-toggle chip-all" aria-pressed={areas.includes(g)} onClick={() => toggleGroup(g)}>
-                      All of it
-                    </button>
-                    {Object.entries(grp.areas).map(([k, label]) => (
-                      <button key={k} className="chip-toggle" aria-pressed={areas.includes(k) || areas.includes(g)} onClick={() => toggleArea(g, k)}>
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </>
       )}
@@ -134,7 +156,13 @@ export function Welcome({ next, edit }: { next: string; edit: boolean }) {
       {step === 0 && edit && <ClearHistory uid={session.user.id} />}
       {error && <p className="signin-error" role="alert">{error}</p>}
       <div className="welcome-actions">
-        {step > 0 ? <button className="link-button" onClick={() => setStep(step - 1)}>Back</button> : <span />}
+        {step > 0 ? (
+          <button className="link-button" onClick={() => setStep(step - 1)}>Back</button>
+        ) : (
+          <span className="welcome-picked">
+            {selectedCount === 0 ? "No topics yet" : `${selectedCount} topic${selectedCount === 1 ? "" : "s"} selected`}
+          </span>
+        )}
         <span className="welcome-right">
           {step < 2 && <button className="link-button" onClick={() => setStep(step + 1)}>Skip</button>}
           <button className="signin-primary" disabled={busy} onClick={() => (step < 2 ? setStep(step + 1) : finish())}>
