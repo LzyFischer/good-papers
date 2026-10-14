@@ -40,7 +40,7 @@ export function AuthorLinks({ authors, max, paperId }: { authors: string[]; max:
       {shown.map((a, i) => (
         <span key={`${a}-${i}`}>
           {i > 0 && ", "}
-          <Link href={`/author/${encodeURIComponent(a)}${/^W\d+$/.test(paperId) ? `?from=${paperId}` : ""}`}>{a}</Link>
+          <Link href={`/author/${encodeURIComponent(a)}${/^W\d+$/.test(paperId) ? `?from=${paperId}` : ""}`} rel="nofollow">{a}</Link>
         </span>
       ))}
       {authors.length > max && ` and ${authors.length - max} more`}
@@ -156,7 +156,7 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
           {paper.orgs.slice(0, 5).map((o) => {
             const kind = orgKind(o);
             return (
-              <Link key={o} href={`/?org=${encodeURIComponent(o)}`} className={`tag ${kind ? `org-${kind}` : ""}`} title={`All papers from ${o}`}>
+              <Link key={o} href={`/?org=${encodeURIComponent(o)}`} rel="nofollow" className={`tag ${kind ? `org-${kind}` : ""}`} title={`All papers from ${o}`}>
                 {shortOrg(o)}
               </Link>
             );

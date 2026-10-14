@@ -95,6 +95,9 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     ),
     {
       ...size,
+      // Rendering a card takes real CPU, and link previews ask for the same one again and
+      // again: Vercel's CDN keeps each for a day (scores move slowly), then refreshes it.
+      headers: { "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800" },
       // Without either font, fall back to the renderer's built-in one.
       ...(display && body
         ? { fonts: [{ name: "Bricolage Grotesque", data: display, weight: 800 as const }, { name: "Public Sans", data: body, weight: 500 as const }] }

@@ -17,3 +17,5 @@ __pycache__/
 neurips-*.json
 scripts/data/
 worker/.venv-embed/
+.vercel
+.env*

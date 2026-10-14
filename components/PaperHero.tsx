@@ -37,7 +37,7 @@ export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper
             {area && <Link href={`/?area=${area.key}`} className="tag tag--area">{area.label}</Link>}
             {paper.tags.map((x) => <span key={x} className={`tag ${x === "Oral" ? "oral" : ""}`}>{x}</span>)}
             {paper.orgs.slice(0, 6).map((o) => (
-              <Link key={o} href={`/?org=${encodeURIComponent(o)}`} className={`tag ${orgKind(o) ? `org-${orgKind(o)}` : ""}`} title={o}>
+              <Link key={o} href={`/?org=${encodeURIComponent(o)}`} rel="nofollow" className={`tag ${orgKind(o) ? `org-${orgKind(o)}` : ""}`} title={o}>
                 {shortOrg(o)}
               </Link>
             ))}

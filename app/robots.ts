@@ -5,7 +5,12 @@ import { SITE_URL } from "@/lib/site";
 // a crawler following them would trigger an AI-panel judgment for each one.
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/author/", "/org/", "/area/", "/ask", "/search", "/api/"] },
+    rules: [
+      { userAgent: "*", allow: "/", disallow: ["/author/", "/org/", "/area/", "/ask", "/search", "/api/", "/*?org=", "/*?author="] },
+      // Bulk AI-training and SEO crawlers: most of the traffic, none of the readers. Also
+      // denied in the Vercel firewall ("Block bulk crawlers"), since not all of them listen.
+      { userAgent: ["meta-externalagent", "Amazonbot", "SERankingBacklinksBot"], disallow: "/" },
+    ],
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
