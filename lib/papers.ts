@@ -19,6 +19,10 @@ export function manualId(title: string) {
   );
 }
 
+// The columns rowToPaper reads. Never select "*" from papers: rows carry a 768-number
+// embedding (migration 017) that would be read from disk on every page view.
+const PAPER_COLUMNS = "id, title, authors, year, venue, url, abstract, orgs, tags, published_on, cited_by_count";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function rowToPaper(r: any): Paper {
   return {
@@ -40,7 +44,7 @@ function rowToPaper(r: any): Paper {
 // Our database first (it may hold manual papers), then OpenAlex or arXiv.
 export async function getPaperAnywhere(id: string): Promise<Paper | null> {
   if (!PAPER_ID.test(id)) return null;
-  const { data } = await serverClient().from("papers").select("*").eq("id", id).maybeSingle();
+  const { data } = await serverClient().from("papers").select(PAPER_COLUMNS).eq("id", id).maybeSingle();
   if (data && data.abstract) return rowToPaper(data);
   const aid = id.match(ARXIV_PAPER)?.[1];
   const fetched = id.startsWith("W") ? await getPaper(id) : aid ? (await getArxivPapers([aid]))[0] ?? null : null;
@@ -99,8 +103,11 @@ export async function getVerdicts(ids: string[]): Promise<Map<string, AiVerdict[
 
 // The AI curve (percentile ranks) is a materialized view; refresh it after storing new
 // verdicts, once per batch (migration 012).
-export async function refreshAiCurve() {
-  const { error } = await adminClient().rpc("refresh_ai_curve");
+// The curve is recomputed from every AI verdict (~2 s). After background judging, skip it if
+// it was refreshed in the last few minutes; a reader waiting on a newly judged paper
+// (the paper page) refreshes at once.
+export async function refreshAiCurve(opts: { unlessFresherThanMinutes?: number } = {}) {
+  const { error } = await adminClient().rpc("refresh_ai_curve", { p_min_age_minutes: opts.unlessFresherThanMinutes ?? 0 });
   if (error) console.warn("refresh_ai_curve failed:", error.message);
 }
 
@@ -179,7 +186,7 @@ export async function fillMissingTakes(limit = 5): Promise<number> {
   const ids = seen.filter((id) => !withTake.has(id)).slice(0, limit);
   let done = 0;
   for (const id of ids) {
-    const { data: row } = await db.from("papers").select("*").eq("id", id).maybeSingle();
+    const { data: row } = await db.from("papers").select(PAPER_COLUMNS).eq("id", id).maybeSingle();
     if (!row?.abstract) continue;
     const paper = rowToPaper(row);
     const { data: vs } = await db.from("ai_verdicts").select("persona, fresh, probability").eq("paper_id", id);

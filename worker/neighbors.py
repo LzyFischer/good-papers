@@ -75,7 +75,27 @@ def compute(ids, areas, dates, m) -> list[dict]:
     return rows
 
 
-def run(http: httpx.Client, dry_run: bool = False) -> None:
+STALE_HOURS = 20
+
+
+def stale(http: httpx.Client) -> bool:
+    """True when the table is empty or its newest row is older than STALE_HOURS."""
+    r = http.get("/paper_neighbors", params={"select": "updated_at", "order": "updated_at.desc", "limit": "1"})
+    r.raise_for_status()
+    rows = r.json()
+    if not rows:
+        return True
+    newest = dt.datetime.fromisoformat(rows[0]["updated_at"].replace("Z", "+00:00"))
+    return dt.datetime.now(dt.timezone.utc) - newest > dt.timedelta(hours=STALE_HOURS)
+
+
+def run(http: httpx.Client, dry_run: bool = False, new_vectors: int | None = None) -> None:
+    """Recompute everything. Reading every vector costs real database IO, so a run after the
+    worker skips it unless there are new vectors or the table is getting old (papers age out
+    of the recent window daily). new_vectors=None (run by hand) always recomputes."""
+    if new_vectors == 0 and not dry_run and not stale(http):
+        print("neighbours: no new vectors and the table is recent; skipped", flush=True)
+        return
     ids, areas, dates, m = load(http)
     started = dt.datetime.now(dt.timezone.utc).isoformat()
     rows = compute(ids, areas, dates, m)

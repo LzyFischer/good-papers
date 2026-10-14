@@ -16,6 +16,8 @@ concurrency:
 
 jobs:
   run:
+    # Only after a worker run that finished (cancelled duplicates don't count).
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:

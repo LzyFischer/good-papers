@@ -72,7 +72,7 @@ def main() -> None:
     if not args.dry_run and not args.no_neighbors:
         import neighbors  # worker/neighbors.py: recompute "For you" neighbours from all vectors
 
-        neighbors.run(http)
+        neighbors.run(http, new_vectors=len(papers))
 
 
 def embed(http: httpx.Client, papers: list[dict], args: argparse.Namespace) -> None:

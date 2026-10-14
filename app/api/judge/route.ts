@@ -27,6 +27,6 @@ export async function POST(req: Request) {
       results.push({ id, ok: false, error: String(e) });
     }
   }
-  await refreshAiCurve();
+  await refreshAiCurve({ unlessFresherThanMinutes: 10 });
   return NextResponse.json({ results });
 }

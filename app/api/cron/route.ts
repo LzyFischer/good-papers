@@ -60,7 +60,7 @@ export async function GET(req: Request) {
       return { id: paper.id, ok: false, error: String(e) };
     }
   });
-  await refreshAiCurve();
+  await refreshAiCurve({ unlessFresherThanMinutes: 10 });
   if (results.some((r) => r.ok)) await nudgeWorker(); // discussions, TL;DRs, thumbnails for the new papers
   const takesFilled = await fillMissingTakes(5);
   const citationsRefreshed = await refreshCitations().catch((e) => String(e));

@@ -39,6 +39,6 @@ export async function ingestArxivIds(ids: string[], max: number, { budget = true
     }
   });
   const n = done.filter(Boolean).length;
-  if (n) await refreshAiCurve();
+  if (n) await refreshAiCurve({ unlessFresherThanMinutes: 10 });
   return n;
 }
