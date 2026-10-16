@@ -3,16 +3,13 @@ import { notFound, redirect } from "next/navigation";
 import { Comments } from "@/components/Comments";
 import { NoteBox } from "@/components/NoteBox";
 import { ReadTracker } from "@/components/ReadTracker";
+import { WarmUp } from "@/components/WarmUp";
 import { PaperHero } from "@/components/PaperHero";
 import { tierOf } from "@/components/Score";
-import { jevConfigured } from "@/lib/jev";
-import { judgePaper } from "@/lib/judge";
 import { arxivIdOf } from "@/lib/arxiv";
-import { getPaperAnywhere, getScores, getVerdicts, refreshAiCurve, storeJudgement, storedIdsByArxiv, underInlineBudget } from "@/lib/papers";
-import { nudgeWorker } from "@/lib/dispatch";
+import { getPaperAnywhere, getScores, getVerdicts, storedIdsByArxiv } from "@/lib/papers";
 import { openScoreIds } from "@/lib/trending";
 import { SITE_URL } from "@/lib/site";
-import { adminClient } from "@/lib/supabase";
 import type { Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -60,36 +57,17 @@ export default async function PaperPage({ params }: Props) {
   const paper = await getPaperAnywhere(id);
   if (!paper) notFound();
 
-  let verdicts = (await getVerdicts([id])).get(id) ?? [];
+  const verdicts = (await getVerdicts([id])).get(id) ?? [];
 
   // Same arXiv paper already stored under its other id ("W…" or "arxiv-…"): go there.
   const aid = verdicts.length === 0 ? arxivIdOf(paper.url) : null;
   const stored = aid ? (await storedIdsByArxiv([aid]).catch(() => new Map<string, string>())).get(aid) : undefined;
   if (stored && stored !== id) redirect(`/paper/${stored}`);
 
-  // AI warm start: the first visit to an unjudged paper asks Jev (fast, no takes).
-  // The daily cron writes the one-line takes afterwards.
-  if (verdicts.length === 0 && paper.abstract && jevConfigured() && process.env.SUPABASE_SERVICE_ROLE_KEY && (await underInlineBudget())) {
-    try {
-      await storeJudgement(paper, await judgePaper(paper, { withTakes: false }));
-      await refreshAiCurve();
-      verdicts = (await getVerdicts([id])).get(id) ?? [];
-      await nudgeWorker(); // AI discussion, TL;DR and consensus follow in a couple of minutes
-    } catch (e) {
-      console.warn("Inline judging failed:", e);
-    }
-  }
+  // A paper with no AI verdicts yet is judged once a reader has the page open for a few
+  // seconds (components/WarmUp.tsx, /api/warm), not while rendering: crawlers fetching
+  // thousands of paper pages used to spend the whole judging budget.
   const score = (await getScores([id])).get(id) ?? null;
-
-  // Bulk-imported conference papers get their AI discussion when someone first opens them.
-  if (score && score.comments === 0 && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const db = adminClient();
-    const { data: flags } = await db.from("papers").select("discuss_on_demand, discuss_requested_at").eq("id", id).maybeSingle();
-    if (flags?.discuss_on_demand && !flags.discuss_requested_at) {
-      await db.from("papers").update({ discuss_requested_at: new Date().toISOString() }).eq("id", id);
-      await nudgeWorker();
-    }
-  }
 
   return (
     <main className="wrap page paper-page">
@@ -102,6 +80,7 @@ export default async function PaperPage({ params }: Props) {
       />
       <NoteBox paperId={paper.id} />
       <ReadTracker paperId={paper.id} />
+      {(verdicts.length === 0 ? !!paper.abstract : !score?.comments) && <WarmUp id={paper.id} unjudged={verdicts.length === 0} />}
       <div className="paper-cols">
         {paper.abstract && (
           <section className="abstract">

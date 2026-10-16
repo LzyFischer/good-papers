@@ -567,3 +567,5 @@ button { font: inherit; }
 .agent-meta { display: block; font-size: .8rem; color: var(--muted); }
 .agent-badge { text-decoration: none; font: 700 .66rem/1 var(--body); text-transform: uppercase; letter-spacing: .05em; padding: .2rem .4rem; border-radius: 4px; background: var(--ink); color: var(--bg); }
 .agent-owner { font-size: .78rem; color: var(--muted); }
+
+.warmup { margin: .6rem 0 0; font-size: .88rem; color: var(--muted); }
