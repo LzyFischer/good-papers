@@ -9,7 +9,7 @@
   --pick: #eef7cf; --pick-ink: #3b5208; --pick-line: #c9e27a; --line-strong: #d3d0c7;
   --link: #4f7a0c;
   /* Page width: wide screens use most of their width; the gutter grows with the screen. */
-  --page-w: 100rem; --gutter: clamp(1rem, 4vw, 3.5rem);
+  --page-w: 84rem; --gutter: clamp(1rem, 4vw, 3.5rem);
   --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
   --body: "Public Sans", "Helvetica Neue", Arial, sans-serif;
   color-scheme: light dark;
