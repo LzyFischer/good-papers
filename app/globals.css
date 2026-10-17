@@ -7,6 +7,8 @@
   --t5: #2f8a3e; --t4: #3f9a6b; --t3: #2f8c99; --t2: #5a77a8; --t1: #7a7f99;
   --t5-soft: #e3f2e5; --t4-soft: #e2f3ea; --t3-soft: #e0f1f3; --t2-soft: #e6ecf6; --t1-soft: #eceef3;
   --pick: #eef7cf; --pick-ink: #3b5208; --pick-line: #c9e27a; --line-strong: #d3d0c7;
+  /* Page width: wide screens use most of their width; the gutter grows with the screen. */
+  --page-w: 100rem; --gutter: clamp(1rem, 4vw, 3.5rem);
   --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
   --body: "Public Sans", "Helvetica Neue", Arial, sans-serif;
   color-scheme: light dark;
@@ -49,7 +51,7 @@ button { font: inherit; }
 
 /* Header */
 .top { background: var(--head); color: var(--head-ink); border-bottom: 1px solid #23262c; }
-.top-in { max-width: 72rem; margin: 0 auto; padding: .9rem clamp(1rem, 4vw, 2rem); display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
+.top-in { max-width: var(--page-w); margin: 0 auto; padding: .9rem var(--gutter); display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: .55rem; font: 800 1.45rem/1 var(--display); letter-spacing: -.02em; text-decoration: none; }
 .brand .icon { width: 2rem; height: 2rem; }
 .nav { display: flex; gap: 1.1rem; font: 600 .92rem var(--body); }
@@ -77,7 +79,7 @@ button { font: inherit; }
 }
 
 /* Frame */
-.wrap { max-width: 72rem; margin: 0 auto; padding-left: clamp(1rem, 4vw, 2rem); padding-right: clamp(1rem, 4vw, 2rem); }
+.wrap { max-width: var(--page-w); margin: 0 auto; padding-left: var(--gutter); padding-right: var(--gutter); }
 .page { padding-top: clamp(1.5rem, 5vw, 3rem); padding-bottom: 3rem; }
 .page-title { font: 800 clamp(1.6rem, 3vw, 2.2rem)/1.15 var(--display); letter-spacing: -.02em; margin: 0 0 1.5rem; }
 .empty { color: var(--muted); max-width: 40rem; }
@@ -391,9 +393,14 @@ button.shelf-more::after { content: none; }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin: 1rem 0 1rem; padding-top: 1.5rem; border-top: 2px solid var(--ink); }
 .section-note { font-size: .85rem; color: var(--muted); }
 .all-papers .card { border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(20, 22, 26, .04); }
+/* On wide screens All papers runs in two columns, so lines of abstract stay readable. */
+@media (min-width: 80rem) {
+  .all-papers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+  .all-papers .card { margin-bottom: 0; }
+}
 
 /* Paper page */
-.paper-page { max-width: 64rem; }
+.paper-page { max-width: 78rem; }
 .ph { margin-bottom: 1.5rem; }
 .ph-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 20rem); gap: 2rem; align-items: start; }
 .ph-top > :only-child { grid-column: 1 / -1; }
@@ -432,11 +439,11 @@ button.shelf-more::after { content: none; }
 .sc--ai .dots-wrap { margin-top: .5rem; }
 .ph-consensus { margin: 0 0 1.5rem; padding: 1.2rem 1.4rem; background: var(--surface); border-radius: 16px; box-shadow: 0 0 0 1px var(--line); border-left: 6px solid var(--lime); }
 .ph-consensus figcaption { font: 700 .72rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: .35rem; }
-.ph-consensus blockquote { margin: 0; font: 600 clamp(1.1rem, 2vw, 1.3rem)/1.45 var(--display); letter-spacing: -.005em; }
+.ph-consensus blockquote { max-width: 62rem; margin: 0; font: 600 clamp(1.1rem, 2vw, 1.3rem)/1.45 var(--display); letter-spacing: -.005em; }
 .paper-cols { display: grid; gap: 2rem; }
 .abstract { background: var(--surface); border-radius: 16px; padding: 1.2rem 1.4rem; box-shadow: 0 0 0 1px var(--line); }
 .abstract h2 { font: 700 .72rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 .5rem; }
-.abstract p { margin: 0; line-height: 1.65; }
+.abstract p { margin: 0; line-height: 1.65; max-width: 78ch; }
 
 /* Discussion threads */
 .discussion { margin-top: 0; }
