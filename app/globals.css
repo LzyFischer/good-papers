@@ -290,24 +290,14 @@ button { font: inherit; }
 .shelf-head { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; margin-bottom: .75rem; }
 .shelf-head h2, .section-title { font: 800 1.35rem var(--display); letter-spacing: -.01em; margin: 0; }
 .section-title { margin: 0 0 1rem; }
-/* "See all", "All sessions", "How scores work": text and an arrow in a small dark disc. On
-   hover the link lifts into a pill, the disc turns lime and the arrow slides on. */
+/* "See all", "All sessions", "How scores work": quiet text and an arrow that nudges on hover. */
 .shelf-more, .section-head > a {
-  margin-left: auto; display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap;
-  padding: .3rem .3rem .3rem .75rem; border-radius: 999px; border: 1px solid transparent;
-  font: 600 .86rem var(--body); color: var(--muted); text-decoration: none;
-  transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, color .2s ease;
+  margin-left: auto; display: inline-flex; align-items: center; gap: .35rem; white-space: nowrap;
+  font: 600 .86rem var(--body); color: var(--muted); text-decoration: none; transition: color .15s ease;
 }
-.shelf-more::after, .section-head > a::after {
-  content: "→"; display: grid; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 50%;
-  background: var(--ink); color: var(--bg); font-size: .8rem; line-height: 1;
-  transition: background .2s ease, color .2s ease, transform .2s cubic-bezier(.2, .7, .2, 1);
-}
-.shelf-more:hover, .section-head > a:hover {
-  color: var(--ink); background: var(--surface); border-color: var(--line); box-shadow: 0 4px 14px rgba(20, 22, 26, .08);
-}
-.shelf-more:hover::after, .section-head > a:hover::after { background: var(--lime); color: var(--lime-ink); transform: translateX(2px); }
-button.shelf-more { padding-right: .75rem; }
+.shelf-more::after, .section-head > a::after { content: "→"; transition: transform .2s ease; }
+.shelf-more:hover, .section-head > a:hover { color: var(--ink); }
+.shelf-more:hover::after, .section-head > a:hover::after { transform: translateX(3px); }
 button.shelf-more::after { content: none; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
 .seg a { font: 600 .82rem var(--body); padding: .3rem .8rem; text-decoration: none; color: var(--muted); }
