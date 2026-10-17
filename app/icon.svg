@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- Good Papers: the score ring, mostly full, with a check (favicon, on its own dark disc) -->
+  <circle cx="24" cy="24" r="24" fill="#111316"/>
+  <circle cx="24" cy="24" r="15.5" fill="none" stroke="#2b2f36" stroke-width="6"/>
+  <circle cx="24" cy="24" r="15.5" fill="none" stroke="#d2f54a" stroke-width="6" stroke-linecap="round" stroke-dasharray="83 200" transform="rotate(-90 24 24)"/>
+  <path d="M18 24.4l4.3 4.3 8-8.8" fill="none" stroke="#f6f5f2" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

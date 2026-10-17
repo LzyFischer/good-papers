@@ -12,6 +12,11 @@ export const alt = "Good Papers rating";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+// The brand ring (components/Icons.tsx), as an image the renderer can draw.
+const BRAND = `data:image/svg+xml;base64,${Buffer.from(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="19" fill="none" stroke="#2b2f36" stroke-width="7"/><circle cx="24" cy="24" r="19" fill="none" stroke="#d2f54a" stroke-width="7" stroke-linecap="round" stroke-dasharray="102 200" transform="rotate(-90 24 24)"/><path d="M16.5 24.5l5.2 5.2 10-11" fill="none" stroke="#f6f5f2" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+).toString("base64")}`;
+
 const TONES = { 5: "#5cc06b", 4: "#63c49a", 3: "#5bbccb", 2: "#8fa8d6", 1: "#a3a8c0" } as Record<number, string>;
 // Cut at a word boundary.
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n).replace(/\s+\S*$/, "").replace(/[,;:.]$/, "")}…` : s);
@@ -54,9 +59,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: "#111316", color: "#f4f1ea", padding: "56px 64px", fontFamily: "Public Sans" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 30 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14, fontFamily: "Bricolage Grotesque" }}>
-            <div style={{ width: 34, height: 40, borderRadius: 6, background: "#f4f1ea", display: "flex", alignItems: "flex-end", justifyContent: "flex-end", padding: 4 }}>
-              <div style={{ width: 18, height: 18, borderRadius: 9, background: "#d2f54a" }} />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={BRAND} width={42} height={42} alt="" />
             Good Papers
           </div>
           {(venue || track) && (

@@ -64,12 +64,11 @@ export function IconSprite() {
         </symbol>
         {/* Brand: half fresh, half rotten page */}
         {/* Brand: a clean page with a lime check, "a good paper" */}
+        {/* Brand: the site's score ring, mostly full, with a check: "rated, worth reading" */}
         <symbol id="ic-brand" viewBox="0 0 48 48">
-          <path d="M11 5h17l10 10v27a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" fill="#f4f1ea" />
-          <path d="M28 5v10h10" fill="#d9d3c4" />
-          <path d="M15 17h9M15 22h14" stroke="#c9c2b1" strokeWidth="2.2" strokeLinecap="round" />
-          <circle cx="31" cy="33" r="9" fill="#d2f54a" />
-          <path d="M26.8 33.2l3 3 5.6-6" fill="none" stroke="#14161a" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="24" cy="24" r="19" fill="none" stroke="#2b2f36" strokeWidth="7" />
+          <circle cx="24" cy="24" r="19" fill="none" stroke="#d2f54a" strokeWidth="7" strokeLinecap="round" strokeDasharray="102 200" transform="rotate(-90 24 24)" />
+          <path d="M16.5 24.5l5.2 5.2 10-11" fill="none" stroke="#f6f5f2" strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
         </symbol>
       </defs>
     </svg>
