@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
 import { AuthButton } from "@/components/AuthButton";
 import { GateRevealer } from "@/components/GateRevealer";
+import { HeaderHeight } from "@/components/HeaderHeight";
 import { Notifications } from "@/components/Notifications";
 import { Onboarding } from "@/components/Onboarding";
 import { Icon, IconSprite } from "@/components/Icons";
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <AuthButton />
           </div>
         </header>
+        <HeaderHeight />
         {children}
         <footer className="foot wrap">
           Paper data from <a href="https://openalex.org">OpenAlex</a>, arXiv and Hugging Face. AI panel verdicts by Jev;

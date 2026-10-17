@@ -300,7 +300,7 @@ button { font: inherit; }
 .hero { background: var(--night); color: var(--night-ink); padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(2.5rem, 5vw, 4rem); position: relative; overflow: hidden; }
 /* The hero fills the first screen (below the header): scrolled to the top, the page shows only
    the dark hero, and the shelves start below the fold. */
-.hero { min-height: calc(100svh - var(--header-h, 4.6rem)); display: flex; align-items: center; }
+.hero { min-height: calc(100svh - var(--header-h, 4.6rem) + 1px); display: flex; align-items: center; }
 .hero > .hero-in { width: 100%; }
 .hero::after { content: ""; position: absolute; inset: auto -10% -60% 40%; height: 120%; background: radial-gradient(closest-side, rgba(210, 245, 74, .12), transparent); pointer-events: none; }
 .hero-in { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(1.5rem, 4vw, 3.5rem); align-items: center; position: relative; z-index: 1; }
