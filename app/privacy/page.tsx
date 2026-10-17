@@ -61,6 +61,10 @@ export default function Privacy() {
         papers; clearing your browser data removes them, and signing in moves them into your account. No advertising or
         analytics cookies.
       </p>
+      <p>
+        We count visits with Vercel Web Analytics: which pages are viewed, the site that linked to us, and the country and
+        device type. It sets no cookies and doesn&apos;t identify you or follow you across sites.
+      </p>
 
       <h2>Your choices</h2>
       <p>
