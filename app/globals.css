@@ -7,6 +7,7 @@
   --t5: #2f8a3e; --t4: #3f9a6b; --t3: #2f8c99; --t2: #5a77a8; --t1: #7a7f99;
   --t5-soft: #e3f2e5; --t4-soft: #e2f3ea; --t3-soft: #e0f1f3; --t2-soft: #e6ecf6; --t1-soft: #eceef3;
   --pick: #eef7cf; --pick-ink: #3b5208; --pick-line: #c9e27a; --line-strong: #d3d0c7;
+  --link: #4f7a0c;
   /* Page width: wide screens use most of their width; the gutter grows with the screen. */
   --page-w: 100rem; --gutter: clamp(1rem, 4vw, 3.5rem);
   --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
@@ -22,6 +23,7 @@
     --t5: #5cc06b; --t4: #63c49a; --t3: #5bbccb; --t2: #8fa8d6; --t1: #a3a8c0;
     --t5-soft: #1d3322; --t4-soft: #1b3329; --t3-soft: #18323a; --t2-soft: #222b3d; --t1-soft: #262a35;
     --pick: #26300f; --pick-ink: #d2f54a; --pick-line: #4a5a1a; --line-strong: #3d424b;
+    --link: #c3e85a;
   }
 }
 *, *::before, *::after { box-sizing: border-box; }
@@ -35,7 +37,7 @@ a { color: inherit; text-decoration: none; transition: color .15s ease, opacity 
 a:hover { opacity: .72; }
 /* Text links: on hover a lime marker sweeps in behind the words, left to right. */
 :is(.prose, .foot, .page-sub, .empty, .hint, .ask-read, .welcome-sub, .welcome-history, .comment-body, .signin, .reveal, .filter) a:not([class]) {
-  color: var(--ink); font-weight: 600; padding: 0 .12em; margin: 0 -.12em; border-radius: 4px;
+  color: var(--link); font-weight: 600; padding: 0 .12em; margin: 0 -.12em; border-radius: 4px;
   background: linear-gradient(var(--lime), var(--lime)) no-repeat left center / 0% 100%;
   transition: background-size .28s cubic-bezier(.2, .7, .2, 1), color .15s ease;
   -webkit-box-decoration-break: clone; box-decoration-break: clone;
@@ -217,7 +219,7 @@ button { font: inherit; }
 .abstract p { margin: 0; line-height: 1.75; max-width: 70ch; }
 
 .foot { color: var(--muted); font-size: .82rem; padding-top: 1.5rem; padding-bottom: 2.5rem; border-top: 1px solid var(--line); }
-.foot a { color: var(--ink); }
+.foot a { color: var(--link); }
 @media (prefers-reduced-motion: reduce) { .vbtn { transition: none; } }
 
 /* Discussion */
@@ -393,10 +395,14 @@ button.shelf-more::after { content: none; }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin: 1rem 0 1rem; padding-top: 1.5rem; border-top: 2px solid var(--ink); }
 .section-note { font-size: .85rem; color: var(--muted); }
 .all-papers .card { border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(20, 22, 26, .04); }
-/* On wide screens All papers runs in two columns, so lines of abstract stay readable. */
-@media (min-width: 80rem) {
-  .all-papers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
-  .all-papers .card { margin-bottom: 0; }
+/* On wide screens each paper is one wide row: score, text, and a large figure on the right
+   (one row per paper keeps the rows lined up; two columns made uneven heights). */
+@media (min-width: 64rem) {
+  .all-papers .card:has(.card-body > .thumb) { position: relative; padding-right: calc(1.25rem + 24rem + 1.75rem); min-height: 15.5rem; }
+  .all-papers .card .card-body > .thumb {
+    position: absolute; top: 1.25rem; right: 1.25rem; bottom: 1.25rem; float: none; margin: 0;
+    width: 24rem; height: auto; max-height: none; padding: .5rem; object-fit: contain;
+  }
 }
 
 /* Paper page */
