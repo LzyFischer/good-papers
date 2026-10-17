@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Analytics } from "@vercel/analytics/next";
 import { AuthButton } from "@/components/AuthButton";
 import { GateRevealer } from "@/components/GateRevealer";
 import { Notifications } from "@/components/Notifications";
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           AI comments, TL;DRs and consensus lines by a language model. <a href="/how">How scores work</a> ·{" "}
           <a href="/privacy">Privacy</a>.
         </footer>
+        <Analytics />
       </body>
     </html>
   );
