@@ -122,7 +122,7 @@ export default async function Home({ searchParams }: Props) {
       <div className="wrap home-body">
         {browsing && (
           <>
-            <ForYou />
+            <ForYou guests={false} />
             <Shelf id="trending" title="Trending" note="What readers here and on Hugging Face are upvoting" papers={hotNow} openIds={openIds} more={{ href: `/shelf/trending?t=${window}`, label: "See all" }}>
               <nav className="seg" aria-label="Trending window">
                 {(Object.keys(WINDOWS) as Window[]).map((w) => (
@@ -133,6 +133,7 @@ export default async function Home({ searchParams }: Props) {
               </nav>
             </Shelf>
             <Shelf id="neurips" title={`Trending at ${NEURIPS}`} note="Orals, spotlights and posters people are talking about" papers={nips} openIds={openIds} more={{ href: "/neurips", label: "All sessions" }} />
+            <ForYou guests />
             <Shelf id="must-read" title="Must read" note="This year's highest-rated papers" papers={must} openIds={openIds} more={{ href: "/shelf/must-read", label: "See all" }} />
             <Shelf id="debated" title="Most debated" note="Where the reviewers can't agree" papers={debated} openIds={openIds} more={{ href: "/shelf/debated", label: "See all" }} />
             <div className="section-head">

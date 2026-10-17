@@ -39,7 +39,9 @@ async function moveHistoryIntoAccount() {
   clearHistory();
 }
 
-export function useForYou(limit: number): { list: ForYouList | null; fresh: boolean; guest: boolean } {
+// `forGuests`: false = only signed-in readers, true = only visitors who aren't signed in,
+// undefined = both. The other kind gets nothing and nothing is fetched.
+export function useForYou(limit: number, forGuests?: boolean): { list: ForYouList | null; fresh: boolean; guest: boolean } {
   const { session, ready } = useSession();
   const router = useRouter();
   const [list, setList] = useState<ForYouList | null>(null);
@@ -49,6 +51,7 @@ export function useForYou(limit: number): { list: ForYouList | null; fresh: bool
 
   useEffect(() => {
     if (!ready) return;
+    if (forGuests !== undefined && forGuests !== !uid) return;
     const who = uid ?? "guest";
     const history = uid ? [] : readHistory();
     if (!uid && history.length < GUEST_MIN_PAPERS) return;
@@ -74,13 +77,15 @@ export function useForYou(limit: number): { list: ForYouList | null; fresh: bool
     };
     // The token refreshes every hour; a new one needn't refetch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, uid, limit, router]);
+  }, [ready, uid, limit, router, forGuests]);
   return { list, fresh, guest: !uid };
 }
 
-export function ForYou() {
-  const { list, guest } = useForYou(24);
-  if (!list) return null;
+// The home page shows it twice: above Trending for signed-in readers (picked from their
+// topics), and below the main shelves for visitors (picked only from what they opened here).
+export function ForYou({ guests }: { guests: boolean }) {
+  const { list, guest } = useForYou(24, guests);
+  if (!list || guest !== guests) return null;
   const { papers, reasons, hasTopics } = list;
   if (guest) {
     if (!papers.length) return null;
