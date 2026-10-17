@@ -12,6 +12,7 @@ import { ReaderCounts } from "./ReaderCounts";
 import { Icon, type IconName } from "./Icons";
 import { tierOf } from "./Score";
 import { VoteButtons } from "./VoteButtons";
+import { tex } from "@/lib/latex";
 
 export function formatAuthors(authors: string[], max = 4) {
   if (authors.length === 0) return "Unknown authors";
@@ -32,18 +33,28 @@ export function formatPublished(date: string | null | undefined, year: number | 
 }
 
 // Each author links to all their papers on the site.
-export function AuthorLinks({ authors, max, paperId }: { authors: string[]; max: number; paperId: string }) {
+export function AuthorLinks({ authors, max, paperId, expandable = false }: { authors: string[]; max: number; paperId: string; expandable?: boolean }) {
   if (authors.length === 0) return <>Unknown authors</>;
-  const shown = authors.slice(0, max);
+  const link = (a: string, i: number) => (
+    <span key={`${a}-${i}`}>
+      {i > 0 && ", "}
+      <Link href={`/author/${encodeURIComponent(a)}${/^W\d+$/.test(paperId) ? `?from=${paperId}` : ""}`} rel="nofollow">{a}</Link>
+    </span>
+  );
+  const rest = authors.length - max;
   return (
     <>
-      {shown.map((a, i) => (
-        <span key={`${a}-${i}`}>
-          {i > 0 && ", "}
-          <Link href={`/author/${encodeURIComponent(a)}${/^W\d+$/.test(paperId) ? `?from=${paperId}` : ""}`} rel="nofollow">{a}</Link>
-        </span>
-      ))}
-      {authors.length > max && ` and ${authors.length - max} more`}
+      {authors.slice(0, max).map(link)}
+      {rest > 0 &&
+        (expandable ? (
+          // Long author lists (40 names) fold away; a click shows them all, no script needed.
+          <details className="more-authors">
+            <summary>and {rest} more</summary>
+            {authors.slice(max).map((a, i) => link(a, max + i))}
+          </details>
+        ) : (
+          ` and ${rest} more`
+        ))}
     </>
   );
 }
@@ -117,13 +128,13 @@ export function PaperCard({ paper, score, verdicts, linkTitle = true, openPanel 
   const arxivId = arxivIdOf(paper.url);
 
   const title = linkTitle ? (
-    <Link href={`/paper/${paper.id}`}>{paper.title}</Link>
+    <Link href={`/paper/${paper.id}`}>{tex(paper.title)}</Link>
   ) : paper.url ? (
     <a href={paper.url} target="_blank" rel="noopener noreferrer">
-      {paper.title}
+      {tex(paper.title)}
     </a>
   ) : (
-    paper.title
+    tex(paper.title)
   );
 
   return (

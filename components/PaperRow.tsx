@@ -3,6 +3,7 @@ import type { Score } from "@/lib/types";
 import { formatAuthors } from "./PaperCard";
 import { Gate } from "./Gate";
 import { ScoreChip, tierOf } from "./Score";
+import { tex } from "@/lib/latex";
 
 type Props = {
   id: string;
@@ -22,7 +23,7 @@ export function PaperRow({ id, title, authors, year, venue, score, scoreOpen = f
       </Gate>
       <div>
         <Link href={`/paper/${id}`} className="paper-title">
-          {title}
+          {tex(title)}
         </Link>
         <p className="paper-meta">
           {formatAuthors(authors, 3)}

@@ -5,6 +5,25 @@ import { SCORING, TIERS } from "@/lib/types";
 
 export const metadata: Metadata = { title: "How scores work" };
 
+// The five labels as one scale, low to high, each segment as wide as its range.
+function TierScale() {
+  const tiers = [...TIERS].sort((a, b) => a.min - b.min);
+  return (
+    <div className="tier-scale" role="list">
+      {tiers.map((t, i) => {
+        const hi = i + 1 < tiers.length ? tiers[i + 1].min : 1;
+        return (
+          <div key={t.label} role="listitem" className="tier-seg" style={{ flexGrow: Math.round((hi - t.min) * 100), ["--tone" as string]: `var(--t${t.tone})` }}>
+            <span className="tier-bar" />
+            <b>{t.label}</b>
+            <span>{Math.round(t.min * 100)}–{Math.round(hi * 100)}%</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function How() {
   return (
     <main className="wrap page prose">
@@ -17,13 +36,7 @@ export default function How() {
 
       <h2>The score</h2>
       <p>Each paper gets a score from 0 to 100% and a label:</p>
-      <ul>
-        {TIERS.map((t) => (
-          <li key={t.label}>
-            <b>{t.label}</b>: {Math.round(t.min * 100)}% and up
-          </li>
-        ))}
-      </ul>
+      <TierScale />
       <p>
         A low score means a narrower audience, not a bad paper. Until readers have voted, the score rests on the AI
         panel, shown on every card.

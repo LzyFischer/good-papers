@@ -7,6 +7,7 @@ import { Thumb } from "./Thumb";
 import { LiveGauge, LiveLabel } from "./LiveScore";
 import { VoteButtons } from "./VoteButtons";
 import { tierOf } from "./Score";
+import { tex } from "@/lib/latex";
 
 // Compact card for horizontal shelves: thumbnail, score, title, TL;DR.
 export function MiniCard({ s, scoreOpen = false, why }: { s: Score; scoreOpen?: boolean; why?: string }) {
@@ -30,7 +31,7 @@ export function MiniCard({ s, scoreOpen = false, why }: { s: Score; scoreOpen?: 
           )}
         </span>
         {why && <span className="mini-why">{why}</span>}
-        <span className="mini-title">{s.title}</span>
+        <span className="mini-title">{tex(s.title)}</span>
         {s.tldr && <span className="mini-tldr">{s.tldr}</span>}
         <span className="mini-meta">
           {!isPreprint(s.venue) && (

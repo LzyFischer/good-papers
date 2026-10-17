@@ -11,6 +11,7 @@ import { getPaperAnywhere, getScores, getVerdicts, storedIdsByArxiv } from "@/li
 import { openScoreIds } from "@/lib/trending";
 import { SITE_URL } from "@/lib/site";
 import type { Score } from "@/lib/types";
+import { tex } from "@/lib/latex";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -28,10 +29,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const body = s?.tldr ?? s?.panel_consensus ?? paper.abstract ?? "";
   const description = [lead && `${lead}.`, body].filter(Boolean).join(" ").slice(0, 300);
   return {
-    title: t ? `${paper.title} (${t.label})` : paper.title,
+    title: t ? `${tex(paper.title)} (${t.label})` : tex(paper.title),
     description: description || undefined,
     alternates: { canonical: `/paper/${id}` },
-    openGraph: { type: "article", title: paper.title, description: description || undefined, url: `/paper/${id}` },
+    openGraph: { type: "article", title: tex(paper.title), description: description || undefined, url: `/paper/${id}` },
   };
 }
 
@@ -85,7 +86,7 @@ export default async function PaperPage({ params }: Props) {
         {paper.abstract && (
           <section className="abstract">
             <h2>Abstract</h2>
-            <p>{paper.abstract}</p>
+            <p>{tex(paper.abstract)}</p>
           </section>
         )}
         <Comments

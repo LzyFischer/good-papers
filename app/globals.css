@@ -173,8 +173,9 @@ button { font: inherit; }
 .legend li { display: flex; gap: .5rem; align-items: center; }
 
 /* Lists (search, my papers) */
-.paper-list { list-style: none; margin: 0; padding: 0; max-width: 50rem; }
+.paper-list { list-style: none; margin: 0; padding: 0 1.1rem; max-width: 52rem; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
 .paper-row { display: grid; grid-template-columns: 5.5rem 1fr; gap: 1rem; align-items: start; padding: 1rem 0; border-top: 1px solid var(--line); }
+.paper-row:first-child { border-top: 0; }
 .paper-title { font: 700 1.05rem/1.35 var(--display); text-decoration: none; }
 .paper-title:hover { text-decoration: underline; }
 .paper-meta { margin: .3rem 0 0; color: var(--muted); font-size: .9rem; }
@@ -184,7 +185,7 @@ button { font: inherit; }
 .chip[class*="tone-"] { color: var(--tone); }
 .chip-dot { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; background: var(--tone, var(--muted)); }
 .legend .chip-dot { margin: 0 .45rem 0 .45rem; }
-.chip--pending { color: var(--muted); border-style: dashed; font-weight: 500; font-size: .78rem; }
+.chip--pending { color: var(--muted); border: 0; background: var(--bg); font-weight: 500; font-size: .76rem; }
 
 /* Paper page */
 .paper-page { max-width: 54rem; }
@@ -578,3 +579,29 @@ button { font: inherit; }
 .agent-owner { font-size: .78rem; color: var(--muted); }
 
 .warmup { margin: .6rem 0 0; font-size: .88rem; color: var(--muted); }
+
+/* Long author lists on the paper page fold after eight names. */
+.more-authors { display: inline; }
+.more-authors summary { display: inline; cursor: pointer; color: var(--muted); list-style: none; margin-left: .3rem; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
+.more-authors summary::-webkit-details-marker { display: none; }
+.more-authors[open] summary { display: none; }
+
+/* How it works: the five labels as one scale. */
+.tier-scale { display: flex; gap: 4px; margin: .4rem 0 1.4rem; }
+.tier-seg { flex-basis: 0; min-width: 0; display: grid; gap: .3rem; align-content: start; }
+.tier-bar { height: 10px; border-radius: 3px; background: var(--tone); }
+.tier-seg:first-child .tier-bar { border-radius: 8px 3px 3px 8px; }
+.tier-seg:last-child .tier-bar { border-radius: 3px 8px 8px 3px; }
+.tier-seg b { font: 700 .84rem/1.2 var(--display); color: var(--tone); }
+.tier-seg span:last-child { font-size: .76rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 36rem) { .tier-seg b { font-size: .72rem; } .tier-seg span:last-child { font-size: .68rem; } }
+
+/* Author and institution pages: a profile card above the list. */
+.profile { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 1rem; align-items: center; max-width: 52rem; margin: 0 0 1rem; padding: 1.1rem 1.2rem; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+.profile h1 { font: 800 clamp(1.4rem, 2.6vw, 1.9rem)/1.15 var(--display); letter-spacing: -.02em; margin: 0; }
+.profile-initials { display: grid; place-items: center; width: 3.2rem; height: 3.2rem; border-radius: 50%; background: var(--night); color: var(--lime); font: 800 1.05rem var(--display); }
+.profile-orgs { display: flex; flex-wrap: wrap; gap: .35rem; margin: .45rem 0 0; }
+.profile-orgs span { font-size: .78rem; color: var(--muted); background: var(--bg); border-radius: 999px; padding: .2rem .6rem; }
+.profile-stat { margin: 0; text-align: right; color: var(--muted); font-size: .85rem; }
+.profile-stat b { display: block; font: 800 1.6rem/1 var(--display); color: var(--ink); font-variant-numeric: tabular-nums; }
+@media (max-width: 36rem) { .profile { grid-template-columns: auto minmax(0, 1fr); } .profile-stat { grid-column: 1 / -1; text-align: left; } .profile-stat b { display: inline; font-size: 1.1rem; margin-right: .3rem; } }

@@ -10,6 +10,7 @@ import { Gauge, tierOf } from "./Score";
 import { ShareButton } from "./ShareButton";
 import { Gate } from "./Gate";
 import { VoteButtons } from "./VoteButtons";
+import { tex } from "@/lib/latex";
 
 // The top of a paper page: header, scorecard (overall, readers, AI panel) and the panel consensus.
 export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper: Paper; score: Score | null; verdicts: AiVerdict[]; scoreOpen?: boolean }) {
@@ -42,11 +43,12 @@ export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper
               </Link>
             ))}
           </div>
-          <h1 className="ph-title">{paper.title}</h1>
+          <h1 className="ph-title">{tex(paper.title)}</h1>
           {score?.tldr && <p className="ph-tldr">{score.tldr}</p>}
-          <p className="ph-authors">
-            <AuthorLinks authors={paper.authors} max={40} paperId={paper.id} />
-          </p>
+          {/* A div, not a p: the folded author list is a <details>, which can't sit inside a paragraph. */}
+          <div className="ph-authors">
+            <AuthorLinks authors={paper.authors} max={8} paperId={paper.id} expandable />
+          </div>
           <p className="ph-facts">
             {facts.map((f) => <span key={f}>{f}</span>)}
             {score?.hf_upvotes && arxivId ? (

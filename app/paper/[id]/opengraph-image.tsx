@@ -6,6 +6,7 @@ import { tierOf } from "@/components/Score";
 import { getPaperAnywhere, getScores } from "@/lib/papers";
 import { isPreprint, venueLabel } from "@/lib/orgs";
 import { SITE_URL } from "@/lib/site";
+import { tex } from "@/lib/latex";
 
 export const alt = "Good Papers rating";
 export const size = { width: 1200, height: 630 };
@@ -80,7 +81,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", flex: 1, gap: 22 }}>
-            <div style={{ fontSize: 50, fontFamily: "Bricolage Grotesque", lineHeight: 1.1, letterSpacing: -1 }}>{clip(paper?.title ?? "A research paper", 110)}</div>
+            <div style={{ fontSize: 50, fontFamily: "Bricolage Grotesque", lineHeight: 1.1, letterSpacing: -1 }}>{clip(tex(paper?.title) || "A research paper", 110)}</div>
             {line && <div style={{ fontSize: 27, lineHeight: 1.4, color: "#a3a7ae" }}>{`“${clip(line, 170)}”`}</div>}
           </div>
         </div>

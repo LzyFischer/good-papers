@@ -117,6 +117,9 @@ export async function getCitationCounts(ids: string[]): Promise<Map<string, numb
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const PAGE_SIZE = 50;
 const CS_FIELDS = new Set(["Computer Science", "Mathematics", "Engineering", "Decision Sciences"]);
+// Single papers outside Computer Science that are still ML (the author-record check above is
+// looser on purpose; papers are filtered tighter, or fluid dynamics passes as "Engineering").
+const ML_SUBFIELDS = new Set(["Statistics and Probability", "Control and Systems Engineering", "Computational Mathematics", "Artificial Intelligence", "Signal Processing"]);
 export const normTitle = (s: string) =>
   s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const norm = normTitle;
@@ -186,7 +189,8 @@ export async function getAuthorWorks(name: string, fromWork: string | null, page
   // which is how author disambiguation is usually done.
   const all: any[] = [];
   for (let pg = 1; pg <= 3; pg++) {
-    const data = await oa("/works", { filter: `author.id:${ids.join("|")}`, sort: "publication_date:desc", per_page: "200", page: String(pg) });
+    // The usual fields plus each work's topic, used below to tell namesakes apart.
+    const data = await oa("/works", { filter: `author.id:${ids.join("|")}`, sort: "publication_date:desc", per_page: "200", page: String(pg) }, `${FIELDS},primary_topic`);
     all.push(...(data.results ?? []));
     if ((data.results ?? []).length < 200) break;
   }
@@ -212,6 +216,15 @@ export async function getAuthorWorks(name: string, fromWork: string | null, page
       if (!grew) break;
     }
     kept = all.filter((w) => inCircle.has(shortId(w.id)));
+  } else {
+    // No paper to start from: the core is the work OpenAlex files under Computer Science (or
+    // an ML-adjacent subfield). New papers often have no topic yet; they stay only if they
+    // share a co-author with the core. Work filed elsewhere goes: namesakes in physics,
+    // medicine or policy otherwise mix in (a fluid-dynamics paper on an ML author's page).
+    const ml = (w: any) => w.primary_topic?.field?.display_name === "Computer Science" || ML_SUBFIELDS.has(w.primary_topic?.subfield?.display_name);
+    const core = all.filter(ml);
+    const circle = new Set<string>(core.flatMap(coauthorsOf));
+    kept = all.filter((w) => ml(w) || (!w.primary_topic && coauthorsOf(w).some((n: string) => circle.has(n))));
   }
   kept = dedupeByTitle(kept, (w) => w.display_name ?? "");
   const papers = kept.filter(isPaper).slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(toPaper) as Paper[];
