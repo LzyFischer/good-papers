@@ -27,15 +27,14 @@ body {
   margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--body);
   padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-/* Links in running text: a thin, faint underline set a little below the letters, which
-   darkens on hover. Navigational links (see .shelf-more) drop it altogether. */
-a {
-  color: inherit;
-  text-decoration-line: underline; text-decoration-thickness: 1px; text-underline-offset: .22em;
-  text-decoration-color: color-mix(in srgb, currentColor 32%, transparent);
-  transition: text-decoration-color .15s ease, color .15s ease;
+/* No underlines anywhere. Links in running text are set dark and semi-bold so they stand
+   out from the grey prose around them; links fade a little on hover. */
+a { color: inherit; text-decoration: none; transition: color .15s ease, opacity .15s ease; }
+a:hover { opacity: .72; }
+:is(.prose, .foot, .page-sub, .empty, .hint, .ask-read, .welcome-sub, .welcome-history, .comment-body, .signin, .reveal, .filter) a:not([class]) {
+  color: var(--ink); font-weight: 600;
 }
-a:hover { text-decoration-color: currentColor; }
+.hero a:hover, .mini:hover, .mini-link:hover, .spot:hover, .seg a:hover, .tab:hover, .load-more:hover, .account-menu a:hover, .bell-item:hover, .shelf-more:hover, .section-head > a:hover { opacity: 1; }
 :focus-visible { outline: 3px solid var(--ai); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .icon { width: 1.5rem; height: 1.5rem; flex: none; }
@@ -77,7 +76,7 @@ button { font: inherit; }
 .empty { color: var(--muted); max-width: 40rem; }
 .hint { color: var(--muted); font-size: .88rem; margin: .5rem 0 0; }
 .button-primary { font-weight: 600; padding: .6rem 1.1rem; color: var(--surface); background: var(--ink); border: 0; border-radius: 8px; cursor: pointer; }
-.button-quiet { padding: 0; background: none; border: 0; color: var(--ai); cursor: pointer; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .22em; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); }
+.button-quiet { padding: 0; background: none; border: 0; color: var(--ai); cursor: pointer; text-decoration: none; font-weight: 600; }
 
 .intro { padding: 2.5rem 0 1.5rem; display: grid; gap: .75rem; }
 .intro h1 { font: 800 clamp(2rem, 5vw, 3.2rem)/1.05 var(--display); letter-spacing: -.03em; margin: 0; max-width: 22ch; }
@@ -124,7 +123,7 @@ button { font: inherit; }
 .tag.org-top { background: var(--rotten-soft); color: var(--rotten); border-color: transparent; }
 .title { font: 700 1.3rem/1.25 var(--display); letter-spacing: -.01em; margin: 0 0 .3rem; }
 .title a { text-decoration: none; }
-.title a:hover { text-decoration: underline; }
+.title a:hover { color: var(--t5); opacity: 1; }
 .authors { margin: 0 0 1rem; color: var(--muted); font-size: .9rem; }
 
 .tables { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-bottom: 1rem; }
@@ -165,7 +164,7 @@ button { font: inherit; }
 .dot--up { background: var(--t5); }
 .dot--down { background: none; border: 2px solid var(--t1); }
 .tag--area { text-decoration: none; color: var(--ai); background: var(--ai-soft); border-color: transparent; }
-.tag--area:hover { text-decoration: underline; }
+.tag--area:hover { background: color-mix(in srgb, var(--ai) 16%, var(--surface)); opacity: 1; }
 .pubinfo { margin: -.8rem 0 1rem; font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .filter { margin: 0 0 1rem; font-size: .92rem; color: var(--muted); }
 .filter b { color: var(--ink); }
@@ -190,7 +189,7 @@ button { font: inherit; }
 .paper-row { display: grid; grid-template-columns: 5.5rem 1fr; gap: 1rem; align-items: start; padding: 1rem 0; border-top: 1px solid var(--line); }
 .paper-row:first-child { border-top: 0; }
 .paper-title { font: 700 1.05rem/1.35 var(--display); text-decoration: none; }
-.paper-title:hover { text-decoration: underline; }
+.paper-title:hover { color: var(--t5); opacity: 1; }
 .paper-meta { margin: .3rem 0 0; color: var(--muted); font-size: .9rem; }
 .my-note { margin: .5rem 0 0; padding-left: .75rem; border-left: 2px solid var(--line); font-size: .92rem; }
 .chip { display: inline-flex; align-items: center; gap: .3rem; font: 700 .9rem/1 var(--display); padding: .35rem .5rem; border: 2px solid currentColor; border-radius: 8px; font-variant-numeric: tabular-nums; }
@@ -245,7 +244,7 @@ button { font: inherit; }
 .meta a.tag { text-decoration: none; }
 .meta a.tag:hover { border-color: currentColor; }
 .authors a { text-decoration: none; }
-.authors a:hover { text-decoration: underline; color: var(--ink); }
+.authors a:hover { color: var(--ink); opacity: 1; }
 
 .page-sub { margin: -1rem 0 1.5rem; color: var(--muted); }
 .pager { display: flex; gap: 1rem; align-items: center; justify-content: center; margin: 1.5rem 0; color: var(--muted); font-size: .9rem; }
@@ -258,7 +257,7 @@ button { font: inherit; }
 .ask-form button { font: 700 1rem var(--display); padding: 0 1.3rem; border: 0; border-radius: 12px; background: var(--ai); color: #fff; cursor: pointer; }
 .ask-chips { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
 .ask-chip { font-size: .82rem; text-decoration: none; color: var(--ai); background: var(--ai-soft); border-radius: 999px; padding: .3rem .7rem; }
-.ask-chip:hover { text-decoration: underline; }
+.ask-chip:hover { background: color-mix(in srgb, var(--ai) 16%, var(--surface)); opacity: 1; }
 .ask-read { color: var(--muted); margin: 0 0 1.25rem; }
 .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 1rem; }
 .who { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; margin-bottom: 2rem; }
@@ -271,7 +270,7 @@ button { font: inherit; }
 .who-top .who-rank { color: var(--ink); font: 800 .95rem var(--display); }
 .who-main { display: grid; gap: .3rem; min-width: 0; }
 .who-main a { color: var(--ink); text-decoration: none; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.who-main a:hover { text-decoration: underline; }
+.who-main a:hover { color: var(--t5); opacity: 1; }
 .who-bar { display: block; height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--t5) var(--w), var(--t5-soft) var(--w)); opacity: .85; }
 .who-n { font: 600 .85rem var(--body); color: var(--muted); font-variant-numeric: tabular-nums; }
 
@@ -342,7 +341,7 @@ button.shelf-more::after { content: none; }
 /* The NeurIPS guide gets the first, highlighted chip */
 .ask-chip--featured { flex-basis: 100%; max-width: max-content; font-weight: 600; display: inline-flex; align-items: center; gap: .55rem; }
 .ask-chip--featured a { color: inherit; text-decoration: none; }
-.ask-chip--featured a:hover { text-decoration: underline; }
+.ask-chip--featured a:hover { opacity: .75; }
 .ask-chip--featured a:first-of-type { font-weight: 800; }
 .ask-chip-badge { font: 700 .66rem/1 var(--body); text-transform: uppercase; letter-spacing: .05em; padding: .2rem .4rem; border-radius: 4px; background: var(--ai); color: #fff; }
 .ask--dark .ask-chip--featured { color: var(--lime); border-color: var(--lime); background: rgba(220, 242, 106, .08); }
@@ -391,12 +390,12 @@ button.shelf-more::after { content: none; }
 .ph-tldr { font-size: 1.15rem; line-height: 1.5; margin: 0 0 .9rem; max-width: 46rem; }
 .ph-authors { color: var(--muted); margin: 0 0 .6rem; }
 .ph-authors a { text-decoration: none; }
-.ph-authors a:hover { text-decoration: underline; color: var(--ink); }
+.ph-authors a:hover { color: var(--ink); opacity: 1; }
 /* Facts: one quiet line of text separated by dots, Share as the one real button */
 .ph-facts { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.15rem; margin: .2rem 0 0; font-size: .9rem; line-height: 1.4; color: var(--muted); }
 .ph-facts > :not(.share) { display: inline-flex; align-items: center; }
 .ph-facts a { color: var(--ink); font-weight: 600; text-decoration: none; }
-.ph-facts a:hover { text-decoration: underline; text-underline-offset: .2em; }
+.ph-facts a:hover { opacity: .7; }
 .ph-facts .share { margin-left: .2rem; }
 .ph-img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: #fff; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(20, 22, 26, .1); }
 .scorecard { display: grid; grid-template-columns: minmax(12rem, .8fr) minmax(0, 1.2fr) minmax(0, 1fr); gap: 1rem; margin: 1.75rem 0 1.25rem; }
@@ -429,7 +428,7 @@ button.shelf-more::after { content: none; }
 .discussion-meta { color: var(--muted); font-size: .9rem; }
 .composer-actions { display: flex; gap: .9rem; align-items: center; }
 .comment-main .composer { margin-top: .7rem; }
-.link-button--strong { color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .22em; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); }
+.link-button--strong { color: var(--ink); text-decoration: none; font-weight: 700; }
 .comments { gap: 1rem; }
 .comment { background: var(--surface); border: 0; box-shadow: 0 0 0 1px var(--line); border-radius: 14px; padding: .85rem 1rem; }
 .replies { margin: .7rem 0 0 1.05rem; padding-left: 1.1rem; border-left: 2px solid var(--line); gap: .75rem; }
@@ -609,7 +608,7 @@ button.shelf-more::after { content: none; }
 
 /* Long author lists on the paper page fold after eight names. */
 .more-authors { display: inline; }
-.more-authors summary { display: inline; cursor: pointer; color: var(--muted); list-style: none; margin-left: .3rem; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
+.more-authors summary { display: inline; cursor: pointer; color: var(--muted); list-style: none; margin-left: .3rem; color: var(--ink); font-weight: 600; }
 .more-authors summary::-webkit-details-marker { display: none; }
 .more-authors[open] summary { display: none; }
 
