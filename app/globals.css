@@ -31,8 +31,15 @@ body {
    out from the grey prose around them; links fade a little on hover. */
 a { color: inherit; text-decoration: none; transition: color .15s ease, opacity .15s ease; }
 a:hover { opacity: .72; }
+/* Text links: on hover a lime marker sweeps in behind the words, left to right. */
 :is(.prose, .foot, .page-sub, .empty, .hint, .ask-read, .welcome-sub, .welcome-history, .comment-body, .signin, .reveal, .filter) a:not([class]) {
-  color: var(--ink); font-weight: 600;
+  color: var(--ink); font-weight: 600; padding: 0 .12em; margin: 0 -.12em; border-radius: 4px;
+  background: linear-gradient(var(--lime), var(--lime)) no-repeat left center / 0% 100%;
+  transition: background-size .28s cubic-bezier(.2, .7, .2, 1), color .15s ease;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+:is(.prose, .foot, .page-sub, .empty, .hint, .ask-read, .welcome-sub, .welcome-history, .comment-body, .signin, .reveal, .filter) a:not([class]):hover {
+  background-size: 100% 100%; color: var(--lime-ink); opacity: 1;
 }
 .hero a:hover, .mini:hover, .mini-link:hover, .spot:hover, .seg a:hover, .tab:hover, .load-more:hover, .account-menu a:hover, .bell-item:hover, .shelf-more:hover, .section-head > a:hover { opacity: 1; }
 :focus-visible { outline: 3px solid var(--ai); outline-offset: 2px; }
@@ -56,7 +63,7 @@ button { font: inherit; }
   color: var(--head-ink); background: transparent; border: 1px solid rgba(255, 255, 255, .22);
   font: 600 .9rem var(--body); cursor: pointer; text-decoration: none; transition: border-color .15s ease, background .15s ease;
 }
-.auth-link:hover { border-color: rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .06); }
+.auth-link:hover { border-color: var(--lime); background: var(--lime); color: var(--lime-ink); }
 
 /* Search */
 .search { display: flex; }
@@ -279,14 +286,24 @@ button { font: inherit; }
 .shelf-head { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; margin-bottom: .75rem; }
 .shelf-head h2, .section-title { font: 800 1.35rem var(--display); letter-spacing: -.01em; margin: 0; }
 .section-title { margin: 0 0 1rem; }
-/* "See all", "All sessions", "How scores work": quiet text with an arrow, no underline. */
+/* "See all", "All sessions", "How scores work": text and an arrow in a small dark disc. On
+   hover the link lifts into a pill, the disc turns lime and the arrow slides on. */
 .shelf-more, .section-head > a {
-  margin-left: auto; display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap;
+  margin-left: auto; display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap;
+  padding: .3rem .3rem .3rem .75rem; border-radius: 999px; border: 1px solid transparent;
   font: 600 .86rem var(--body); color: var(--muted); text-decoration: none;
+  transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, color .2s ease;
 }
-.shelf-more::after, .section-head > a::after { content: "→"; transition: transform .15s ease; }
-.shelf-more:hover, .section-head > a:hover { color: var(--ink); }
-.shelf-more:hover::after, .section-head > a:hover::after { transform: translateX(3px); }
+.shelf-more::after, .section-head > a::after {
+  content: "→"; display: grid; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 50%;
+  background: var(--ink); color: var(--bg); font-size: .8rem; line-height: 1;
+  transition: background .2s ease, color .2s ease, transform .2s cubic-bezier(.2, .7, .2, 1);
+}
+.shelf-more:hover, .section-head > a:hover {
+  color: var(--ink); background: var(--surface); border-color: var(--line); box-shadow: 0 4px 14px rgba(20, 22, 26, .08);
+}
+.shelf-more:hover::after, .section-head > a:hover::after { background: var(--lime); color: var(--lime-ink); transform: translateX(2px); }
+button.shelf-more { padding-right: .75rem; }
 button.shelf-more::after { content: none; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
 .seg a { font: 600 .82rem var(--body); padding: .3rem .8rem; text-decoration: none; color: var(--muted); }
