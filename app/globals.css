@@ -27,7 +27,15 @@ body {
   margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--body);
   padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-a { color: inherit; text-underline-offset: .15em; }
+/* Links in running text: a thin, faint underline set a little below the letters, which
+   darkens on hover. Navigational links (see .shelf-more) drop it altogether. */
+a {
+  color: inherit;
+  text-decoration-line: underline; text-decoration-thickness: 1px; text-underline-offset: .22em;
+  text-decoration-color: color-mix(in srgb, currentColor 32%, transparent);
+  transition: text-decoration-color .15s ease, color .15s ease;
+}
+a:hover { text-decoration-color: currentColor; }
 :focus-visible { outline: 3px solid var(--ai); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .icon { width: 1.5rem; height: 1.5rem; flex: none; }
@@ -44,7 +52,12 @@ button { font: inherit; }
 @media (max-width: 52rem) { .nav { display: none; } }
 .top .search { flex: 1 1 16rem; max-width: 30rem; }
 .auth { display: inline-flex; gap: 1rem; align-items: center; margin-left: auto; min-height: 2.25rem; }
-.auth a, .auth-link { color: var(--head-ink); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: .15em; }
+.auth-link {
+  display: inline-flex; align-items: center; height: 2.1rem; padding: 0 .95rem; border-radius: 999px;
+  color: var(--head-ink); background: transparent; border: 1px solid rgba(255, 255, 255, .22);
+  font: 600 .9rem var(--body); cursor: pointer; text-decoration: none; transition: border-color .15s ease, background .15s ease;
+}
+.auth-link:hover { border-color: rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .06); }
 
 /* Search */
 .search { display: flex; }
@@ -64,7 +77,7 @@ button { font: inherit; }
 .empty { color: var(--muted); max-width: 40rem; }
 .hint { color: var(--muted); font-size: .88rem; margin: .5rem 0 0; }
 .button-primary { font-weight: 600; padding: .6rem 1.1rem; color: var(--surface); background: var(--ink); border: 0; border-radius: 8px; cursor: pointer; }
-.button-quiet { padding: 0; background: none; border: 0; color: var(--ai); cursor: pointer; text-decoration: underline; text-underline-offset: .15em; }
+.button-quiet { padding: 0; background: none; border: 0; color: var(--ai); cursor: pointer; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .22em; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); }
 
 .intro { padding: 2.5rem 0 1.5rem; display: grid; gap: .75rem; }
 .intro h1 { font: 800 clamp(2rem, 5vw, 3.2rem)/1.05 var(--display); letter-spacing: -.03em; margin: 0; max-width: 22ch; }
@@ -196,6 +209,7 @@ button { font: inherit; }
 .abstract p { margin: 0; line-height: 1.75; max-width: 70ch; }
 
 .foot { color: var(--muted); font-size: .82rem; padding-top: 1.5rem; padding-bottom: 2.5rem; border-top: 1px solid var(--line); }
+.foot a { color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { .vbtn { transition: none; } }
 
 /* Discussion */
@@ -266,7 +280,15 @@ button { font: inherit; }
 .shelf-head { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; margin-bottom: .75rem; }
 .shelf-head h2, .section-title { font: 800 1.35rem var(--display); letter-spacing: -.01em; margin: 0; }
 .section-title { margin: 0 0 1rem; }
-.shelf-more { margin-left: auto; font-size: .88rem; }
+/* "See all", "All sessions", "How scores work": quiet text with an arrow, no underline. */
+.shelf-more, .section-head > a {
+  margin-left: auto; display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap;
+  font: 600 .86rem var(--body); color: var(--muted); text-decoration: none;
+}
+.shelf-more::after, .section-head > a::after { content: "→"; transition: transform .15s ease; }
+.shelf-more:hover, .section-head > a:hover { color: var(--ink); }
+.shelf-more:hover::after, .section-head > a:hover::after { transform: translateX(3px); }
+button.shelf-more::after { content: none; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
 .seg a { font: 600 .82rem var(--body); padding: .3rem .8rem; text-decoration: none; color: var(--muted); }
 .seg a[aria-current="page"] { background: var(--ink); color: var(--bg); }
@@ -407,7 +429,7 @@ button { font: inherit; }
 .discussion-meta { color: var(--muted); font-size: .9rem; }
 .composer-actions { display: flex; gap: .9rem; align-items: center; }
 .comment-main .composer { margin-top: .7rem; }
-.link-button--strong { color: var(--ink); text-decoration: underline; }
+.link-button--strong { color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .22em; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); }
 .comments { gap: 1rem; }
 .comment { background: var(--surface); border: 0; box-shadow: 0 0 0 1px var(--line); border-radius: 14px; padding: .85rem 1rem; }
 .replies { margin: .7rem 0 0 1.05rem; padding-left: 1.1rem; border-left: 2px solid var(--line); gap: .75rem; }
@@ -562,6 +584,7 @@ button { font: inherit; }
 .account-who { padding: .45rem .65rem .55rem; font-size: .8rem; color: var(--muted); border-bottom: 1px solid var(--line); margin-bottom: .25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account-menu a, .account-menu button { text-align: left; padding: .5rem .65rem; border-radius: 8px; border: 0; background: none; color: var(--ink); font: 500 .9rem var(--body); text-decoration: none; cursor: pointer; }
 .account-menu a:hover, .account-menu button:hover { background: var(--bg); }
+.account-menu a { text-decoration: none; }
 .welcome-history { margin: 1.4rem 0 0; font-size: .88rem; color: var(--muted); }
 
 /* Agents */
