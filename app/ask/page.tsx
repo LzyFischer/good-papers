@@ -15,6 +15,29 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return { title: q ? `Ask: ${q}` : "Ask" };
 }
 
+// A ranked list: name, a bar for the number of papers, and the number.
+function WhoList({ title, rows }: { title: string; rows: { name: string; papers: number; href: string }[] }) {
+  if (!rows.length) return null;
+  const top = Math.max(...rows.map((r) => r.papers));
+  return (
+    <section className="who-panel">
+      <h2>{title}</h2>
+      <ol>
+        {rows.map((r, i) => (
+          <li key={r.name} className={i < 3 ? "who-top" : undefined}>
+            <span className="who-rank">{i + 1}</span>
+            <span className="who-main">
+              <Link href={r.href} rel="nofollow">{r.name}</Link>
+              <span className="who-bar" style={{ ["--w" as string]: `${Math.round((r.papers / top) * 100)}%` }} />
+            </span>
+            <span className="who-n">{r.papers}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default async function AskPage({ searchParams }: Props) {
   const openIds = await openScoreIds().catch(() => [] as string[]);
   const sp = await searchParams;
@@ -48,26 +71,8 @@ export default async function AskPage({ searchParams }: Props) {
           </p>
           {a.intent === "who" && (a.people.length > 0 || a.orgs.length > 0) && (
             <div className="who">
-              <div>
-                <h2>People</h2>
-                <ol>
-                  {a.people.map((p) => (
-                    <li key={p.name}>
-                      <Link href={`/author/${encodeURIComponent(p.name)}`}>{p.name}</Link> <span>{p.papers} paper{p.papers === 1 ? "" : "s"}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-              <div>
-                <h2>Institutions</h2>
-                <ol>
-                  {a.orgs.map((o) => (
-                    <li key={o.name}>
-                      <Link href={`/?org=${encodeURIComponent(o.name)}`}>{o.name}</Link> <span>{o.papers} paper{o.papers === 1 ? "" : "s"}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
+              <WhoList title="People" rows={a.people.map((p) => ({ ...p, href: `/author/${encodeURIComponent(p.name)}` }))} />
+              <WhoList title="Institutions" rows={a.orgs.map((o) => ({ ...o, href: `/?org=${encodeURIComponent(o.name)}` }))} />
             </div>
           )}
           {a.papers.length > 0 ? (

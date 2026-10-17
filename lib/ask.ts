@@ -113,10 +113,22 @@ export async function ask(question: string, limit = 40): Promise<Answer> {
       if (!data || data.length < 1000) break;
     }
   }
+  // Spellings of one name count together ("Shanghai Jiao Tong University" and "Shanghai
+  // Jiaotong University", "nanjing university"), shown in the spelling seen most often.
+  const keyOf = (n: string) => n.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "");
   const count = (names: string[][]) => {
-    const m = new Map<string, number>();
-    for (const list of names) for (const n of new Set(list)) m.set(n, (m.get(n) ?? 0) + 1);
-    return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15).map(([name, papers]) => ({ name, papers }));
+    const m = new Map<string, { papers: number; spellings: Map<string, number> }>();
+    for (const list of names) {
+      for (const k of new Set(list.map(keyOf))) if (k) {
+        const e = m.get(k) ?? { papers: 0, spellings: new Map() };
+        e.papers++;
+        m.set(k, e);
+      }
+      for (const n of list) m.get(keyOf(n))?.spellings.set(n, (m.get(keyOf(n))!.spellings.get(n) ?? 0) + 1);
+    }
+    const shown = (sp: Map<string, number>) =>
+      [...sp].sort((a, b) => b[1] - a[1] || Number(/[A-Z]/.test(b[0])) - Number(/[A-Z]/.test(a[0])))[0][0];
+    return [...m.values()].sort((a, b) => b.papers - a.papers).slice(0, 10).map((e) => ({ name: shown(e.spellings), papers: e.papers }));
   };
   const people = intent === "who" ? count(pool.map((p) => p.authors ?? [])) : [];
   // NeurIPS lists some affiliations twice ("Tsinghua University, Tsinghua University").
