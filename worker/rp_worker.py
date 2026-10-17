@@ -24,6 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 import random
 import re
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -181,8 +182,19 @@ class Writer:
 
         self.tinker = tinker
         self.Message = Message
-        self.renderer = TmlV0Renderer(get_tokenizer(MODEL))
+        self.tokenizer = get_tokenizer(MODEL)
+        self._renderer_cls = TmlV0Renderer
+        # The renderer is a Rust object that newer builds pin to the thread that made it, and
+        # comments and TL;DRs are written from a thread pool: one renderer per thread.
+        self._local = threading.local()
         self.client = tinker.ServiceClient().create_sampling_client(base_model=MODEL)
+
+    @property
+    def renderer(self):
+        r = getattr(self._local, "renderer", None)
+        if r is None:
+            r = self._local.renderer = self._renderer_cls(self.tokenizer)
+        return r
 
     def write(self, system: str, user: str, max_tokens: int = 220) -> str:
         msgs = [self.Message(role="system", content=system), self.Message(role="user", content=user)]
