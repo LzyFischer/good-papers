@@ -398,10 +398,11 @@ button.shelf-more::after { content: none; }
 /* On wide screens each paper is one wide row: score, text, and a large figure on the right
    (one row per paper keeps the rows lined up; two columns made uneven heights). */
 @media (min-width: 64rem) {
-  .all-papers .card:has(.card-body > .thumb) { position: relative; padding-right: calc(1.25rem + 24rem + 1.75rem); min-height: 15.5rem; }
+  /* Every figure sits in the same fixed frame, scaled to fit (never cropped, never spilling). */
+  .all-papers .card:has(.card-body > .thumb) { position: relative; padding-right: calc(1.25rem + 24rem + 1.75rem); min-height: calc(13.5rem + 2.5rem); }
   .all-papers .card .card-body > .thumb {
-    position: absolute; top: 1.25rem; right: 1.25rem; bottom: 1.25rem; float: none; margin: 0;
-    width: 24rem; height: auto; max-height: none; padding: .5rem; object-fit: contain;
+    position: absolute; top: 1.25rem; right: 1.25rem; float: none; margin: 0;
+    width: 24rem; height: 13.5rem; max-height: none; padding: .5rem; object-fit: contain;
   }
 }
 
