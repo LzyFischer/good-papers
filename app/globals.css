@@ -297,13 +297,13 @@ button { font: inherit; }
 /* ===== v4 visual pass ===== */
 
 /* Hero */
-.hero { background: var(--night); color: var(--night-ink); padding: clamp(1.5rem, 3.5vw, 2.5rem) 0 clamp(1.75rem, 3.5vw, 2.75rem); position: relative; overflow: hidden; }
+.hero { background: var(--night); color: var(--night-ink); padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(2.5rem, 5vw, 4rem); position: relative; overflow: hidden; }
 .hero::after { content: ""; position: absolute; inset: auto -10% -60% 40%; height: 120%; background: radial-gradient(closest-side, rgba(210, 245, 74, .12), transparent); pointer-events: none; }
 .hero-in { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(1.5rem, 4vw, 3.5rem); align-items: center; position: relative; z-index: 1; }
 @media (max-width: 56rem) { .hero-in { grid-template-columns: minmax(0, 1fr); } }
-.hero h1 { font: 800 clamp(2.3rem, 5vw, 4rem)/.95 var(--display); letter-spacing: -.045em; margin: 0 0 .8rem; }
+.hero h1 { font: 800 clamp(2.8rem, 7vw, 5.2rem)/.95 var(--display); letter-spacing: -.045em; margin: 0 0 1.1rem; }
 .hero .hl { color: var(--lime); }
-.hero-lede { font-size: clamp(1rem, 1.4vw, 1.1rem); line-height: 1.5; color: var(--night-muted); max-width: 34rem; margin: 0 0 1rem; }
+.hero-lede { font-size: clamp(1.05rem, 1.6vw, 1.2rem); line-height: 1.5; color: var(--night-muted); max-width: 34rem; margin: 0 0 1.3rem; }
 .hero-stats { display: flex; gap: 1.4rem; flex-wrap: wrap; margin: 0 0 1.6rem; color: var(--night-muted); font-size: .92rem; }
 .hero-stats b { color: var(--night-ink); font: 800 1.35rem var(--display); margin-right: .3rem; font-variant-numeric: tabular-nums; }
 .ask--dark { margin: 0; }
@@ -326,7 +326,7 @@ button { font: inherit; }
 .spot { display: grid; gap: .8rem; text-decoration: none; color: var(--ink); background: var(--surface); border-radius: 18px; padding: 1rem; box-shadow: 0 20px 60px rgba(0, 0, 0, .35); transform: rotate(.6deg); transition: transform .2s ease; }
 .spot:hover { transform: rotate(0) translateY(-2px); }
 .spot-kicker { font: 800 .7rem var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.spot-img { width: 100%; aspect-ratio: 16 / 9; max-height: 11rem; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+.spot-img { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
 .spot-body { display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: center; }
 .spot-tier { display: block; font: 700 .8rem var(--body); color: var(--tone, var(--t5)); text-transform: uppercase; letter-spacing: .06em; }
 .spot-title { display: block; font: 800 1.2rem/1.2 var(--display); letter-spacing: -.01em; }
@@ -605,6 +605,3 @@ button { font: inherit; }
 .profile-stat { margin: 0; text-align: right; color: var(--muted); font-size: .85rem; }
 .profile-stat b { display: block; font: 800 1.6rem/1 var(--display); color: var(--ink); font-variant-numeric: tabular-nums; }
 @media (max-width: 36rem) { .profile { grid-template-columns: auto minmax(0, 1fr); } .profile-stat { grid-column: 1 / -1; text-align: left; } .profile-stat b { display: inline; font-size: 1.1rem; margin-right: .3rem; } }
-
-/* The hero stays short enough that the shelves show on a laptop screen: two example questions. */
-.hero .ask-chips a.ask-chip:not(.ask-chip--featured):nth-of-type(n+3) { display: none; }
