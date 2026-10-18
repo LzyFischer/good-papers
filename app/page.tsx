@@ -4,7 +4,7 @@ import { after } from "next/server";
 import { AskBox } from "@/components/AskBox";
 import { AutoMore } from "@/components/AutoMore";
 import { ForYou } from "@/components/ForYou";
-import { PaperCard } from "@/components/PaperCard";
+import { PaperListCard } from "@/components/PaperListCard";
 import { Gate } from "@/components/Gate";
 import { Gauge, tierOf } from "@/components/Score";
 import { Shelf } from "@/components/Shelf";
@@ -12,7 +12,6 @@ import { AREAS } from "@/lib/areas";
 import { mergeByTopics, topicGroups, topicsFromCookie, TOPICS_COOKIE } from "@/lib/forYou";
 import { topUpTrending } from "@/lib/ingest";
 import { NEURIPS } from "@/lib/neurips";
-import { getVerdicts } from "@/lib/papers";
 import { serverClient } from "@/lib/supabase";
 import { WINDOWS, WINDOW_LABELS, homeShelves, openScoreIds, pickPaperOfTheDay, type Window } from "@/lib/trending";
 import type { Score } from "@/lib/types";
@@ -94,7 +93,7 @@ export default async function Home({ searchParams }: Props) {
     p.set("n", String(shown + PAGE));
     return `/?${p}`; // scroll={false} keeps your place; new papers appear below
   })();
-  const [verdicts, openIds] = await Promise.all([getVerdicts(papers.map((p) => p.id)), openScoreIds().catch(() => [] as string[])]);
+  const openIds = await openScoreIds().catch(() => [] as string[]);
 
   const browsing = !filtered;
   if (browsing) after(() => topUpTrending().catch((e) => console.warn("Trending top-up failed:", e)));
@@ -153,7 +152,7 @@ export default async function Home({ searchParams }: Props) {
           ) : (
             papers.map((s, i) => (
               <div key={s.id} id={`p${i}`} className="card-anchor">
-                <PaperCard paper={s} score={s} verdicts={verdicts.get(s.id) ?? []} scoreOpen={openIds.includes(s.id)} />
+                <PaperListCard s={s} scoreOpen={openIds.includes(s.id)} />
               </div>
             ))
           )}

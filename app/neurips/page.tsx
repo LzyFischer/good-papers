@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PaperCard } from "@/components/PaperCard";
+import { PaperListCard } from "@/components/PaperListCard";
 import { MiniCard } from "@/components/Shelf";
 import { NEURIPS, TRACKS, bestBySession, sessionPapers, sessionWhen, trackPapers, type Track } from "@/lib/neurips";
-import { getVerdicts } from "@/lib/papers";
 import type { Score } from "@/lib/types";
 import { openScoreIds } from "@/lib/trending";
 
@@ -32,12 +31,11 @@ function Tabs({ track }: { track: Track | null }) {
 
 async function List({ papers }: { papers: Score[] }) {
   const openIds = await openScoreIds().catch(() => [] as string[]);
-  const verdicts = await getVerdicts(papers.map((p) => p.id));
   return (
     <section aria-label="Papers" className="all-papers">
       {papers.map((s, i) => (
         <div key={s.id} id={`p${i}`} className="card-anchor">
-          <PaperCard paper={s} score={s} verdicts={verdicts.get(s.id) ?? []} scoreOpen={openIds.includes(s.id)} />
+          <PaperListCard s={s} scoreOpen={openIds.includes(s.id)} />
         </div>
       ))}
     </section>
