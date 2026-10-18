@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { Abstract } from "@/components/Abstract";
 import { Comments } from "@/components/Comments";
 import { NoteBox } from "@/components/NoteBox";
 import { ReadTracker } from "@/components/ReadTracker";
 import { WarmUp } from "@/components/WarmUp";
+import { PaperAside } from "@/components/PaperAside";
 import { PaperHero } from "@/components/PaperHero";
 import { tierOf } from "@/components/Score";
 import { arxivIdOf } from "@/lib/arxiv";
@@ -69,6 +71,7 @@ export default async function PaperPage({ params }: Props) {
   // seconds (components/WarmUp.tsx, /api/warm), not while rendering: crawlers fetching
   // thousands of paper pages used to spend the whole judging budget.
   const score = (await getScores([id])).get(id) ?? null;
+  const scoreOpen = (await openScoreIds().catch(() => [] as string[])).includes(id);
 
   return (
     <main className="wrap page paper-page">
@@ -77,21 +80,19 @@ export default async function PaperPage({ params }: Props) {
         paper={{ ...paper, tags: paper.tags.length ? paper.tags : score?.tags ?? [], orgs: paper.orgs.length ? paper.orgs : score?.orgs ?? [] }}
         score={score}
         verdicts={verdicts}
-        scoreOpen={(await openScoreIds().catch(() => [] as string[])).includes(id)}
+        scoreOpen={scoreOpen}
       />
       <NoteBox paperId={paper.id} />
       <ReadTracker paperId={paper.id} />
       {(verdicts.length === 0 ? !!paper.abstract : !score?.comments) && <WarmUp id={paper.id} unjudged={verdicts.length === 0} />}
       <div className="paper-cols">
-        {paper.abstract && (
-          <section className="abstract">
-            <h2>Abstract</h2>
-            <p>{tex(paper.abstract)}</p>
-          </section>
-        )}
-        <Comments
-          paper={{ id: paper.id, title: paper.title, authors: paper.authors, year: paper.year, venue: paper.venue, url: paper.url }}
-        />
+        <div className="paper-read">
+          {paper.abstract && <Abstract>{tex(paper.abstract)}</Abstract>}
+          <Comments
+            paper={{ id: paper.id, title: paper.title, authors: paper.authors, year: paper.year, venue: paper.venue, url: paper.url }}
+          />
+        </div>
+        <PaperAside paper={paper} score={score} scoreOpen={scoreOpen} />
       </div>
     </main>
   );
