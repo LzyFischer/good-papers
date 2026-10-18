@@ -31,6 +31,14 @@ export function PaperListCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: 
     s.comments ? <span key="d">{`${s.comments} comment${s.comments === 1 ? "" : "s"}`}</span> : null,
   ].filter(Boolean);
 
+  // Stands in for a missing figure, so every card keeps the same shape.
+  const figHolder = (
+    <span className="lcard-nofig">
+      <b>{area?.label ?? (s.venue ? venueLabel(s.venue, s.year) : "Paper")}</b>
+      Read the paper →
+    </span>
+  );
+
   return (
     <article className="lcard">
       <div className="lcard-side">
@@ -75,7 +83,9 @@ export function PaperListCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: 
           </span>
         </div>
       </div>
-      {s.thumbnail && <Thumb className="lcard-fig" src={s.thumbnail} />}
+      <Link href={`/paper/${s.id}`} className="lcard-fig" tabIndex={-1} aria-hidden="true">
+        {s.thumbnail ? <Thumb src={s.thumbnail} fallback={figHolder} /> : figHolder}
+      </Link>
     </article>
   );
 }
