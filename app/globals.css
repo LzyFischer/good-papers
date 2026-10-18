@@ -147,14 +147,14 @@ button { font: inherit; }
 
 /* Vote buttons: the loudest thing on the card */
 .vote { display: flex; gap: .6rem; flex-wrap: wrap; }
-.vbtn { display: flex; align-items: center; gap: .5rem; font: 700 1.02rem var(--display); padding: .75rem 1.25rem; border-radius: 12px; cursor: pointer; border: 0; transition: transform .08s ease, background .15s ease, color .15s ease; }
-.vbtn .icon { width: 1.4rem; height: 1.4rem; }
+.vbtn { display: flex; align-items: center; gap: .55rem; font: 700 1.05rem var(--display); padding: .7rem 1.2rem; border-radius: 12px; cursor: pointer; border: 2px solid currentColor; background: var(--surface); transition: transform .08s ease; }
+.vbtn .icon { width: 1.7rem; height: 1.7rem; }
 .vbtn span { text-align: left; }
 .vbtn small { display: block; font: 500 .75rem var(--body); opacity: .8; }
-.vbtn.f { color: var(--t5); background: var(--t5-soft); }
-.vbtn.r { color: var(--t1); background: var(--t1-soft); }
-.vbtn.f:hover, .vbtn.f[aria-pressed="true"] { background: var(--t5); color: var(--surface); }
-.vbtn.r:hover, .vbtn.r[aria-pressed="true"] { background: var(--t1); color: var(--surface); }
+.vbtn.f { color: var(--t5); }
+.vbtn.r { color: var(--t1); }
+.vbtn.f[aria-pressed="true"] { background: var(--t5); color: var(--surface); }
+.vbtn.r[aria-pressed="true"] { background: var(--t1); color: var(--surface); }
 .vbtn:active { transform: scale(.97); }
 .vbtn:disabled { opacity: .6; cursor: wait; }
 .vote { align-items: center; }
@@ -429,7 +429,6 @@ button.shelf-more::after { content: none; }
 .sc-label { font: 700 .72rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .sc--main .sc-label { color: var(--night-muted); }
 .sc-tier { display: block; font: 800 1.45rem/1.1 var(--display); color: var(--tone, var(--night-ink)); }
-.sc-first { margin: .2rem 0 .1rem; font-size: .95rem; color: var(--muted); }
 .sc-num { font: 800 2.1rem/1 var(--display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .sc-sub { color: var(--muted); font-size: .85rem; }
 .sc .vote-wrap { margin-top: .5rem; }
