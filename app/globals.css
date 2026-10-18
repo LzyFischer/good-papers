@@ -393,6 +393,15 @@ button.shelf-more::after { content: none; }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin: 1rem 0 1rem; padding-top: 1.5rem; border-top: 2px solid var(--ink); }
 .section-note { font-size: .85rem; color: var(--muted); }
 .all-papers .card { border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(20, 22, 26, .04); }
+/* Like the shelf cards: the card lifts on a soft shadow when hovered, and its figure eases in. */
+.all-papers .card { transition: transform .35s cubic-bezier(.2, .8, .2, 1), box-shadow .35s ease; }
+.all-papers .card:hover { transform: translateY(-4px); box-shadow: 0 22px 44px -16px rgba(20, 22, 26, .26), 0 6px 14px rgba(20, 22, 26, .06); }
+.all-papers .card .thumb { transition: transform .6s cubic-bezier(.2, .8, .2, 1); }
+.all-papers .card:hover .thumb { transform: scale(1.03); }
+@media (prefers-reduced-motion: reduce) {
+  .all-papers .card, .all-papers .card .thumb { transition: none; }
+  .all-papers .card:hover, .all-papers .card:hover .thumb { transform: none; }
+}
 /* On wide screens each paper is one wide row: score, text, and a large figure on the right
    (one row per paper keeps the rows lined up; two columns made uneven heights). */
 @media (min-width: 64rem) {
@@ -448,7 +457,7 @@ button.shelf-more::after { content: none; }
 .paper-cols { display: grid; gap: 2rem; }
 .abstract { background: var(--surface); border-radius: 16px; padding: 1.2rem 1.4rem; box-shadow: 0 0 0 1px var(--line); }
 .abstract h2 { font: 700 .72rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 .5rem; }
-.abstract p { margin: 0; line-height: 1.65; max-width: 78ch; }
+.abstract p { margin: 0; line-height: 1.65; max-width: none; }
 
 /* Discussion threads */
 .discussion { margin-top: 0; }
