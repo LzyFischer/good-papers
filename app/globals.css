@@ -215,6 +215,8 @@ button { font: inherit; }
 .notebox { margin: -.25rem 0 1.5rem; display: grid; gap: .4rem; justify-items: start; }
 .notebox label { display: grid; gap: .35rem; width: 100%; font-size: .88rem; color: var(--muted); }
 .notebox textarea { font: inherit; color: var(--ink); padding: .5rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
+.abstract h2 { font: 700 1.05rem var(--display); margin: 0 0 .5rem; }
+.abstract p { margin: 0; line-height: 1.75; max-width: 70ch; }
 
 .foot { color: var(--muted); font-size: .82rem; padding-top: 1.5rem; padding-bottom: 2.5rem; border-top: 1px solid var(--line); }
 .foot a { color: var(--link); }
@@ -443,27 +445,30 @@ button.shelf-more::after { content: none; }
 .ph-consensus figcaption { font: 700 .72rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: .35rem; }
 .ph-consensus blockquote { max-width: 62rem; margin: 0; font: 600 clamp(1.1rem, 2vw, 1.3rem)/1.45 var(--display); letter-spacing: -.005em; }
 .paper-cols { display: grid; gap: 2rem; }
-/* Below the scorecard, on the scorecard's own grid: the reading column (abstract, discussion)
-   spans the score and readers cards, the side card sits under the AI panel. */
-.paper-cols { grid-template-columns: minmax(12rem, .8fr) minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; gap: 1rem; }
-.paper-cols > .paper-read { grid-column: 1 / 3; }
+/* Below the scorecard: a reading column (abstract, discussion) and a side card that stays in
+   view. Lines stay near 70 characters, so the abstract reads like an article. */
+.paper-cols { grid-template-columns: minmax(0, 46rem) minmax(15rem, 19rem); justify-content: space-between; align-items: start; gap: 3rem; }
 .paper-read { display: grid; gap: 2.5rem; min-width: 0; }
 .paside { position: sticky; top: 1.5rem; }
-.paside-card { display: grid; gap: .6rem; padding: 1.1rem 1.2rem; background: var(--surface); border-radius: 16px; box-shadow: 0 0 0 1px var(--line); }
+.paside-card { display: grid; gap: 1rem; padding: 1.15rem 1.2rem; background: var(--surface); border-radius: 18px; box-shadow: 0 0 0 1px var(--line), 0 14px 32px -22px rgba(20, 22, 26, .35); }
 .paside-label { font: 700 .7rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.paside-links { list-style: none; margin: 0; padding: 0; display: grid; gap: .15rem; }
+.paside-score { display: flex; align-items: center; gap: .75rem; color: var(--tone); font: 800 1.2rem/1.1 var(--display); }
+.paside-score .gauge--sm { width: 3.2rem; height: 3.2rem; box-shadow: none; }
+.paside-score .gauge--sm b { font-size: .9rem; }
+.paside-score small { display: block; margin-top: .2rem; font: 600 .75rem var(--body); color: var(--muted); }
+.paside-links { list-style: none; margin: 0; padding: .9rem 0 0; display: grid; gap: .15rem; border-top: 1px solid var(--line); }
 .paside-links a, .paside-date { display: flex; align-items: center; gap: .65rem; padding: .4rem .5rem; margin: 0 -.5rem; border-radius: 8px; font-size: .9rem; color: var(--ink); }
 .paside-links a:hover { background: var(--bg); opacity: 1; }
 .paside-links span { width: 1.4rem; text-align: center; font: 700 .8rem var(--display); color: var(--muted); }
 .paside-date { color: var(--muted); }
-@media (max-width: 56rem) {
+.paside .vote--compact { margin-top: 0; }
+@media (max-width: 62rem) {
   .paper-cols { grid-template-columns: minmax(0, 1fr); }
-  .paper-cols > .paper-read { grid-column: auto; }
   /* The scorecard above already shows all of it on narrow screens. */
   .paside { display: none; }
 }
 .abstract h2 { font: 700 .72rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 .8rem; }
-.abstract-text { margin: 0; width: 100%; font: 400 1.18rem/1.7 "Newsreader", Georgia, serif; color: var(--ink); max-width: none; }
+.abstract-text { margin: 0; font: 400 1.18rem/1.7 "Newsreader", Georgia, serif; color: var(--ink); max-width: none; }
 .abstract-text::first-letter { float: left; font: 800 3.6rem/.82 var(--display); margin: .35rem .6rem 0 0; color: var(--t5); }
 .abstract-text--folded { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 7; overflow: hidden; }
 .abstract-more { margin-top: .7rem; padding: 0; border: 0; background: none; cursor: pointer; font: 700 .9rem var(--display); color: var(--link); }
