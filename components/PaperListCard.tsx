@@ -1,5 +1,5 @@
 // A paper in a list (All papers, shelf pages, NeurIPS sessions): an eyebrow line, title,
-// TL;DR and authors, then one row with the score, a few numbers and the vote buttons; the
+// TL;DR, authors and a few numbers, then one row with the score and the vote buttons; the
 // figure sits on the right. The paper page shows the full breakdown (PaperHero).
 import Link from "next/link";
 import { AREAS } from "@/lib/areas";
@@ -51,6 +51,7 @@ export function PaperListCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: 
         <p className="lcard-authors">
           <AuthorLinks authors={s.authors} max={4} paperId={s.id} />
         </p>
+        {stats.length > 0 && <p className="lcard-stats">{stats.flatMap((x, i) => (i ? [" · ", x] : [x]))}</p>}
         <div className="lcard-foot">
           <Gate
             id={s.id}
@@ -67,7 +68,6 @@ export function PaperListCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: 
               {t ? <LiveLabel id={s.id} score={s.score!} /> : "Not rated yet"}
             </span>
           </Gate>
-          {stats.length > 0 && <span className="lcard-stats">{stats.flatMap((x, i) => (i ? [" · ", x] : [x]))}</span>}
           <span className="lcard-vote">
             <VoteButtons paper={{ id: s.id, title: s.title, authors: s.authors ?? [], year: s.year, venue: s.venue, url: s.url }} compact />
           </span>
