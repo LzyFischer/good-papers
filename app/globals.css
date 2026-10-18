@@ -745,24 +745,17 @@ button.shelf-more::after { content: none; }
 .lcard-vote { margin-left: auto; }
 .lcard-vote .vote--compact { margin-top: 0; grid-template-columns: auto auto; }
 .lcard-vote .vote--compact .vbtn { padding: 0 .85rem; }
+.lcard-fig:empty { display: none; }
 .lcard-fig {
   display: grid; min-height: 11rem; max-height: 14rem; align-self: stretch; overflow: hidden;
   border-radius: 12px; background: #fff; box-shadow: inset 0 0 0 1px rgba(20, 22, 26, .06); transition: box-shadow .15s ease;
 }
 .lcard-fig:hover { opacity: 1; box-shadow: inset 0 0 0 1px rgba(20, 22, 26, .18); }
 .lcard-fig img { width: 100%; height: 100%; max-height: 14rem; object-fit: contain; padding: .5rem; place-self: center; }
-.lcard-nofig {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .35rem; padding: 1rem;
-  text-align: center; font-size: .78rem; color: var(--muted);
-  background: repeating-linear-gradient(135deg, transparent 0 10px, rgba(20, 22, 26, .025) 10px 20px), #f6f5f2;
-}
-.lcard-nofig b { font: 700 1.05rem/1.25 var(--display); color: var(--ink); letter-spacing: -.01em; }
-.lcard-fig:hover .lcard-nofig { color: var(--link); }
 @media (max-width: 48rem) {
   .lcard { grid-template-columns: 4.5rem minmax(0, 1fr); gap: 1rem; }
   .lcard-fig { grid-column: 1 / -1; order: -1; max-height: 12rem; }
   .lcard-fig img { max-height: 12rem; }
-  .lcard-fig:has(.lcard-nofig) { display: none; }
   .lcard-side { padding-right: 1rem; }
   .lcard-score .gauge--lg { width: 3.4rem; height: 3.4rem; }
   .lcard-score .gauge--lg b { font-size: .95rem; }
