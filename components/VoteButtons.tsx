@@ -109,7 +109,11 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
     <div className="vote-wrap">
       {reveal && (
         <>
-          <span className="sc-num">{pct === null ? "–" : !shown ? "?" : `${pct}%`}</span>
+          {pct === null ? (
+            <span className="sc-sub sc-first">Be the first reader to vote.</span>
+          ) : (
+            <span className="sc-num">{!shown ? "?" : `${pct}%`}</span>
+          )}
           {reveal.readerTotal > 0 && !shown && (
             <span className="sc-sub">
               {`${reveal.readerTotal} reader${reveal.readerTotal === 1 ? "" : "s"} voted. Vote to see how they split.`}
