@@ -422,10 +422,14 @@ button.shelf-more::after { content: none; }
 .scorecard { display: grid; grid-template-columns: minmax(12rem, .8fr) minmax(0, 1.2fr) minmax(0, 1fr); gap: 1rem; margin: 1.75rem 0 1.25rem; }
 @media (max-width: 56rem) { .scorecard { grid-template-columns: minmax(0, 1fr); } }
 .sc { background: var(--surface); border-radius: 16px; padding: 1.1rem 1.2rem; box-shadow: 0 0 0 1px var(--line); display: grid; align-content: start; gap: .3rem; }
-.sc--main { grid-template-columns: auto 1fr; align-items: center; gap: 1rem; background: var(--night); color: var(--night-ink); box-shadow: none; }
+.sc--main { grid-template-columns: auto 1fr; align-items: center; align-content: center; gap: 1rem; background: var(--night); color: var(--night-ink); box-shadow: none; }
 .sc--main .gauge { --surface: var(--night); }
 .sc--main .gauge--lg { width: 6rem; height: 6rem; }
 .sc--main .gauge--lg b { font-size: 1.7rem; }
+/* Three across but the score card is narrow: ring above the label, both centred in the card. */
+@media (min-width: 56.01rem) and (max-width: 80rem) {
+  .sc--main { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+}
 .sc-label { font: 700 .72rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .sc--main .sc-label { color: var(--night-muted); }
 .sc-tier { display: block; font: 800 1.45rem/1.1 var(--display); color: var(--tone, var(--night-ink)); }
@@ -439,9 +443,10 @@ button.shelf-more::after { content: none; }
 .ph-consensus figcaption { font: 700 .72rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: .35rem; }
 .ph-consensus blockquote { max-width: 62rem; margin: 0; font: 600 clamp(1.1rem, 2vw, 1.3rem)/1.45 var(--display); letter-spacing: -.005em; }
 .paper-cols { display: grid; gap: 2rem; }
-.abstract { background: var(--surface); border-radius: 16px; padding: 1.2rem 1.4rem; box-shadow: 0 0 0 1px var(--line); }
-.abstract h2 { font: 700 .72rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 .5rem; }
-.abstract p { margin: 0; line-height: 1.65; max-width: none; }
+/* The abstract reads as plain text on the page, like an article, not as a boxed field. */
+.abstract { padding-top: 1.5rem; border-top: 1px solid var(--line); }
+.abstract h2 { font: 700 1.2rem var(--display); letter-spacing: normal; text-transform: none; color: var(--ink); margin: 0 0 .6rem; }
+.abstract p { margin: 0; font-size: 1.05rem; line-height: 1.75; max-width: none; color: var(--ink); }
 
 /* Discussion threads */
 .discussion { margin-top: 0; }
