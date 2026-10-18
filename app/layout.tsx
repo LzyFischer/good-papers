@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { AuthButton } from "@/components/AuthButton";
 import { GateRevealer } from "@/components/GateRevealer";
@@ -8,6 +9,7 @@ import { Notifications } from "@/components/Notifications";
 import { Onboarding } from "@/components/Onboarding";
 import { Icon, IconSprite } from "@/components/Icons";
 import { SearchForm } from "@/components/SearchForm";
+import { ThemePicker } from "@/components/ThemePicker";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -24,15 +26,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    // data-theme is set before the page paints (the script below), so the server markup differs.
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap"
         />
+        {/* The reader's theme (components/ThemePicker.tsx), applied before first paint: no flash. */}
+        <Script id="theme" strategy="beforeInteractive">
+          {`try{var t=localStorage.getItem("gp_theme");if(t&&t!=="classic")document.documentElement.dataset.theme=t}catch(e){}`}
+        </Script>
       </head>
       <body>
         <IconSprite />
@@ -50,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Notifications />
             <GateRevealer />
             <Onboarding />
+            <ThemePicker />
             <AuthButton />
           </div>
         </header>

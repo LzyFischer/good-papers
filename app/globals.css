@@ -669,3 +669,63 @@ button.shelf-more::after { content: none; }
 .profile-stat { margin: 0; text-align: right; color: var(--muted); font-size: .85rem; }
 .profile-stat b { display: block; font: 800 1.6rem/1 var(--display); color: var(--ink); font-variant-numeric: tabular-nums; }
 @media (max-width: 36rem) { .profile { grid-template-columns: auto minmax(0, 1fr); } .profile-stat { grid-column: 1 / -1; text-align: left; } .profile-stat b { display: inline; font-size: 1.1rem; margin-right: .3rem; } }
+
+/* ---------- Theme picker (components/ThemePicker.tsx) ---------- */
+.theme-picker { position: relative; display: inline-flex; }
+.theme-btn { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .18); background: transparent; color: var(--head-ink); cursor: pointer; transition: border-color .15s ease, background .15s ease; }
+.theme-btn:hover { border-color: rgba(255, 255, 255, .45); background: rgba(255, 255, 255, .06); }
+.theme-menu { position: absolute; top: calc(100% + .45rem); right: 0; z-index: 40; min-width: 13rem; display: flex; flex-direction: column; padding: .35rem; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 16px 36px -12px rgba(20, 22, 26, .3); }
+.theme-menu button { display: flex; align-items: center; gap: .65rem; padding: .5rem .6rem; border: 0; border-radius: 8px; background: none; color: var(--ink); text-align: left; cursor: pointer; font: 500 .88rem var(--body); }
+.theme-menu button:hover, .theme-menu button[aria-checked="true"] { background: var(--bg); }
+.theme-menu b { display: block; font-weight: 600; }
+.theme-menu small { display: block; color: var(--muted); font-size: .76rem; }
+.theme-swatch { width: 1.6rem; height: 1.6rem; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
+
+/* ---------- Beach: sky, sand and sea ---------- */
+:root[data-theme="beach"] {
+  --bg: #f5eee3; --surface: #fffdf8; --ink: #1f2a33; --muted: #5f7180; --line: #e6dccb; --line-strong: #d5c6ad;
+  --night: #1f3b4d; --night-2: #28495d; --night-ink: #f6efe4; --night-muted: #a9bcc6;
+  --lime: #1b8a8f; --lime-ink: #ffffff; --link: #17736f;
+  --head: #cfe6f0; --head-ink: #1f3b4d; --brand-track: rgba(31, 59, 77, .16);
+  --pick: #dff0ec; --pick-ink: #17736f; --pick-line: #9fd3cd;
+  --t5-soft: #dff0ec; --t1-soft: #efe7da; --t1: #7d6f5c;
+  --read: "Newsreader", Georgia, serif;
+  color-scheme: light;
+}
+:root[data-theme="beach"] .top { background: #cfe6f0; border-bottom-color: rgba(31, 59, 77, .08); }
+:root[data-theme="beach"] .nav a { color: #3e5666; }
+:root[data-theme="beach"] .nav a:hover { color: #1f3b4d; opacity: 1; }
+:root[data-theme="beach"] .search input { border-color: rgba(31, 59, 77, .14); border-radius: 999px 0 0 999px; padding-left: 1rem; }
+:root[data-theme="beach"] .search button { border-radius: 0 999px 999px 0; background: #1b8a8f; color: #fff; border-color: #1b8a8f; }
+:root[data-theme="beach"] .auth-link, :root[data-theme="beach"] .theme-btn { color: #1f3b4d; border-color: rgba(31, 59, 77, .25); }
+:root[data-theme="beach"] .auth-link:hover { background: #1f3b4d; border-color: #1f3b4d; color: #fff; }
+:root[data-theme="beach"] .theme-btn:hover { background: rgba(31, 59, 77, .06); border-color: rgba(31, 59, 77, .45); }
+:root[data-theme="beach"] .account-btn { border-color: rgba(31, 59, 77, .25); color: #1f3b4d; }
+
+/* The hero: morning sky to sand, a soft wave at the bottom, dark-sea text. */
+:root[data-theme="beach"] .hero {
+  background: linear-gradient(180deg, #cfe6f0 0%, #e4eef0 45%, #f5eee3 100%); color: #1f3b4d;
+  --night-ink: #1f3b4d; --night-muted: #476070; --night-2: rgba(255, 255, 255, .72);
+}
+:root[data-theme="beach"] .hero::after {
+  inset: auto 0 -1px 0; height: clamp(2rem, 5vw, 4rem); border-radius: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 80' preserveAspectRatio='none'%3E%3Cpath d='M0,44 C160,12 320,12 480,36 C640,60 800,68 960,44 C1060,28 1140,24 1200,32 L1200,80 L0,80 Z' fill='%23f5eee3'/%3E%3C/svg%3E") bottom / 100% 100% no-repeat;
+}
+:root[data-theme="beach"] .hero-lede { font: italic 400 clamp(1.15rem, 1.8vw, 1.35rem)/1.45 var(--read); }
+:root[data-theme="beach"] .ask--dark .ask-form input { border-color: rgba(31, 59, 77, .14); border-radius: 999px; }
+:root[data-theme="beach"] .ask--dark .ask-form input::placeholder { color: #6b7f8b; }
+:root[data-theme="beach"] .ask--dark .ask-form button { border-radius: 999px; }
+:root[data-theme="beach"] .ask--dark .ask-chip { background: rgba(255, 255, 255, .55); color: #3e5666; border-color: rgba(31, 59, 77, .12); }
+:root[data-theme="beach"] .ask--dark .ask-chip:hover { color: #17736f; border-color: #9fd3cd; }
+:root[data-theme="beach"] .ask--dark .ask-chip--featured { color: #17736f; border-color: #9fd3cd; background: rgba(223, 240, 236, .7); }
+:root[data-theme="beach"] .ask--dark .ask-chip--featured .ask-chip-badge { background: #1b8a8f; color: #fff; }
+:root[data-theme="beach"] .spot { box-shadow: 0 24px 50px -20px rgba(31, 59, 77, .35); }
+
+/* Cards: paper-white, softer and rounder, shadows tinted like the sea. */
+:root[data-theme="beach"] .mini, :root[data-theme="beach"] .card { border-radius: 18px; box-shadow: 0 10px 26px -16px rgba(31, 59, 77, .28), 0 1px 2px rgba(31, 59, 77, .05); }
+:root[data-theme="beach"] .mini:hover, :root[data-theme="beach"] .all-papers .card:hover { box-shadow: 0 24px 46px -16px rgba(31, 59, 77, .34), 0 6px 14px rgba(31, 59, 77, .06); }
+:root[data-theme="beach"] .vote--compact .vbtn { border-radius: 999px; }
+:root[data-theme="beach"] .section-head { border-top-color: rgba(31, 59, 77, .2); border-top-width: 1px; }
+
+/* Reading text in a book serif. */
+:root[data-theme="beach"] :is(.mini-tldr, .tldr, .ph-tldr, .abstract p, .spot-tldr, .comment-body) { font-family: var(--read); font-size: 1.04em; }

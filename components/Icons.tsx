@@ -66,9 +66,10 @@ export function IconSprite() {
         {/* Brand: a clean page with a lime check, "a good paper" */}
         {/* Brand: the site's score ring, mostly full, with a check: "rated, worth reading" */}
         <symbol id="ic-brand" viewBox="0 0 48 48">
-          <circle cx="24" cy="24" r="19" fill="none" stroke="#2b2f36" strokeWidth="7" />
-          <circle cx="24" cy="24" r="19" fill="none" stroke="#d2f54a" strokeWidth="7" strokeLinecap="round" strokeDasharray="102 200" transform="rotate(-90 24 24)" />
-          <path d="M16.5 24.5l5.2 5.2 10-11" fill="none" stroke="#f6f5f2" strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Colours follow the theme (globals.css): ring track, accent arc, check in the header's ink. */}
+          <circle cx="24" cy="24" r="19" fill="none" style={{ stroke: "var(--brand-track, #2b2f36)" }} strokeWidth="7" />
+          <circle cx="24" cy="24" r="19" fill="none" style={{ stroke: "var(--lime, #d2f54a)" }} strokeWidth="7" strokeLinecap="round" strokeDasharray="102 200" transform="rotate(-90 24 24)" />
+          <path d="M16.5 24.5l5.2 5.2 10-11" fill="none" style={{ stroke: "var(--head-ink, #f6f5f2)" }} strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
         </symbol>
       </defs>
     </svg>
