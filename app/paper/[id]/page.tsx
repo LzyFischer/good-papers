@@ -92,7 +92,7 @@ export default async function PaperPage({ params }: Props) {
             paper={{ id: paper.id, title: paper.title, authors: paper.authors, year: paper.year, venue: paper.venue, url: paper.url }}
           />
         </div>
-        <PaperAside paper={paper} score={score} scoreOpen={scoreOpen} />
+        <PaperAside paper={paper} score={score} />
       </div>
     </main>
   );
