@@ -715,12 +715,18 @@ button.shelf-more::after { content: none; }
 
 /* ---------- Paper in a list (components/PaperListCard.tsx) ---------- */
 .lcard {
-  display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; margin-bottom: 1rem;
+  display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 1.25rem; margin-bottom: 1rem;
   padding: 1.1rem 1.25rem; background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
   box-shadow: 0 1px 2px rgba(20, 22, 26, .04);
 }
-.lcard:has(> .lcard-fig) { grid-template-columns: minmax(0, 1fr) minmax(0, clamp(13rem, 30%, 20rem)); }
-.lcard-main { display: flex; flex-direction: column; min-width: 0; container-type: inline-size; }
+.lcard:has(> .lcard-fig) { grid-template-columns: 6.5rem minmax(0, 1fr) minmax(0, clamp(13rem, 28%, 20rem)); }
+/* The score column: a big ring and the label under it. */
+.lcard-side { display: flex; justify-content: center; padding: .2rem 1.25rem 0 0; border-right: 1px solid var(--line); }
+.lcard-score { display: flex; flex-direction: column; align-items: center; gap: .55rem; text-align: center; color: var(--tone); }
+.lcard-score .gauge--lg { width: 4.6rem; height: 4.6rem; }
+.lcard-score .gauge--lg b { font-size: 1.25rem; }
+.lcard-tier { font: 800 .9rem/1.15 var(--display); letter-spacing: -.01em; }
+.lcard-main { display: flex; flex-direction: column; min-width: 0; }
 .lcard-eyebrow { margin: 0 0 .45rem; font: 700 .7rem/1.4 var(--body); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 .lcard-area { color: var(--ai); }
 .lcard-area:hover { opacity: .75; }
@@ -728,33 +734,30 @@ button.shelf-more::after { content: none; }
 .lcard-title { margin: 0 0 .4rem; font: 700 clamp(1.08rem, 1.5vw, 1.25rem)/1.25 var(--display); letter-spacing: -.01em; }
 .lcard-title a:hover { color: var(--t5); opacity: 1; }
 .lcard-tldr { margin: 0 0 .45rem; font-size: .95rem; line-height: 1.5; color: #2b2f36; }
-.lcard-authors { margin: 0; font-size: .85rem; color: var(--muted); }
+.lcard-authors { margin: 0 0 .9rem; font-size: .85rem; color: var(--muted); }
 .lcard-authors a:hover { color: var(--ink); opacity: 1; }
-.lcard-stats { margin-left: auto; font-size: .8rem; color: var(--muted); text-align: right; }
-.lcard-stats a:hover { color: var(--ink); opacity: 1; }
 .lcard-foot {
-  margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: .6rem;
-  padding-top: .85rem; border-top: 1px solid var(--line);
+  margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem;
+  padding-top: .75rem; border-top: 1px solid var(--line);
 }
-.lcard-main > :nth-last-child(2) { margin-bottom: .9rem; }
-.lcard-score { display: inline-flex; align-items: center; gap: .6rem; padding: .2rem 1rem .2rem .2rem; border-radius: 999px; background: var(--tone-soft); color: var(--tone); font: 800 1.05rem/1 var(--display); letter-spacing: -.01em; white-space: nowrap; }
-.lcard-score .gauge--sm { width: 2.5rem; height: 2.5rem; box-shadow: none; }
-.lcard-score .gauge--sm b { font-size: .74rem; }
+.lcard-stats { font-size: .8rem; color: var(--muted); }
+.lcard-stats a:hover { color: var(--ink); opacity: 1; }
+.lcard-vote { margin-left: auto; }
 .lcard-vote .vote--compact { margin-top: 0; grid-template-columns: auto auto; }
-.lcard-vote .vote--compact .vbtn { height: 2.9rem; padding: 0 1rem; border-radius: 999px; }
-/* Too narrow for score and votes side by side: the votes take a full row of their own. */
-@container (max-width: 30rem) {
-  .lcard-vote { flex: 1 1 100%; order: 1; }
-  .lcard-stats { margin-left: .4rem; }
-  .lcard-vote .vote--compact { grid-template-columns: 1fr 1fr; }
-}
+.lcard-vote .vote--compact .vbtn { padding: 0 .85rem; }
 .lcard-fig {
   width: 100%; height: 100%; min-height: 11rem; max-height: 14rem; align-self: center; object-fit: contain;
   padding: .5rem; border-radius: 12px; background: #fff; box-shadow: inset 0 0 0 1px rgba(20, 22, 26, .06);
 }
 @media (max-width: 48rem) {
-  .lcard:has(> .lcard-fig) { grid-template-columns: minmax(0, 1fr); }
-  .lcard-fig { order: -1; max-height: 12rem; }
+  .lcard, .lcard:has(> .lcard-fig) { grid-template-columns: 4.5rem minmax(0, 1fr); gap: 1rem; }
+  .lcard-fig { grid-column: 1 / -1; order: -1; max-height: 12rem; }
+  .lcard-side { padding-right: 1rem; }
+  .lcard-score .gauge--lg { width: 3.4rem; height: 3.4rem; }
+  .lcard-score .gauge--lg b { font-size: .95rem; }
+  .lcard-tier { font-size: .75rem; }
+  .lcard-vote { margin-left: 0; flex: 1 1 100%; }
+  .lcard-vote .vote--compact { grid-template-columns: 1fr 1fr; }
 }
 :root[data-theme="beach"] .lcard { border-radius: 18px; box-shadow: 0 10px 26px -16px rgba(31, 59, 77, .28), 0 1px 2px rgba(31, 59, 77, .05); }
 :root[data-theme="beach"] .lcard-tldr { font-family: var(--read); font-size: 1.02rem; color: var(--ink); }

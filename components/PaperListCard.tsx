@@ -1,6 +1,6 @@
-// A paper in a list (All papers, shelf pages, NeurIPS sessions): an eyebrow line, title,
-// TL;DR and authors, then one row with the score, the vote buttons and a few numbers; the
-// figure sits on the right. The paper page shows the full breakdown (PaperHero).
+// A paper in a list (All papers, shelf pages, NeurIPS sessions): the score in a column on the
+// left; an eyebrow line, title, TL;DR and authors, then a few numbers and the vote buttons;
+// the figure sits on the right. The paper page shows the full breakdown (PaperHero).
 import Link from "next/link";
 import { AREAS } from "@/lib/areas";
 import { arxivIdOf } from "@/lib/arxiv";
@@ -33,6 +33,23 @@ export function PaperListCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: 
 
   return (
     <article className="lcard">
+      <div className="lcard-side">
+        <Gate
+          id={s.id}
+          open={scoreOpen || !t}
+          mask={
+            <span className={`lcard-score tone-${t?.tone ?? 1}`} title="Vote to see the score">
+              <span className="gauge gauge--lg gauge--empty"><b>?</b></span>
+              <span className="lcard-tier">{t?.label}</span>
+            </span>
+          }
+        >
+          <span className={`lcard-score tone-${t?.tone ?? 1}`}>
+            {t ? <LiveGauge id={s.id} score={s.score!} /> : <span className="gauge gauge--lg gauge--empty"><b>?</b></span>}
+            <span className="lcard-tier">{t ? <LiveLabel id={s.id} score={s.score!} /> : "Not rated yet"}</span>
+          </span>
+        </Gate>
+      </div>
       <div className="lcard-main">
         <p className="lcard-eyebrow">
           {[
@@ -52,25 +69,10 @@ export function PaperListCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: 
           <AuthorLinks authors={s.authors} max={4} paperId={s.id} />
         </p>
         <div className="lcard-foot">
-          <Gate
-            id={s.id}
-            open={scoreOpen || !t}
-            mask={
-              <span className={`lcard-score tone-${t?.tone ?? 1}`} title="Vote to see the score">
-                <span className="gauge gauge--sm gauge--empty"><b>?</b></span>
-                {t?.label}
-              </span>
-            }
-          >
-            <span className={`lcard-score tone-${t?.tone ?? 1}`}>
-              {t ? <LiveGauge id={s.id} score={s.score!} size="sm" /> : <span className="gauge gauge--sm gauge--empty"><b>?</b></span>}
-              {t ? <LiveLabel id={s.id} score={s.score!} /> : "Not rated yet"}
-            </span>
-          </Gate>
+          {stats.length > 0 && <span className="lcard-stats">{stats.flatMap((x, i) => (i ? [" · ", x] : [x]))}</span>}
           <span className="lcard-vote">
             <VoteButtons paper={{ id: s.id, title: s.title, authors: s.authors ?? [], year: s.year, venue: s.venue, url: s.url }} compact />
           </span>
-          {stats.length > 0 && <span className="lcard-stats">{stats.flatMap((x, i) => (i ? [" · ", x] : [x]))}</span>}
         </div>
       </div>
       {s.thumbnail && <Thumb className="lcard-fig" src={s.thumbnail} />}
