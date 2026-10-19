@@ -91,20 +91,3 @@ export const homeShelves = unstable_cache(
   ["home-shelves"],
   { revalidate: 120, tags: ["home"] },
 );
-
-// For the home hero: how many papers the site holds, and how many arrived this week.
-// Counted at most once an hour.
-export const siteStats = unstable_cache(
-  async (): Promise<{ papers: number; week: number } | null> => {
-    const db = serverClient();
-    const since = new Date(Date.now() - 7 * 864e5).toISOString();
-    const [all, week] = await Promise.all([
-      db.from("papers").select("id", { count: "exact", head: true }),
-      db.from("papers").select("id", { count: "exact", head: true }).gte("created_at", since),
-    ]);
-    if (all.error || week.error || !all.count) return null;
-    return { papers: all.count, week: week.count ?? 0 };
-  },
-  ["site-stats"],
-  { revalidate: 3600 },
-);

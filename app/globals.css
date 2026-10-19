@@ -438,13 +438,12 @@ button.shelf-more::after { content: none; }
 .ph-consensus figcaption { font: 700 .72rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: .35rem; }
 .ph-consensus blockquote { max-width: 62rem; margin: 0; font: 600 clamp(1.1rem, 2vw, 1.3rem)/1.45 var(--display); letter-spacing: -.005em; }
 .paper-cols { display: grid; gap: 2rem; }
-/* The abstract as a centred reading column, about 75 characters a line. */
-.abstract { width: 100%; max-width: 46rem; margin: .5rem auto 0; }
-.abstract h2 { font: 700 1.35rem var(--display); letter-spacing: -.01em; text-align: center; color: var(--ink); margin: 0 0 .9rem; }
-.abstract p { margin: 0; font-size: 1.04rem; line-height: 1.75; max-width: none; }
+.abstract { background: var(--surface); border-radius: 16px; padding: 1.2rem 1.4rem; box-shadow: 0 0 0 1px var(--line); }
+.abstract h2 { font: 700 .72rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 .5rem; }
+.abstract p { margin: 0; line-height: 1.65; max-width: none; }
 
 /* Author badge, under the abstract */
-.badge-snippet { width: 100%; max-width: 46rem; margin: -1rem auto 0; font-size: .85rem; color: var(--muted); }
+.badge-snippet { margin-top: -1.2rem; font-size: .85rem; color: var(--muted); }
 .badge-snippet summary { display: flex; align-items: center; gap: .6rem; cursor: pointer; list-style: none; }
 .badge-snippet summary::-webkit-details-marker { display: none; }
 .badge-snippet summary:hover span { color: var(--ink); }
@@ -737,8 +736,6 @@ button.shelf-more::after { content: none; }
   inset: auto 0 -1px 0; height: clamp(2rem, 5vw, 4rem); border-radius: 0;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 80' preserveAspectRatio='none'%3E%3Cpath d='M0,44 C160,12 320,12 480,36 C640,60 800,68 960,44 C1060,28 1140,24 1200,32 L1200,80 L0,80 Z' fill='%23f5eee3'/%3E%3C/svg%3E") bottom / 100% 100% no-repeat;
 }
-:root[data-theme="beach"] .hero-stats { color: #3e5666; }
-:root[data-theme="beach"] .hero-stats b { color: #1f3b4d; }
 :root[data-theme="beach"] .hero-lede { font: italic 400 clamp(1.15rem, 1.8vw, 1.35rem)/1.45 var(--read); }
 :root[data-theme="beach"] .ask--dark .ask-form input { border-color: rgba(31, 59, 77, .14); border-radius: 999px; }
 :root[data-theme="beach"] .ask--dark .ask-form input::placeholder { color: #6b7f8b; }
