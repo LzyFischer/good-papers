@@ -438,9 +438,33 @@ button.shelf-more::after { content: none; }
 .ph-consensus figcaption { font: 700 .72rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: .35rem; }
 .ph-consensus blockquote { max-width: 62rem; margin: 0; font: 600 clamp(1.1rem, 2vw, 1.3rem)/1.45 var(--display); letter-spacing: -.005em; }
 .paper-cols { display: grid; gap: 2rem; }
-.abstract { background: var(--surface); border-radius: 16px; padding: 1.2rem 1.4rem; box-shadow: 0 0 0 1px var(--line); }
-.abstract h2 { font: 700 .72rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 .5rem; }
-.abstract p { margin: 0; line-height: 1.65; max-width: none; }
+/* The abstract as a centred reading column, about 75 characters a line. */
+.abstract { width: 100%; max-width: 46rem; margin: .5rem auto 0; }
+.abstract h2 { font: 700 1.35rem var(--display); letter-spacing: -.01em; text-align: center; color: var(--ink); margin: 0 0 .9rem; }
+.abstract p { margin: 0; font-size: 1.04rem; line-height: 1.75; max-width: none; }
+
+/* Author badge, under the abstract */
+.badge-snippet { width: 100%; max-width: 46rem; margin: -1rem auto 0; font-size: .85rem; color: var(--muted); }
+.badge-snippet summary { display: flex; align-items: center; gap: .6rem; cursor: pointer; list-style: none; }
+.badge-snippet summary::-webkit-details-marker { display: none; }
+.badge-snippet summary:hover span { color: var(--ink); }
+.badge-snippet img { display: block; height: 20px; width: auto; }
+.badge-code { display: flex; align-items: center; gap: .5rem; margin-top: .6rem; padding: .5rem .5rem .5rem .75rem; border-radius: 10px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.badge-code code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font: .78rem ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink); }
+.badge-code button { flex: none; padding: .35rem .8rem; border: 0; border-radius: 8px; background: var(--ink); color: var(--surface); font: 600 .8rem var(--body); cursor: pointer; }
+
+/* Related papers, at the foot of the page */
+.related h2 { font: 800 1.6rem var(--display); letter-spacing: -.02em; margin: 0; }
+.related-note { margin: .2rem 0 .8rem; color: var(--muted); font-size: .9rem; }
+.related-list { list-style: none; margin: 0; padding: 0; }
+.related-list li { display: flex; align-items: baseline; gap: .9rem; padding: .7rem 0; border-top: 1px solid var(--line); }
+.related-list li:last-child { border-bottom: 1px solid var(--line); }
+.related-title { flex: 1; min-width: 0; font-weight: 600; color: var(--ink); line-height: 1.4; }
+.related-title:hover { color: var(--t5); opacity: 1; }
+.related-year { font-weight: 400; color: var(--muted); }
+.related-tier { flex: none; font: 700 .78rem var(--display); color: var(--tone); }
+.related-match { flex: none; width: 5.5rem; text-align: right; font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 36rem) { .related-list li { flex-wrap: wrap; row-gap: .2rem; } .related-title { flex-basis: 100%; } .related-match { width: auto; } }
 
 /* Discussion threads */
 .discussion { margin-top: 0; }
@@ -713,6 +737,8 @@ button.shelf-more::after { content: none; }
   inset: auto 0 -1px 0; height: clamp(2rem, 5vw, 4rem); border-radius: 0;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 80' preserveAspectRatio='none'%3E%3Cpath d='M0,44 C160,12 320,12 480,36 C640,60 800,68 960,44 C1060,28 1140,24 1200,32 L1200,80 L0,80 Z' fill='%23f5eee3'/%3E%3C/svg%3E") bottom / 100% 100% no-repeat;
 }
+:root[data-theme="beach"] .hero-stats { color: #3e5666; }
+:root[data-theme="beach"] .hero-stats b { color: #1f3b4d; }
 :root[data-theme="beach"] .hero-lede { font: italic 400 clamp(1.15rem, 1.8vw, 1.35rem)/1.45 var(--read); }
 :root[data-theme="beach"] .ask--dark .ask-form input { border-color: rgba(31, 59, 77, .14); border-radius: 999px; }
 :root[data-theme="beach"] .ask--dark .ask-form input::placeholder { color: #6b7f8b; }

@@ -86,6 +86,23 @@ export async function getScores(ids: string[]): Promise<Map<string, Score>> {
   return map;
 }
 
+// The papers closest in content to this one (paper_neighbors, worker/neighbors.py), closest
+// first, with their similarity as a 0-100 match. Skips copies of this paper under its other id.
+const norm = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+export async function relatedPapers(id: string, title: string, limit = 8): Promise<{ s: Score; match: number }[]> {
+  const { data } = await serverClient().from("paper_neighbors").select("neighbor_ids, similarities").eq("source", id).maybeSingle();
+  if (!data) return [];
+  const ids = (data.neighbor_ids as string[]).filter((x) => x !== id).slice(0, limit + 4);
+  const sims = new Map((data.neighbor_ids as string[]).map((x, i) => [x, (data.similarities as number[])[i] ?? 0]));
+  const scores = await getScores(ids);
+  return ids
+    .map((x) => scores.get(x))
+    .filter((s): s is Score => Boolean(s) && norm(s!.title) !== norm(title))
+    .slice(0, limit)
+    .map((s) => ({ s, match: Math.round((sims.get(s.id) ?? 0) * 100) }));
+}
+
 export async function getVerdicts(ids: string[]): Promise<Map<string, AiVerdict[]>> {
   const map = new Map<string, AiVerdict[]>();
   if (ids.length === 0) return map;

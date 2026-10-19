@@ -13,7 +13,7 @@ import { mergeByTopics, topicGroups, topicsFromCookie, TOPICS_COOKIE } from "@/l
 import { topUpTrending } from "@/lib/ingest";
 import { NEURIPS } from "@/lib/neurips";
 import { serverClient } from "@/lib/supabase";
-import { WINDOWS, WINDOW_LABELS, homeShelves, openScoreIds, pickPaperOfTheDay, type Window } from "@/lib/trending";
+import { WINDOWS, WINDOW_LABELS, homeShelves, openScoreIds, pickPaperOfTheDay, siteStats, type Window } from "@/lib/trending";
 import type { Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -100,6 +100,7 @@ export default async function Home({ searchParams }: Props) {
   const [hotNow, must, debated, nips] = browsing ? await homeShelves(window) : [[], [], [], []];
   const week = browsing ? (window === "week" ? hotNow : (await homeShelves("week"))[0]) : [];
   const spot = pickPaperOfTheDay(week) ?? must[0];
+  const stats = browsing ? await siteStats().catch(() => null) : null;
 
   return (
     <main>
@@ -111,6 +112,12 @@ export default async function Home({ searchParams }: Props) {
                 Read the <span className="hl">good ones</span>.
               </h1>
               <p className="hero-lede">You decide which ones are good research papers.</p>
+              {stats && (
+                <p className="hero-stats">
+                  <span><b>{stats.papers.toLocaleString("en-US")}</b>papers</span>
+                  {stats.week > 0 && <span><b>+{stats.week.toLocaleString("en-US")}</b>this week</span>}
+                </p>
+              )}
               <AskBox dark />
             </div>
             {spot && <Spotlight s={spot} open />}

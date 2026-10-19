@@ -63,6 +63,13 @@ export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper
             {score?.openreview_url && score.openreview_url !== paper.url && (
               <a href={score.openreview_url} target="_blank" rel="noopener noreferrer">OpenReview ↗</a>
             )}
+            <a href={`https://scholar.google.com/scholar?q=${encodeURIComponent(`"${paper.title}"`)}`} target="_blank" rel="noopener noreferrer nofollow">Google Scholar ↗</a>
+            {arxivId && (
+              <a href={`https://www.semanticscholar.org/arxiv/${arxivId}`} target="_blank" rel="noopener noreferrer nofollow">Semantic Scholar ↗</a>
+            )}
+            {arxivId && (
+              <a href={`https://www.alphaxiv.org/abs/${arxivId}`} target="_blank" rel="noopener noreferrer nofollow">alphaXiv ↗</a>
+            )}
             <ShareButton id={paper.id} title={paper.title} pct={t ? t.pct : null} />
           </p>
         </div>
