@@ -388,7 +388,10 @@ button.shelf-more::after { content: none; }
 .deck-ghost--2 { z-index: 0; transform: translateY(24px) scale(.9); background: #22252b; }
 .deck-card--out-yes { animation: deck-out-yes .28s ease forwards; }
 .deck-card--out-no { animation: deck-out-no .28s ease forwards; }
-@keyframes deck-in { from { opacity: 0; transform: translateY(14px) scale(.97); } }
+/* A new top card starts where the waiting card sat, so taking its place looks continuous. */
+@keyframes deck-in { from { transform: translateY(12px) scale(.95); } }
+.deck-card--next { z-index: 1; transform: translateY(12px) scale(.95); filter: brightness(.82); pointer-events: none; cursor: default; animation: none; transition: transform .28s ease, filter .28s ease; }
+.deck-stage--leaving .deck-card--next { transform: none; filter: none; }
 @keyframes deck-out-yes { to { opacity: 0; transform: translateX(120%) rotate(14deg); } }
 @keyframes deck-out-no { to { opacity: 0; transform: translateX(-120%) rotate(-14deg); } }
 .deck-card--out-skip { animation: deck-out-skip .28s ease forwards; }

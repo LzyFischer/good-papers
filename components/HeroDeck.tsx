@@ -183,14 +183,22 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
   }
 
   const agrees = c?.tier && (answer === "yes" ? c.tier.tone >= 4 : c.tier.tone <= 3);
+  const next = ready && !atEnd ? cards[i + 1] : undefined;
   const tilt = Math.max(-1, Math.min(1, dx / 160));
   const style = exit ? undefined : { transform: `translateX(${dx}px) rotate(${tilt * 8}deg)`, transition: drag.current ? "none" : undefined };
 
   return (
     <div className={ready && c ? "deck" : "deck deck--loading"}>
-      <div className="deck-stage">
+      <div className={exit === "yes" || exit === "no" || exit === "skip" ? "deck-stage deck-stage--leaving" : "deck-stage"}>
         <div className="deck-ghost deck-ghost--2" aria-hidden="true" />
-        <div className="deck-ghost deck-ghost--1" aria-hidden="true" />
+        {/* The next paper waits behind this one, so the deck looks like a real stack. */}
+        {next ? (
+          <div key={`next-${next.id}`} className="deck-card deck-card--next" aria-hidden="true">
+            <CardFace c={next} still />
+          </div>
+        ) : (
+          <div className="deck-ghost deck-ghost--1" aria-hidden="true" />
+        )}
         {!c ? (
           <div className="deck-card deck-end" aria-hidden="true" />
         ) : atEnd ? (
@@ -213,24 +221,10 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
             onPointerCancel={onUp}
             onClickCapture={(e) => { if (dx !== 0 && !answer) e.preventDefault(); }}
           >
-            <div className="deck-media">
-              {c.thumbnail ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={c.thumbnail} alt="" draggable={false} />
-              ) : (
-                <span className="deck-media-empty">{c.area ?? "Paper"}</span>
-              )}
+            <CardFace c={c}>
               <span className="deck-stamp deck-stamp--yes" style={{ opacity: answer === "yes" ? 1 : Math.max(0, tilt * 1.6) }}>Worth it</span>
               <span className="deck-stamp deck-stamp--no" style={{ opacity: answer === "no" ? 1 : Math.max(0, -tilt * 1.6) }}>Not for me</span>
-            </div>
-            <div className="deck-body">
-              <span className="deck-kicker">
-                {c.kicker}
-                {c.area && !c.kicker.toLowerCase().includes(c.area.toLowerCase()) ? ` · ${c.area}` : ""}
-              </span>
-              <Link href={`/paper/${c.id}`} className="deck-title" draggable={false}>{c.title}</Link>
-              {c.tldr && <p className="deck-tldr">{c.tldr}</p>}
-            </div>
+            </CardFace>
             {answer && (
               <div className={`deck-verdict tone-${c.tier?.tone ?? 1}`} role="status">
                 <b>
@@ -268,5 +262,34 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
       </div>
       <p className="deck-hint">Read it? Swipe right if it&apos;s worth reading, left if not. Skip the ones you haven&apos;t read.</p>
     </div>
+  );
+}
+
+// A card's picture, kicker, title and TL;DR. `still`: the card waiting behind, with no link.
+function CardFace({ c, still = false, children }: { c: DeckCard; still?: boolean; children?: React.ReactNode }) {
+  return (
+    <>
+      <div className="deck-media">
+        {c.thumbnail ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={c.thumbnail} alt="" draggable={false} />
+        ) : (
+          <span className="deck-media-empty">{c.area ?? "Paper"}</span>
+        )}
+        {children}
+      </div>
+      <div className="deck-body">
+        <span className="deck-kicker">
+          {c.kicker}
+          {c.area && !c.kicker.toLowerCase().includes(c.area.toLowerCase()) ? ` · ${c.area}` : ""}
+        </span>
+        {still ? (
+          <span className="deck-title">{c.title}</span>
+        ) : (
+          <Link href={`/paper/${c.id}`} className="deck-title" draggable={false}>{c.title}</Link>
+        )}
+        {c.tldr && <p className="deck-tldr">{c.tldr}</p>}
+      </div>
+    </>
   );
 }
