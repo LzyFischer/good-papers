@@ -121,7 +121,7 @@ export async function syncClaims(db: SupabaseClient, userId: string, orcid: stri
 
   const rows = [...ours].map(([paper_id, source]) => ({ user_id: userId, paper_id, source }));
   if (rows.length) await db.from("paper_claims").upsert(rows, { onConflict: "user_id,paper_id", ignoreDuplicates: true });
-  await db.from("researchers").update({ synced_at: new Date().toISOString(), openalex_id: ids.openalexAuthor }).eq("user_id", userId);
+  await db.from("orcid_accounts").update({ synced_at: new Date().toISOString(), openalex_id: ids.openalexAuthor }).eq("user_id", userId);
   const { count } = await db.from("paper_claims").select("paper_id", { count: "exact", head: true }).eq("user_id", userId);
   return { claimed: count ?? rows.length, openalexId: ids.openalexAuthor };
 }

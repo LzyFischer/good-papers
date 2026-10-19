@@ -91,7 +91,7 @@ export async function verifiedAuthors(id: string): Promise<{ userId: string; orc
   const db = serverClient();
   const { data: claims, error } = await db.from("paper_claims").select("user_id").eq("paper_id", id);
   if (error || !claims?.length) return [];
-  const { data } = await db.from("researchers").select("user_id, orcid, name").in("user_id", claims.map((c) => c.user_id));
+  const { data } = await db.from("orcid_accounts").select("user_id, orcid, name").in("user_id", claims.map((c) => c.user_id));
   return ((data ?? []) as { user_id: string; orcid: string; name: string | null }[]).map((r) => ({ userId: r.user_id, orcid: r.orcid, name: r.name }));
 }
 

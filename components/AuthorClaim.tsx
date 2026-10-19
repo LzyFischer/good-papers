@@ -33,7 +33,7 @@ export function AuthorClaim({ paperId, authors }: { paperId: string; authors: Ve
   useEffect(() => {
     if (!session) return;
     const db = browserClient();
-    db.from("researchers").select("orcid").eq("user_id", session.user.id).maybeSingle().then(({ data }) => setOrcid(data?.orcid ?? null));
+    db.from("orcid_accounts").select("orcid").eq("user_id", session.user.id).maybeSingle().then(({ data }) => setOrcid(data?.orcid ?? null));
     setMine(authors.some((a) => a.userId === session.user.id));
   }, [session, authors]);
 

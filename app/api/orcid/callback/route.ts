@@ -15,9 +15,9 @@ export async function GET(req: Request) {
   try {
     const { orcid, name } = await exchangeCode(code, `${url.origin}/api/orcid/callback`);
     // One Good Papers account per ORCID iD.
-    const { data: other } = await db.from("researchers").select("user_id").eq("orcid", orcid).maybeSingle();
+    const { data: other } = await db.from("orcid_accounts").select("user_id").eq("orcid", orcid).maybeSingle();
     if (other && other.user_id !== state.userId) return to(state.back, { orcid: "taken" });
-    await db.from("researchers").upsert({ user_id: state.userId, orcid, name, verified_at: new Date().toISOString() });
+    await db.from("orcid_accounts").upsert({ user_id: state.userId, orcid, name, verified_at: new Date().toISOString() });
     const { claimed } = await syncClaims(db, state.userId, orcid);
     return to(state.back, { orcid: "connected", claimed: String(claimed) });
   } catch (e) {

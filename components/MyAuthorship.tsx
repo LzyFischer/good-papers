@@ -18,7 +18,7 @@ export function MyAuthorship({ session }: { session: Session }) {
   useEffect(() => {
     const db = browserClient();
     const uid = session.user.id;
-    db.from("researchers").select("orcid, name, synced_at").eq("user_id", uid).maybeSingle().then(({ data, error }) => setMe(error ? null : (data as Me | null)));
+    db.from("orcid_accounts").select("orcid, name, synced_at").eq("user_id", uid).maybeSingle().then(({ data, error }) => setMe(error ? null : (data as Me | null)));
     db.from("paper_claims")
       .select("paper_id, papers(id, title, year, venue)")
       .eq("user_id", uid)
@@ -62,7 +62,7 @@ export function MyAuthorship({ session }: { session: Session }) {
     setBusy(true);
     const db = browserClient();
     await db.from("paper_claims").delete().eq("user_id", session.user.id);
-    await db.from("researchers").delete().eq("user_id", session.user.id);
+    await db.from("orcid_accounts").delete().eq("user_id", session.user.id);
     window.location.reload();
   }
   async function unclaim(id: string) {
