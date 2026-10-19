@@ -17,8 +17,14 @@ import { useForYou } from "./ForYou";
 import { addToHistory } from "./guestHistory";
 import { getMyVotes, setMyVote } from "./myVotes";
 
-// First visit: the top card leans right, then left, to show it can be swiped (once per browser).
+// Until a reader first uses the deck, the top card leans right, then left, on each visit to
+// show it can be swiped. Set once they swipe, vote, skip or go back.
 const HINT_KEY = "gp_deck_hint_seen";
+const markUsed = () => {
+  try {
+    localStorage.setItem(HINT_KEY, "1");
+  } catch {}
+};
 
 // Papers this browser has answered in the deck, newest last.
 const DONE_KEY = "gp_deck_done";
@@ -131,23 +137,39 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i, cards.length, ready]);
 
-  // The swipe hint: once, a moment after the first card shows, unless motion is reduced.
+  // The swipe hint: once per visit, when the deck first comes into view, until the reader has
+  // used the deck once. Skipped when motion is reduced.
+  const deckRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!ready || !cards.length) return;
+    if (!ready || !cards.length || !deckRef.current) return;
     try {
       if (localStorage.getItem(HINT_KEY) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      localStorage.setItem(HINT_KEY, "1");
     } catch {
       return;
     }
-    const steps: [number, () => void][] = [
-      [900, () => { setDemo(true); setDx(70); }],
-      [1900, () => setDx(-70)],
-      [2900, () => setDx(0)],
-      [3600, () => setDemo(false)],
-    ];
-    demoTimers.current = steps.map(([ms, fn]) => setTimeout(fn, ms));
-    return () => demoTimers.current.forEach(clearTimeout);
+    const play = () => {
+      const steps: [number, () => void][] = [
+        [600, () => { setDemo(true); setDx(70); }],
+        [1600, () => setDx(-70)],
+        [2600, () => setDx(0)],
+        [3300, () => setDemo(false)],
+      ];
+      demoTimers.current = steps.map(([ms, fn]) => setTimeout(fn, ms));
+    };
+    // Already on screen: play now. Otherwise wait until it's scrolled into view.
+    const r = deckRef.current.getBoundingClientRect();
+    const onScreen = r.top >= 0 && r.top + r.height * 0.6 <= innerHeight;
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      io.disconnect();
+      play();
+    }, { threshold: 0.6 });
+    if (onScreen) play();
+    else io.observe(deckRef.current);
+    return () => {
+      io.disconnect();
+      demoTimers.current.forEach(clearTimeout);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
   const stopDemo = () => {
@@ -186,6 +208,7 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
 
   function decide(a: Answer) {
     if (busy || atEnd) return;
+    markUsed();
     setAnswer(a);
     setDx(a === "yes" ? 24 : -24);
     if (session) vote(c.id, a === "yes");
@@ -199,9 +222,14 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
     done.current.add(c.id);
     leave(a, () => setI((n) => n + 1), REVEAL_MS);
   }
-  const skip = () => !busy && !atEnd && leave("skip", () => setI((n) => n + 1));
+  const skip = () => {
+    if (busy || atEnd) return;
+    markUsed();
+    leave("skip", () => setI((n) => n + 1));
+  };
   // Back: the last card comes in again from the left; the current one drops behind it.
   function back() {
+    markUsed();
     if (busy || i === 0) return;
     setReturning(true);
     setI((n) => n - 1);
@@ -238,7 +266,7 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
   const style = exit ? undefined : { transform: `translateX(${dx}px) rotate(${tilt * 8}deg)`, transition: drag.current ? "none" : undefined };
 
   return (
-    <div className={ready && c ? "deck" : "deck deck--loading"}>
+    <div ref={deckRef} className={ready && c ? "deck" : "deck deck--loading"}>
       <div className={exit === "yes" || exit === "no" || exit === "skip" ? "deck-stage deck-stage--leaving" : "deck-stage"}>
         <div className="deck-ghost deck-ghost--2" aria-hidden="true" />
         {/* The next paper waits behind this one, so the deck looks like a real stack. Both
