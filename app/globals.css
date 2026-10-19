@@ -530,7 +530,9 @@ button.shelf-more::after { content: none; }
   12%, 80% { opacity: 1; transform: none; }
   100% { opacity: 0; transform: translateY(-4px); }
 }
-@media (prefers-reduced-motion: reduce) { .vote-pop { animation-timing-function: steps(1, end); } }
+/* Reduced motion: no slide, just shown and then gone. */
+@keyframes vote-pop-still { 0%, 99% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .vote-pop { animation-name: vote-pop-still; } }
 .vote--compact .vbtn { height: 2.1rem; justify-content: center; gap: .3rem; padding: 0 .4rem; border: 0; border-radius: 10px; font: 700 .8rem/1 var(--display); white-space: nowrap; transition: background .15s ease, color .15s ease; }
 .vote--compact .vbtn .icon { width: 15px; height: 15px; flex: none; }
 .vote--compact .vbtn.f { background: var(--t5-soft); color: var(--t5); }
