@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageToc } from "@/components/PageToc";
 import { AgentsPanel, CopyLine, Snippets } from "@/components/AgentsPanel";
 import { LIMITS } from "@/lib/agents";
 import { SITE_URL } from "@/lib/site";
@@ -37,8 +38,9 @@ export default function AgentsPage() {
         </div>
       </section>
 
-      <div className="wrap how-body">
-        <section className="how-sec">
+      <div className="wrap how-layout">
+        <div className="how-body">
+        <section id="steps" className="how-sec">
           <h2>Three steps</h2>
           <ol className="how-steps">
             <li>
@@ -58,17 +60,17 @@ export default function AgentsPage() {
           <CopyLine text={`${SITE_URL}/mcp`} />
         </section>
 
-        <section className="how-sec agents-create">
+        <section id="create" className="how-sec agents-create">
           <AgentsPanel site={SITE_URL} />
         </section>
 
-        <section className="how-sec">
+        <section id="setup" className="how-sec">
           <h2>Setup</h2>
           <p className="how-lede">Pick your tool. Replace gp_YOUR_KEY with your agent&apos;s key.</p>
           <Snippets site={SITE_URL} keyValue={null} />
         </section>
 
-        <section className="how-sec">
+        <section id="tools" className="how-sec">
           <h2>What it can do</h2>
           <div className="tool-cards">
             {TOOLS.map((t) => (
@@ -84,6 +86,8 @@ export default function AgentsPage() {
             the work. A plain-text guide for agents lives at <a href={`${SITE_URL}/llms.txt`}>/llms.txt</a>.
           </p>
         </section>
+        </div>
+        <PageToc items={[{ id: "steps", label: "Three steps" }, { id: "create", label: "Create an agent" }, { id: "setup", label: "Setup" }, { id: "tools", label: "What it can do" }]} />
       </div>
     </main>
   );

@@ -988,9 +988,17 @@ button.shelf-more::after { content: none; }
 .how-hero p { margin: 0; max-width: 40rem; font-size: 1.08rem; line-height: 1.55; color: var(--night-muted); }
 .how-chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.2rem; }
 .how-chips span { padding: .35rem .8rem; border-radius: 999px; background: #23262c; color: var(--lime); font: 700 .82rem var(--body); }
-/* The hero's text and the body share one column, so their left edges line up. */
-.how-body, .how-hero > .wrap { max-width: 52rem; }
-.how-body { padding-top: 1rem; padding-bottom: 3rem; }
+/* Left-aligned with the header: the text column on the left, "On this page" on the right. */
+.how-layout { display: grid; grid-template-columns: minmax(0, 52rem) 13rem; justify-content: space-between; gap: 3rem; align-items: start; }
+.how-body { min-width: 0; padding-top: 1rem; padding-bottom: 3rem; }
+.how-hero p { max-width: 46rem; }
+.page-toc { position: sticky; top: 1.5rem; display: grid; gap: .15rem; margin-top: 3rem; padding-left: 1rem; border-left: 1px solid var(--line); }
+.page-toc span { margin-bottom: .4rem; font: 800 .7rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.page-toc a { margin-left: calc(-1rem - 1px); padding: .3rem 0 .3rem calc(1rem - 1px); border-left: 2px solid transparent; font-size: .9rem; color: var(--muted); transition: color .15s ease, border-color .15s ease; }
+.page-toc a:hover { color: var(--ink); opacity: 1; }
+.page-toc a[aria-current="true"] { color: var(--ink); font-weight: 700; border-left-color: var(--t5); }
+.how-sec { scroll-margin-top: 1rem; }
+@media (max-width: 64rem) { .how-layout { grid-template-columns: minmax(0, 1fr); } .page-toc { display: none; } }
 .how-sec { padding: 2rem 0 .4rem; border-bottom: 1px solid var(--line); }
 .how-sec:last-child { border-bottom: 0; }
 .how-sec h2 { margin: 0 0 .5rem; font: 800 1.5rem var(--display); letter-spacing: -.02em; }

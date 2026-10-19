@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageToc } from "@/components/PageToc";
 import { PERSONAS, PERSONA_IDS } from "@/lib/personas";
 import { SCORING, TIERS } from "@/lib/types";
 
@@ -94,8 +95,9 @@ export default function How() {
         </div>
       </section>
 
-      <div className="wrap how-body">
-        <section className="how-sec">
+      <div className="wrap how-layout">
+        <div className="how-body">
+        <section id="scale" className="how-sec">
           <h2>The scale</h2>
           <p className="how-lede">Every paper gets a score from 0 to 100% and one of five labels.</p>
           <TierScale />
@@ -112,7 +114,7 @@ export default function How() {
           </div>
         </section>
 
-        <section className="how-sec">
+        <section id="mix" className="how-sec">
           <h2>What goes into it</h2>
           <div className="how-mix" aria-label={`Readers ${100 - aiPct}%, AI panel ${aiPct}%`}>
             <span style={{ flexGrow: 100 - aiPct }}>Readers&apos; votes · {100 - aiPct}%</span>
@@ -138,7 +140,7 @@ export default function How() {
           </p>
         </section>
 
-        <section className="how-sec">
+        <section id="safeguards" className="how-sec">
           <h2>Four safeguards</h2>
           <div className="how-cards">
             {SAFEGUARDS.map((g) => (
@@ -151,7 +153,7 @@ export default function How() {
           </div>
         </section>
 
-        <section className="how-sec">
+        <section id="ai-panel" className="how-sec">
           <h2>The AI panel</h2>
           <div className="how-panel">
             <div className="how-dots" aria-hidden="true">
@@ -191,6 +193,8 @@ export default function How() {
           </p>
           <Link href="/" className="how-back">Back to papers →</Link>
         </section>
+        </div>
+        <PageToc items={[{ id: "scale", label: "The scale" }, { id: "mix", label: "What goes into it" }, { id: "safeguards", label: "Four safeguards" }, { id: "ai-panel", label: "The AI panel" }]} />
       </div>
     </main>
   );
