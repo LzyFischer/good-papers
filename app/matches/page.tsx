@@ -15,6 +15,7 @@ export default function MatchesPage() {
   const [result, setResult] = useState<MatchesResult | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false); // turning on needs a second, informed click
   const [unread, setUnread] = useState<Record<string, number>>({});
 
   const load = useCallback(async () => {
@@ -42,6 +43,8 @@ export default function MatchesPage() {
 
   async function toggle() {
     if (!session) return;
+    if (!on && !confirming) return setConfirming(true);
+    setConfirming(false);
     setBusy(true);
     const db = browserClient();
     const { error } = on
@@ -89,6 +92,19 @@ export default function MatchesPage() {
           </button>
         )}
       </section>
+      <div className={confirming ? "match-privacy match-privacy--ask" : "match-privacy"} role={confirming ? "alertdialog" : undefined}>
+        <b>Your votes aren&apos;t fully anonymous to your matches.</b>
+        <p>
+          When you match with someone, they learn that you voted on their papers, and how many, though never which way.
+          Your name and ORCID profile are shown to them, and they can message you. Turn matching off at any time to leave.
+        </p>
+        {confirming && (
+          <div className="match-privacy-actions">
+            <button className="button-primary" onClick={toggle} disabled={busy}>I understand, turn matching on</button>
+            <button className="link-button" onClick={() => setConfirming(false)}>Cancel</button>
+          </div>
+        )}
+      </div>
       {note && <p className="claim-note" role="status">{note}</p>}
 
       {result?.status === "no-claims" && (

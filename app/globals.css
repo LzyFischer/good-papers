@@ -1058,3 +1058,8 @@ button.shelf-more::after { content: none; }
 .agents-create .agent-form { padding: 1.1rem 1.2rem; max-width: none; border-radius: 16px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
 .agents-create .empty { margin: 0; }
 .agents-create .agent-created { margin-bottom: 1.6rem; }
+.match-privacy { display: grid; gap: .35rem; margin: -.4rem 0 1.2rem; padding: .9rem 1.1rem; border-radius: 14px; background: var(--rotten-soft); color: var(--ink); }
+.match-privacy b { font: 800 .95rem var(--display); }
+.match-privacy p { margin: 0; font-size: .9rem; line-height: 1.5; color: var(--muted); }
+.match-privacy--ask { box-shadow: 0 0 0 2px var(--rotten); }
+.match-privacy-actions { display: flex; align-items: center; gap: 1rem; margin-top: .4rem; flex-wrap: wrap; }
