@@ -5,12 +5,13 @@
 // if not, and the card shows what readers and the AI panel made of it, score included (the
 // visitor has answered first, so it can't sway them), before flying off;
 // ⏭ moves on without answering and ↺ goes back one. Not a vote (votes are for papers you've
-// read): a guest's "I'd read it" counts as interest for their For you shelf
-// (guestHistory.ts), like opening the paper would. Papers answered here before, or voted on
+// read): "I'd read it" counts as interest, kept in the browser for guests (guestHistory.ts)
+// and in paper_interest for signed-in readers. Papers answered here before, or voted on
 // by a signed-in reader, don't come back: the deck picks up where the visitor left off.
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toDeckCard, titleKey, type DeckCard } from "@/lib/deck";
+import { browserClient } from "@/lib/supabase";
 import { useSession } from "./AuthButton";
 import { useForYou } from "./ForYou";
 import { addToHistory } from "./guestHistory";
@@ -137,6 +138,8 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
     setAnswer(a);
     setDx(a === "yes" ? 24 : -24);
     if (a === "yes" && !session) addToHistory(c.id, 30);
+    // Signed in: kept as interest (migration 024), for For you and Matches.
+    if (a === "yes" && session) browserClient().from("paper_interest").upsert({ paper_id: c.id }, { onConflict: "user_id,paper_id", ignoreDuplicates: true }).then(() => {});
     markDone(c.id);
     done.current.add(c.id);
     leave(a, () => setI((n) => n + 1), REVEAL_MS);

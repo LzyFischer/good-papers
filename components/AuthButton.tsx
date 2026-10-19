@@ -92,6 +92,7 @@ function AccountMenu({ session }: { session: Session }) {
           <Link role="menuitem" href="/welcome?edit=1" onClick={() => setOpen(false)}>Your interests</Link>
           <Link role="menuitem" href="/me" onClick={() => setOpen(false)}>My papers</Link>
           <Link role="menuitem" href="/agents" onClick={() => setOpen(false)}>Your agents</Link>
+          <Link role="menuitem" href="/matches" onClick={() => setOpen(false)}>Matches</Link>
           {orcid ? (
             <Link role="menuitem" href="/me" onClick={() => setOpen(false)} className="account-orcid">
               <span aria-hidden="true">✓</span> ORCID verified

@@ -20,6 +20,8 @@ type Comment = {
   created_at: string;
   likes: number;
   replies: number;
+  anonymous?: boolean; // migration 024: shown as "Anonymous", user_id blanked
+  mine?: boolean; // the signed-in reader wrote it (even when anonymous)
 };
 
 // Jev's graded read of each comment, worded so the low end stays polite.
@@ -58,15 +60,16 @@ function Avatar({ name, ai }: { name: string; ai: boolean }) {
 }
 
 function Composer({ placeholder, onSubmit, onCancel, autoFocus }: {
-  placeholder: string; onSubmit: (body: string) => Promise<string | null>; onCancel?: () => void; autoFocus?: boolean;
+  placeholder: string; onSubmit: (body: string, anonymous: boolean) => Promise<string | null>; onCancel?: () => void; autoFocus?: boolean;
 }) {
   const [body, setBody] = useState("");
+  const [anonymous, setAnonymous] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function submit() {
     if (!body.trim()) return;
     setBusy(true);
-    const err = await onSubmit(body.trim());
+    const err = await onSubmit(body.trim(), anonymous);
     setBusy(false);
     if (err) setError(err);
     else {
@@ -93,6 +96,10 @@ function Composer({ placeholder, onSubmit, onCancel, autoFocus }: {
             Cancel
           </button>
         )}
+        <label className="composer-anon" title="Your name isn't shown to anyone; you can still delete it">
+          <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
+          Post anonymously
+        </label>
       </div>
       {error && <p className="hint" role="status">{error}</p>}
     </div>
@@ -110,7 +117,7 @@ export function Comments({ paper }: { paper: PaperStub }) {
     const supabase = browserClient();
     const { data } = await supabase
       .from("comment_feed")
-      .select("id, parent_id, author_kind, user_id, author_name, agent_owner, body, stance, created_at, likes, replies")
+      .select("*") // "*": older databases lack the anonymous and mine columns (migration 024)
       .eq("paper_id", paper.id)
       .order("created_at", { ascending: true });
     const list = (data ?? []) as Comment[];
@@ -143,7 +150,7 @@ export function Comments({ paper }: { paper: PaperStub }) {
     return { children, byId, people };
   }, [comments]);
 
-  async function post(body: string, parentId: string | null): Promise<string | null> {
+  async function post(body: string, parentId: string | null, anonymous = false): Promise<string | null> {
     if (!session) {
       signIn();
       return null;
@@ -153,7 +160,7 @@ export function Comments({ paper }: { paper: PaperStub }) {
     await supabase
       .from("papers")
       .upsert({ ...paper, authors: paper.authors.slice(0, 40) }, { onConflict: "id", ignoreDuplicates: true });
-    const { error } = await supabase.from("comments").insert({ paper_id: paper.id, parent_id: parentId, body });
+    const { error } = await supabase.from("comments").insert({ paper_id: paper.id, parent_id: parentId, body, ...(anonymous ? { anonymous } : {}) });
     if (error) return `Your comment wasn't posted: ${error.message}`;
     fetch("/api/nudge", { method: "POST" }).catch(() => {}); // wake the AI reviewers
     setReplyTo(null);
@@ -181,7 +188,7 @@ export function Comments({ paper }: { paper: PaperStub }) {
 
   const node = (c: Comment, depth: number): React.ReactNode => {
     const kids = children.get(c.id) ?? [];
-    const name = c.author_name ?? "reader";
+    const name = c.anonymous ? "Anonymous" : c.author_name ?? "reader";
     const parent = c.parent_id ? byId.get(c.parent_id) : null;
     const folded = collapsed.has(c.id);
     return (
@@ -203,7 +210,7 @@ export function Comments({ paper }: { paper: PaperStub }) {
               )}
               <span className="comment-time">{ago(c.created_at)}</span>
             </div>
-            {depth > MAX_INDENT && parent && <p className="replying">replying to @{parent.author_name ?? "reader"}</p>}
+            {depth > MAX_INDENT && parent && <p className="replying">replying to @{parent.anonymous ? "Anonymous" : parent.author_name ?? "reader"}</p>}
             <p className="comment-body">{c.body}</p>
             <div className="comment-actions">
               <button className="link-button" aria-pressed={liked.has(c.id)} onClick={() => toggleLike(c)}>
@@ -220,14 +227,14 @@ export function Comments({ paper }: { paper: PaperStub }) {
                   {folded ? `Show ${count(c.id)} repl${count(c.id) === 1 ? "y" : "ies"}` : "Hide replies"}
                 </button>
               )}
-              {session && c.user_id === session.user.id && (
+              {session && (c.mine ?? c.user_id === session.user.id) && (
                 <button className="link-button" onClick={() => remove(c)}>
                   Delete
                 </button>
               )}
             </div>
             {replyTo === c.id && (
-              <Composer placeholder={`Reply to @${name}…`} autoFocus onCancel={() => setReplyTo(null)} onSubmit={(body) => post(body, c.id)} />
+              <Composer placeholder={`Reply to @${name}…`} autoFocus onCancel={() => setReplyTo(null)} onSubmit={(body, anon) => post(body, c.id, anon)} />
             )}
           </div>
         </div>
@@ -249,7 +256,7 @@ export function Comments({ paper }: { paper: PaperStub }) {
         )}
       </div>
       {session ? (
-        <Composer placeholder="What did you think of this paper?" onSubmit={(body) => post(body, null)} />
+        <Composer placeholder="What did you think of this paper?" onSubmit={(body, anon) => post(body, null, anon)} />
       ) : (
         <p className="hint">
           <button className="link-button link-button--strong" onClick={() => signIn()}>
