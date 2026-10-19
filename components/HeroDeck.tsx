@@ -1,13 +1,13 @@
 "use client";
-// The home hero's "Would you read it?" deck: this week's trending papers one card at a time.
-// The visitor answers from the title and TL;DR, then sees what the readers and AI panel made
-// of it. Not a vote (votes are for papers you've read): a guest's "I'd read it" counts as
-// interest for their For you shelf (guestHistory.ts), like opening the paper would.
+// The home hero's "Would you read it?" deck, swiped like Tinder: this week's trending papers
+// one card at a time. Drag right (or ♥) if you'd read it, left (or ✕) to skip; the card shows
+// what readers and the AI panel made of it, then flies off. Not a vote (votes are for papers
+// you've read): a guest's "I'd read it" counts as interest for their For you shelf
+// (guestHistory.ts), like opening the paper would.
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSession } from "./AuthButton";
 import { addToHistory } from "./guestHistory";
-import { Gauge } from "./Score";
 
 export type DeckCard = {
   id: string;
@@ -21,51 +21,85 @@ export type DeckCard = {
 };
 
 type Answer = "yes" | "no";
+const THROW = 90; // px of drag that counts as a decision
+const REVEAL_MS = 1100;
 
 export function HeroDeck({ cards }: { cards: DeckCard[] }) {
   const { session } = useSession();
   const [i, setI] = useState(0);
   const [answer, setAnswer] = useState<Answer | null>(null);
-  const [leaving, setLeaving] = useState<Answer | null>(null);
+  const [out, setOut] = useState(false);
+  const [dx, setDx] = useState(0);
   const [kept, setKept] = useState(0);
+  const drag = useRef<{ x: number; id: number; moved: boolean } | null>(null);
 
   if (!cards.length) return null;
   const done = i >= cards.length;
   const c = cards[Math.min(i, cards.length - 1)];
 
-  function pick(a: Answer) {
+  function decide(a: Answer) {
+    if (answer) return;
     setAnswer(a);
+    setDx(a === "yes" ? 24 : -24);
     if (a === "yes") {
       setKept((k) => k + 1);
       if (!session) addToHistory(c.id, 30);
     }
+    setTimeout(() => setOut(true), REVEAL_MS);
+    setTimeout(() => {
+      setOut(false);
+      setAnswer(null);
+      setDx(0);
+      setI((n) => n + 1);
+    }, REVEAL_MS + 280);
   }
 
-  function next() {
-    setLeaving(answer);
-    setTimeout(() => {
-      setLeaving(null);
-      setAnswer(null);
-      setI((n) => n + 1);
-    }, 260);
+  function onDown(e: React.PointerEvent) {
+    if (answer) return;
+    drag.current = { x: e.clientX, id: e.pointerId, moved: false };
   }
+  function onMove(e: React.PointerEvent) {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    const x = e.clientX - d.x;
+    if (!d.moved && Math.abs(x) > 6) {
+      d.moved = true;
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    }
+    if (d.moved) setDx(x);
+  }
+  function onUp() {
+    const d = drag.current;
+    drag.current = null;
+    if (!d?.moved) return;
+    if (dx > THROW) decide("yes");
+    else if (dx < -THROW) decide("no");
+    else setDx(0);
+  }
+
+  const progress = (
+    <div className="deck-progress" aria-hidden="true">
+      {cards.map((x, k) => <span key={x.id} className={k < i ? "on" : k === i ? "now" : ""} />)}
+    </div>
+  );
 
   if (done) {
     return (
       <div className="deck">
-        <div className="deck-card deck-end">
-          <span className="deck-kicker">That&apos;s this week&apos;s top {cards.length}</span>
-          <p className="deck-end-title">
-            {kept ? `You'd read ${kept} of them.` : "Nothing caught your eye this week?"}
-          </p>
-          <p className="deck-end-sub">
-            {session
-              ? "Your For you shelf below picks up from here."
-              : "Your For you shelf below learns from what you picked. Sign in to vote on papers you've read."}
-          </p>
-          <div className="deck-actions">
-            <a href="#trending" className="deck-btn deck-btn--yes">See all trending ↓</a>
-            <button className="deck-btn deck-btn--no" onClick={() => setI(0)}>Start over</button>
+        {progress}
+        <div className="deck-stage">
+          <div className="deck-card deck-end">
+            <span className="deck-kicker">That&apos;s this week&apos;s top {cards.length}</span>
+            <p className="deck-end-title">{kept ? `You'd read ${kept} of them.` : "Nothing caught your eye?"}</p>
+            <p className="deck-end-sub">
+              {session
+                ? "Your For you shelf below picks up from here."
+                : "Your For you shelf below learns from what you picked. Sign in to vote on papers you've read."}
+            </p>
+            <div className="deck-end-actions">
+              <a href="#trending" className="deck-pill deck-pill--lime">See all trending ↓</a>
+              <button className="deck-pill" onClick={() => { setI(0); setKept(0); }}>Start over</button>
+            </div>
           </div>
         </div>
       </div>
@@ -73,55 +107,75 @@ export function HeroDeck({ cards }: { cards: DeckCard[] }) {
   }
 
   const agrees = c.tier && (answer === "yes" ? c.tier.tone >= 4 : c.tier.tone <= 3);
+  const tilt = Math.max(-1, Math.min(1, dx / 160));
+  const style = out
+    ? undefined
+    : { transform: `translateX(${dx}px) rotate(${tilt * 8}deg)`, transition: drag.current ? "none" : undefined };
 
   return (
-    <div className="deck" aria-live="polite">
-      {/* The next two cards peek out behind the current one. */}
-      {i + 2 < cards.length && <div className="deck-ghost deck-ghost--2" aria-hidden="true" />}
-      {i + 1 < cards.length && <div className="deck-ghost deck-ghost--1" aria-hidden="true" />}
-      <div key={c.id} className={`deck-card ${leaving ? `deck-card--out-${leaving}` : ""}`}>
-        <div className="deck-top">
-          <span className="deck-kicker">{c.kicker}</span>
-          <span className="deck-count">{i + 1} / {cards.length}</span>
-        </div>
-        {c.thumbnail && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={c.thumbnail} alt="" className="deck-img" />
-        )}
-        {c.area && <span className="deck-area">{c.area}</span>}
-        <Link href={`/paper/${c.id}`} className="deck-title">{c.title}</Link>
-        {c.tldr && <p className="deck-tldr">{c.tldr}</p>}
-
-        {answer === null ? (
-          <div className="deck-actions">
-            <span className="deck-q">Would you read it?</span>
-            <button className="deck-btn deck-btn--no" onClick={() => pick("no")}>Skip</button>
-            <button className="deck-btn deck-btn--yes" onClick={() => pick("yes")}>I&apos;d read it</button>
+    <div className="deck">
+      {progress}
+      <div className="deck-stage">
+        {i + 2 < cards.length && <div className="deck-ghost deck-ghost--2" aria-hidden="true" />}
+        {i + 1 < cards.length && <div className="deck-ghost deck-ghost--1" aria-hidden="true" />}
+        <div
+          key={c.id}
+          className={`deck-card ${out ? `deck-card--out-${answer}` : ""}`}
+          style={style}
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={onUp}
+          onClickCapture={(e) => { if (dx !== 0 && !answer) e.preventDefault(); }}
+        >
+          <div className="deck-media">
+            {c.thumbnail ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={c.thumbnail} alt="" draggable={false} />
+            ) : (
+              <span className="deck-media-empty">{c.area ?? "Paper"}</span>
+            )}
+            <span className="deck-stamp deck-stamp--yes" style={{ opacity: answer === "yes" ? 1 : Math.max(0, tilt * 1.6) }}>Read it</span>
+            <span className="deck-stamp deck-stamp--no" style={{ opacity: answer === "no" ? 1 : Math.max(0, -tilt * 1.6) }}>Skip</span>
           </div>
-        ) : (
-          <div className={`deck-reveal tone-${c.tier?.tone ?? 1}`}>
-            {c.tier && c.open && <Gauge pct={c.tier.pct} tone={c.tier.tone} size="sm" />}
-            <div className="deck-verdict">
-              <b>{c.tier ? c.tier.label : "Not rated yet"}</b>
+          <div className="deck-body">
+            <span className="deck-kicker">
+              {c.kicker}{c.area ? ` · ${c.area}` : ""}
+            </span>
+            <Link href={`/paper/${c.id}`} className="deck-title" draggable={false}>{c.title}</Link>
+            {c.tldr && <p className="deck-tldr">{c.tldr}</p>}
+          </div>
+          {answer && (
+            <div className={`deck-verdict tone-${c.tier?.tone ?? 1}`} role="status">
+              <b>
+                {c.tier ? c.tier.label : "Not rated yet"}
+                {c.tier && c.open ? ` · ${c.tier.pct}%` : ""}
+              </b>
               <span>
                 {!c.tier
-                  ? "Readers haven't weighed in yet."
+                  ? "No verdict yet."
                   : agrees
                     ? "Readers and the AI panel agree with you."
                     : answer === "yes"
                       ? "Readers and the AI panel are less sure."
-                      : "Readers and the AI panel liked it more than you."}
+                      : "Readers and the AI panel liked it more."}
               </span>
             </div>
-            <div className="deck-reveal-actions">
-              <Link href={`/paper/${c.id}`} className="deck-link">Open</Link>
-              <button className="deck-btn deck-btn--yes" onClick={next}>
-                {i + 1 < cards.length ? "Next →" : "Done"}
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+      <div className="deck-buttons">
+        <button className="deck-round deck-round--no" aria-label="Skip" onClick={() => decide("no")} disabled={!!answer}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <Link className="deck-round deck-round--open" aria-label="Open the paper" href={`/paper/${c.id}`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" /></svg>
+        </Link>
+        <button className="deck-round deck-round--yes" aria-label="I'd read it" onClick={() => decide("yes")} disabled={!!answer}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" /></svg>
+        </button>
+      </div>
+      <p className="deck-hint">Would you read it? Swipe or tap.</p>
     </div>
   );
 }

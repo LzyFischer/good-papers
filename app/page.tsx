@@ -73,8 +73,16 @@ export default async function Home({ searchParams }: Props) {
   const week = browsing ? (window === "week" ? hotNow : (await homeShelves("week"))[0]) : [];
   const spot = pickPaperOfTheDay(week) ?? must[0];
   // The hero deck: the paper of the day, then the rest of this week's trending.
-  const deck: DeckCard[] = [spot, ...week.filter((p) => p.id !== spot?.id)]
+  // Some papers are stored twice (OpenAlex and arXiv ids): one card per title.
+  const seen = new Set<string>();
+  const deck: DeckCard[] = [spot, ...week]
     .filter((p): p is Score => Boolean(p))
+    .filter((p) => {
+      const key = p.title.toLowerCase().replace(/[^a-z0-9]+/g, "");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
     .slice(0, 8)
     .map((p, k) => {
       const t = tierOf(p);
