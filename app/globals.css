@@ -400,9 +400,10 @@ button.shelf-more::after { content: none; }
 .deck-stamp { position: absolute; top: 1rem; z-index: 2; padding: .25rem .7rem; border: 3px solid; border-radius: 10px; font: 800 1.35rem var(--display); letter-spacing: .04em; text-transform: uppercase; opacity: 0; pointer-events: none; }
 .deck-stamp--yes { left: 1rem; color: #4fa35d; transform: rotate(-12deg); }
 .deck-stamp--no { right: 1rem; color: #d0575b; transform: rotate(12deg); }
-.deck-body { display: grid; align-content: start; gap: .45rem; padding: .2rem 1.15rem 1.2rem; margin-top: -1.6rem; position: relative; z-index: 1; }
+/* A fixed height, so every card is the same size whatever the title and TL;DR. */
+.deck-body { display: grid; align-content: start; gap: .45rem; height: 12.6rem; overflow: hidden; padding: .2rem 1.15rem 1.2rem; margin-top: -1.6rem; position: relative; z-index: 1; }
 .deck-kicker { font: 800 .68rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--lime); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.deck-title { font: 800 1.3rem/1.18 var(--display); letter-spacing: -.01em; color: #fff; text-decoration: none; }
+.deck-title { font: 800 1.3rem/1.18 var(--display); letter-spacing: -.01em; color: #fff; text-decoration: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 .deck-title:hover { color: var(--lime); opacity: 1; }
 .deck-tldr { margin: 0; font-size: .92rem; line-height: 1.45; color: #b9bdc5; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 .deck-verdict { position: absolute; left: .8rem; right: .8rem; bottom: .8rem; z-index: 3; display: grid; gap: .15rem; padding: .75rem .9rem; border-radius: 14px; background: var(--tone-soft); color: var(--ink); box-shadow: 0 10px 30px rgba(0, 0, 0, .35); animation: deck-in .22s ease both; }
