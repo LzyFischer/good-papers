@@ -1063,3 +1063,7 @@ button.shelf-more::after { content: none; }
 .match-privacy p { margin: 0; font-size: .9rem; line-height: 1.5; color: var(--muted); }
 .match-privacy--ask { box-shadow: 0 0 0 2px var(--rotten); }
 .match-privacy-actions { display: flex; align-items: center; gap: 1rem; margin-top: .4rem; flex-wrap: wrap; }
+/* Home deck: after a few guest swipes, a card that suggests signing in (components/HeroDeck.tsx). */
+.deck-nudge { grid-area: 1 / 1; position: relative; z-index: 6; display: grid; align-content: center; gap: .7rem; padding: 1.6rem; border-radius: 20px; background: #1d2026; color: #f4f4f1; box-shadow: 0 24px 60px rgba(0, 0, 0, .45), inset 0 0 0 2px var(--lime); animation: deck-in .28s ease both; }
+.deck-nudge-title { margin: 0; font: 800 1.7rem/1.15 var(--display); letter-spacing: -.02em; color: #fff; }
+.deck-nudge-sub { margin: 0 0 .3rem; color: #b9bdc5; line-height: 1.5; }

@@ -12,7 +12,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toDeckCard, titleKey, type DeckCard } from "@/lib/deck";
 import { browserClient } from "@/lib/supabase";
-import { useSession } from "./AuthButton";
+import { signIn, useSession } from "./AuthButton";
 import { useForYou } from "./ForYou";
 import { addToHistory } from "./guestHistory";
 import { getMyVotes, setMyVote } from "./myVotes";
@@ -38,6 +38,7 @@ type Answer = "yes" | "no";
 type Exit = Answer | "skip";
 const THROW = 90; // px of drag that counts as a decision
 const REVEAL_MS = 1100;
+const NUDGE_AFTER = 3; // guests: suggest signing in after this many answers, then every 10
 const OUT_MS = 280;
 
 export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
@@ -51,6 +52,8 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
   const [exit, setExit] = useState<Exit | null>(null);
   const [dx, setDx] = useState(0);
   const [returning, setReturning] = useState(false);
+  const [guestAnswers, setGuestAnswers] = useState(0);
+  const [nudge, setNudge] = useState(false);
   const drag = useRef<{ x: number; id: number; moved: boolean } | null>(null);
   const seen = useRef(new Set(initial.map((c) => titleKey(c.title))));
   const mixed = useRef(false);
@@ -125,7 +128,7 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
 
   const c = cards[Math.min(i, cards.length - 1)];
   const atEnd = ready && i >= cards.length;
-  const busy = !ready || !c || answer !== null || exit !== null;
+  const busy = !ready || !c || answer !== null || exit !== null || nudge;
 
   function leave(kind: Exit, then: () => void, delay = 0) {
     setTimeout(() => setExit(kind), delay);
@@ -155,7 +158,12 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
     setAnswer(a);
     setDx(a === "yes" ? 24 : -24);
     if (session) vote(c.id, a === "yes");
-    else if (a === "yes") addToHistory(c.id, 30);
+    else {
+      if (a === "yes") addToHistory(c.id, 30);
+      const n = guestAnswers + 1;
+      setGuestAnswers(n);
+      if (n === NUDGE_AFTER || (n > NUDGE_AFTER && (n - NUDGE_AFTER) % 10 === 0)) setTimeout(() => setNudge(true), REVEAL_MS + 300);
+    }
     markDone(c.id);
     done.current.add(c.id);
     leave(a, () => setI((n) => n + 1), REVEAL_MS);
@@ -205,6 +213,20 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
             cards are keyed by paper, so when the top one flies off, the waiting card's own
             element becomes the top card: it just keeps moving, nothing is redrawn. */}
         {!next && <div className="deck-ghost deck-ghost--1" aria-hidden="true" />}
+        {nudge && (
+          <div className="deck-nudge" role="dialog" aria-label="Sign in to vote">
+            <span className="deck-kicker">Your picks don&apos;t count yet</span>
+            <p className="deck-nudge-title">Sign in to make them votes.</p>
+            <p className="deck-nudge-sub">
+              You&apos;ve swiped {guestAnswers} papers. Signed in, every swipe is a real vote that moves the paper&apos;s score,
+              and your For you feed learns from it.
+            </p>
+            <div className="deck-end-actions">
+              <button className="deck-pill deck-pill--lime" onClick={() => signIn()}>Sign in to vote</button>
+              <button className="deck-pill" onClick={() => setNudge(false)}>Keep browsing</button>
+            </div>
+          </div>
+        )}
         {!c ? (
           <div className="deck-card deck-end" aria-hidden="true" />
         ) : atEnd ? (
