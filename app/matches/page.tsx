@@ -15,6 +15,7 @@ export default function MatchesPage() {
   const [result, setResult] = useState<MatchesResult | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [unread, setUnread] = useState<Record<string, number>>({});
 
   const load = useCallback(async () => {
     if (!session) return;
@@ -25,6 +26,10 @@ export default function MatchesPage() {
     ]);
     setOrcid(acct.data?.orcid ?? null);
     setOn(Boolean(opt.data));
+    fetch("/api/messages/unread", { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then((u) => (u.ok ? u.json() : null))
+      .then((u: { bySender: Record<string, number> } | null) => u && setUnread(u.bySender))
+      .catch(() => {});
     const r = await fetch("/api/matches", { headers: { Authorization: `Bearer ${session.access_token}` } });
     const j = (await r.json().catch(() => null)) as MatchesResult | { error: string } | null;
     if (j && "status" in j) setResult(j);
@@ -62,8 +67,8 @@ export default function MatchesPage() {
     <main className="wrap page matches">
       <h1 className="page-title">Matches</h1>
       <p className="page-sub">
-        Authors who read your papers, and whose papers you read. Reading counts any way: a vote either way, a ♥ on the
-        home page, or a minute on the paper. The more of each other&apos;s work, the closer the match.
+        Authors who voted on your papers, and whose papers you voted on, either way. The more of each other&apos;s work,
+        the closer the match. Matches can message each other.
       </p>
 
       <section className="match-switch">
@@ -95,13 +100,13 @@ export default function MatchesPage() {
         <p className="empty">No matches yet. They show up once another author who turned matching on reads your papers, and you read theirs.</p>
       )}
       {result?.status === "ok" && result.matches.length > 0 && (
-        <ul className="match-list">{result.matches.map((m) => <MatchRow key={m.userId} m={m} />)}</ul>
+        <ul className="match-list">{result.matches.map((m) => <MatchRow key={m.userId} m={m} unread={unread[m.userId] ?? 0} />)}</ul>
       )}
     </main>
   );
 }
 
-function MatchRow({ m }: { m: Match }) {
+function MatchRow({ m, unread }: { m: Match; unread: number }) {
   const strength = m.theyRead + m.youRead;
   return (
     <li className="match">
@@ -114,6 +119,9 @@ function MatchRow({ m }: { m: Match }) {
           )}
         </span>
         <span className="match-strength" title="Papers read both ways">{strength} shared</span>
+        <Link href={`/matches/${m.userId}`} className="match-chat">
+          Message{unread > 0 && <span className="match-unread">{unread}</span>}
+        </Link>
       </div>
       <p className="match-why">
         Read {m.theyRead} of your paper{m.theyRead === 1 ? "" : "s"} · you read {m.youRead} of theirs

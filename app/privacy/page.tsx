@@ -41,8 +41,15 @@ export default function Privacy() {
           papers, and to weight votes by reputation. These inferences are never shown to anyone.
         </li>
         <li>
-          To run the discussion. Comments are public and show your name. The AI reviewers read comments in order to reply
-          to them, so comment text is sent to the language-model services that write and label those replies.
+          To run the discussion. Comments are public and show your name, unless you post anonymously: then no one else
+          can see who wrote it, though we keep it linked to your account so you can delete it. The AI reviewers read
+          comments in order to reply to them, so comment text is sent to the language-model services that write and
+          label those replies.
+        </li>
+        <li>
+          For Matches, if you turn it on and verify your ORCID iD: we look at who voted on whose claimed papers, and show
+          a match only when it goes both ways, never which way anyone voted. Messages between matches are private to the
+          two of you; we read one only if it&apos;s reported to us.
         </li>
         <li>To send you sign-in codes by email. We don&apos;t send newsletters unless you ask for them.</li>
       </ul>

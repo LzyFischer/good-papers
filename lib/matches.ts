@@ -45,8 +45,10 @@ export async function matchesFor(db: SupabaseClient, me: string): Promise<Matche
   const myPapers = (mine ?? []).map((r) => r.paper_id as string);
   if (!myPapers.length) return { status: "no-claims" };
 
-  // Opted-in readers who read my papers.
-  const others = [...opted].filter((u) => u !== me);
+  // Opted-in readers who read my papers, leaving out anyone either of us blocked.
+  const { data: blocks } = await db.from("match_blocks").select("blocker, blocked").or(`blocker.eq.${me},blocked.eq.${me}`);
+  const blocked = new Set((blocks ?? []).map((b) => (b.blocker === me ? b.blocked : b.blocker) as string));
+  const others = [...opted].filter((u) => u !== me && !blocked.has(u));
   if (!others.length) return { status: "ok", matches: [] };
   const readMine = await readersOf(db, myPapers, others);
   const candidates = [...readMine.keys()].filter((u) => u !== me);
@@ -88,4 +90,24 @@ export async function matchesFor(db: SupabaseClient, me: string): Promise<Matche
       papers: (theirs.get(p.u) ?? []).slice(0, 3).flatMap((id) => (title.has(id) ? [{ id, title: title.get(id)! }] : [])),
     })),
   };
+}
+
+// Are these two a match right now (both opted in, each voted on one of the other's claimed
+// papers, no block either way)? The check before every message.
+export async function isMatch(db: SupabaseClient, a: string, b: string): Promise<boolean> {
+  if (a === b) return false;
+  const [{ data: optin }, { data: blocks }, { data: claims }] = await Promise.all([
+    db.from("match_optin").select("user_id").in("user_id", [a, b]),
+    db.from("match_blocks").select("blocker").or(`and(blocker.eq.${a},blocked.eq.${b}),and(blocker.eq.${b},blocked.eq.${a})`),
+    db.from("paper_claims").select("user_id, paper_id").in("user_id", [a, b]),
+  ]);
+  if ((optin ?? []).length < 2 || (blocks ?? []).length) return false;
+  const papersOf = (u: string) => (claims ?? []).filter((c) => c.user_id === u).map((c) => c.paper_id as string);
+  const voted = async (voter: string, papers: string[]) => {
+    if (!papers.length) return false;
+    const { count } = await db.from("ratings").select("paper_id", { count: "exact", head: true }).eq("user_id", voter).in("paper_id", papers.slice(0, 500));
+    return (count ?? 0) > 0;
+  };
+  const [ab, ba] = await Promise.all([voted(a, papersOf(b)), voted(b, papersOf(a))]);
+  return ab && ba;
 }

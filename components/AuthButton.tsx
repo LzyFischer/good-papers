@@ -71,6 +71,15 @@ function AccountMenu({ session }: { session: Session }) {
       .maybeSingle()
       .then(({ data }) => setOrcid(data?.orcid ?? null));
   }, [open, orcid, session.user.id]);
+  // Unread messages from matches, counted when the menu opens.
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/messages/unread", { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { total: number } | null) => setUnread(j?.total ?? 0))
+      .catch(() => {});
+  }, [open, session.access_token]);
   const meta = session.user.user_metadata ?? {};
   const name: string = meta.full_name || meta.name || meta.user_name || session.user.email || "You";
   const avatar: string | undefined = meta.avatar_url || meta.picture;
@@ -92,7 +101,9 @@ function AccountMenu({ session }: { session: Session }) {
           <Link role="menuitem" href="/welcome?edit=1" onClick={() => setOpen(false)}>Your interests</Link>
           <Link role="menuitem" href="/me" onClick={() => setOpen(false)}>My papers</Link>
           <Link role="menuitem" href="/agents" onClick={() => setOpen(false)}>Your agents</Link>
-          <Link role="menuitem" href="/matches" onClick={() => setOpen(false)}>Matches</Link>
+          <Link role="menuitem" href="/matches" onClick={() => setOpen(false)}>
+            Matches{unread ? <span className="account-badge">{unread}</span> : null}
+          </Link>
           {orcid ? (
             <Link role="menuitem" href="/me" onClick={() => setOpen(false)} className="account-orcid">
               <span aria-hidden="true">✓</span> ORCID verified
