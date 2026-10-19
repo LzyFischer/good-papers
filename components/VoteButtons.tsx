@@ -27,6 +27,8 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
   const [vote, setVote] = useState<Vote | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // compact cards: a short "who agrees with you" note that pops up after a vote.
+  const [agree, setAgree] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) {
@@ -66,6 +68,7 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
     }
     await setMyVote(session.user.id, paper.id, next);
     setVote(next);
+    setAgree(null);
     // Reveal this paper's score everywhere on the page right away (GateRevealer).
     window.dispatchEvent(new CustomEvent("gp-voted", { detail: { id: paper.id, prev: vote, next } }));
     // Only the paper page reloads its numbers. Cards update in place (ReaderCounts): reloading
@@ -74,14 +77,15 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
     // The new score and tallies, for the cards on this page (LiveScore, ReaderCounts).
     supabase
       .from("paper_scores")
-      .select("score, reader_fresh, reader_total")
+      .select("score, reader_fresh, reader_total, ai_fresh, ai_total")
       .eq("id", paper.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (data)
-          window.dispatchEvent(
-            new CustomEvent("gp-score", { detail: { id: paper.id, score: data.score, fresh: data.reader_fresh, total: data.reader_total } }),
-          );
+        if (!data) return;
+        window.dispatchEvent(
+          new CustomEvent("gp-score", { detail: { id: paper.id, score: data.score, fresh: data.reader_fresh, total: data.reader_total } }),
+        );
+        if (compact && next !== undefined && next !== null) setAgree(agreeNote(next, data));
       });
     fetch("/api/voted", { method: "POST" }).catch(() => {}); // let the cached home shelves catch up
   }
@@ -93,6 +97,11 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
   if (compact) {
     return (
       <div className="vote vote--compact" title={error ?? "Only vote on papers you've read"}>
+        {agree && (
+          <span key={agree} className="vote-pop" role="status" onAnimationEnd={() => setAgree(null)}>
+            {agree}
+          </span>
+        )}
         <button className="vbtn f" aria-pressed={vote === true} aria-label="Upvote: worth reading" disabled={busy} onClick={() => cast(true)}>
           <Icon name="up" />
           <span>Worth it</span>
@@ -149,4 +158,21 @@ function YouVsEveryone({ vote, reveal }: { vote: boolean; reveal: Reveal }) {
   if (!total) return null;
   const same = readersSame + aiSame;
   return <p className="reveal">{same === 0 ? "No other voters agree with you yet" : same === 1 ? "1 voter agrees with you" : `${same} voters agree with you`}</p>;
+}
+
+// "3 readers and 14 of 20 AI reviewers agree with you". Reader counts include the vote just
+// cast, so it's taken off before counting the others.
+function agreeNote(
+  up: boolean,
+  d: { reader_fresh: number | null; reader_total: number | null; ai_fresh: number | null; ai_total: number | null },
+): string {
+  const others = Math.max(0, (d.reader_total ?? 0) - 1);
+  const othersUp = Math.max(0, (d.reader_fresh ?? 0) - (up ? 1 : 0));
+  const readers = up ? othersUp : others - othersUp;
+  const aiTotal = d.ai_total ?? 0;
+  const ai = up ? d.ai_fresh ?? 0 : aiTotal - (d.ai_fresh ?? 0);
+  const aiPart = aiTotal ? `${ai} of ${aiTotal} AI reviewers` : null;
+  if (!others) return aiPart ? `First reader vote. ${aiPart} agree with you.` : "You're the first reader to vote.";
+  const readerPart = `${readers} of ${others} reader${others === 1 ? "" : "s"}`;
+  return `${readerPart}${aiPart ? ` and ${aiPart}` : ""} agree with you.`;
 }

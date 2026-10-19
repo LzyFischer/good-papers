@@ -517,7 +517,20 @@ button.shelf-more::after { content: none; }
 /* Shelf cards: link area plus quick vote buttons */
 .mini-link { display: grid; align-content: start; gap: .35rem; text-decoration: none; color: inherit; }
 /* Two soft tinted buttons of equal size: quiet until you hover or vote */
-.vote--compact { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; margin-top: .5rem; }
+.vote--compact { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; margin-top: .5rem; }
+/* After a vote on a card: who agrees with you, floating above the buttons for a few seconds. */
+.vote-pop {
+  position: absolute; left: 0; right: 0; bottom: calc(100% + .45rem); z-index: 5; padding: .5rem .7rem; border-radius: 10px;
+  background: var(--night); color: var(--night-ink); font: 600 .8rem/1.35 var(--body); text-align: center;
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, .45); pointer-events: none; animation: vote-pop 4.5s ease forwards;
+}
+.vote-pop::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--night); }
+@keyframes vote-pop {
+  0% { opacity: 0; transform: translateY(6px); }
+  8%, 85% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+@media (prefers-reduced-motion: reduce) { .vote-pop { animation-duration: 4.5s; animation-timing-function: steps(1, end); } }
 .vote--compact .vbtn { height: 2.1rem; justify-content: center; gap: .3rem; padding: 0 .4rem; border: 0; border-radius: 10px; font: 700 .8rem/1 var(--display); white-space: nowrap; transition: background .15s ease, color .15s ease; }
 .vote--compact .vbtn .icon { width: 15px; height: 15px; flex: none; }
 .vote--compact .vbtn.f { background: var(--t5-soft); color: var(--t5); }
@@ -528,8 +541,8 @@ button.shelf-more::after { content: none; }
 .top .search { min-width: 0; }
 @media (max-width: 36rem) {
   .top .search { flex-basis: 100%; max-width: none; }
-  /* The picker sits on the left of the header's second row, so its menu opens rightwards. */
-  .theme-menu { left: 0; right: auto; }
+  /* Header menus open as a sheet across the screen, wherever their button sits. */
+  .top :is(.theme-menu, .bell-menu) { position: fixed; top: calc(var(--header-h, 7rem) + .4rem); left: 1rem; right: 1rem; width: auto; }
 }
 .ask-chip--featured { flex-wrap: wrap; max-width: 100%; row-gap: .25rem; }
 .ask-chip--featured { border-radius: 14px; }
