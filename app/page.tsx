@@ -4,9 +4,9 @@ import { after } from "next/server";
 import { AskBox } from "@/components/AskBox";
 import { AutoMore } from "@/components/AutoMore";
 import { ForYou } from "@/components/ForYou";
+import { HeroDeck, type DeckCard } from "@/components/HeroDeck";
 import { PaperListCard } from "@/components/PaperListCard";
-import { Gate } from "@/components/Gate";
-import { Gauge, tierOf } from "@/components/Score";
+import { tierOf } from "@/components/Score";
 import { Shelf } from "@/components/Shelf";
 import { AREAS } from "@/lib/areas";
 import { mergeByTopics, topicGroups, topicsFromCookie, TOPICS_COOKIE } from "@/lib/forYou";
@@ -26,34 +26,6 @@ const PAGE = 20; // papers per page; more load as you scroll (AutoMore)
 
 // PostgREST array "contains" with a quoted element, so names with commas or spaces work.
 const arrayHas = (v: string) => `{"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"}`;
-
-function Spotlight({ s, open }: { s: Score; open: boolean }) {
-  const t = tierOf(s);
-  return (
-    <Link href={`/paper/${s.id}`} className="spot">
-      <span className="spot-kicker">Paper of the day</span>
-      {s.thumbnail && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={s.thumbnail} alt="" className="spot-img" />
-      )}
-      <span className="spot-body">
-        {t && (
-          <Gate id={s.id} open={open} mask={<span className="gauge gauge--lg gauge--empty"><b>?</b></span>}>
-            <Gauge pct={t.pct} tone={t.tone} />
-          </Gate>
-        )}
-        <span>
-          <span className="spot-tier">
-            {t?.label}
-            <Gate id={s.id} open={open} mask={<span className="vote-to-see"> · vote to see score</span>}>{""}</Gate>
-          </span>
-          <span className="spot-title">{s.title}</span>
-        </span>
-      </span>
-      {s.panel_consensus ? <q className="spot-quote">{s.panel_consensus}</q> : s.tldr && <span className="spot-tldr">{s.tldr}</span>}
-    </Link>
-  );
-}
 
 export default async function Home({ searchParams }: Props) {
   const { area, org, author, t, n } = await searchParams;
@@ -100,6 +72,23 @@ export default async function Home({ searchParams }: Props) {
   const [hotNow, must, debated, nips] = browsing ? await homeShelves(window) : [[], [], [], []];
   const week = browsing ? (window === "week" ? hotNow : (await homeShelves("week"))[0]) : [];
   const spot = pickPaperOfTheDay(week) ?? must[0];
+  // The hero deck: the paper of the day, then the rest of this week's trending.
+  const deck: DeckCard[] = [spot, ...week.filter((p) => p.id !== spot?.id)]
+    .filter((p): p is Score => Boolean(p))
+    .slice(0, 8)
+    .map((p, k) => {
+      const t = tierOf(p);
+      return {
+        id: p.id,
+        title: p.title,
+        tldr: p.tldr,
+        thumbnail: p.thumbnail,
+        area: p.area && AREAS[p.area] ? AREAS[p.area].label : null,
+        tier: t ? { label: t.label, tone: t.tone, pct: t.pct } : null,
+        open: k === 0 || openIds.includes(p.id),
+        kicker: k === 0 ? "Paper of the day" : "Trending this week",
+      };
+    });
 
   return (
     <main>
@@ -113,7 +102,7 @@ export default async function Home({ searchParams }: Props) {
               <p className="hero-lede">You decide which ones are good research papers.</p>
               <AskBox dark />
             </div>
-            {spot && <Spotlight s={spot} open />}
+            <HeroDeck cards={deck} />
           </div>
         </section>
       )}
