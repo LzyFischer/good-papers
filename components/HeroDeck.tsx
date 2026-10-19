@@ -35,7 +35,7 @@ function markDone(id: string) {
 }
 
 type Answer = "yes" | "no";
-type Exit = Answer | "skip" | "back";
+type Exit = Answer | "skip";
 const THROW = 90; // px of drag that counts as a decision
 const REVEAL_MS = 1100;
 const OUT_MS = 280;
@@ -50,6 +50,7 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
   const [answer, setAnswer] = useState<Answer | null>(null);
   const [exit, setExit] = useState<Exit | null>(null);
   const [dx, setDx] = useState(0);
+  const [returning, setReturning] = useState(false);
   const drag = useRef<{ x: number; id: number; moved: boolean } | null>(null);
   const seen = useRef(new Set(initial.map((c) => titleKey(c.title))));
   const mixed = useRef(false);
@@ -157,7 +158,13 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
     leave(a, () => setI((n) => n + 1), REVEAL_MS);
   }
   const skip = () => !busy && !atEnd && leave("skip", () => setI((n) => n + 1));
-  const back = () => !busy && i > 0 && leave("back", () => setI((n) => n - 1));
+  // Back: the last card comes in again from the left; the current one drops behind it.
+  function back() {
+    if (busy || i === 0) return;
+    setReturning(true);
+    setI((n) => n - 1);
+    setTimeout(() => setReturning(false), OUT_MS);
+  }
 
   function onDown(e: React.PointerEvent) {
     if (busy) return;
@@ -191,14 +198,10 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
     <div className={ready && c ? "deck" : "deck deck--loading"}>
       <div className={exit === "yes" || exit === "no" || exit === "skip" ? "deck-stage deck-stage--leaving" : "deck-stage"}>
         <div className="deck-ghost deck-ghost--2" aria-hidden="true" />
-        {/* The next paper waits behind this one, so the deck looks like a real stack. */}
-        {next ? (
-          <div key={`next-${next.id}`} className="deck-card deck-card--next" aria-hidden="true">
-            <CardFace c={next} still />
-          </div>
-        ) : (
-          <div className="deck-ghost deck-ghost--1" aria-hidden="true" />
-        )}
+        {/* The next paper waits behind this one, so the deck looks like a real stack. Both
+            cards are keyed by paper, so when the top one flies off, the waiting card's own
+            element becomes the top card: it just keeps moving, nothing is redrawn. */}
+        {!next && <div className="deck-ghost deck-ghost--1" aria-hidden="true" />}
         {!c ? (
           <div className="deck-card deck-end" aria-hidden="true" />
         ) : atEnd ? (
@@ -210,40 +213,47 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
               <button className="deck-pill" onClick={() => { try { localStorage.removeItem(DONE_KEY); } catch {} location.reload(); }}>Start over</button>
             </div>
           </div>
-        ) : (
-          <div
-            key={c.id}
-            className={`deck-card ${exit ? `deck-card--out-${exit}` : ""}`}
-            style={style}
-            onPointerDown={onDown}
-            onPointerMove={onMove}
-            onPointerUp={onUp}
-            onPointerCancel={onUp}
-            onClickCapture={(e) => { if (dx !== 0 && !answer) e.preventDefault(); }}
-          >
-            <CardFace c={c}>
-              <span className="deck-stamp deck-stamp--yes" style={{ opacity: answer === "yes" ? 1 : Math.max(0, tilt * 1.6) }}>Worth it</span>
-              <span className="deck-stamp deck-stamp--no" style={{ opacity: answer === "no" ? 1 : Math.max(0, -tilt * 1.6) }}>Not for me</span>
-            </CardFace>
-            {answer && (
-              <div className={`deck-verdict tone-${c.tier?.tone ?? 1}`} role="status">
-                <b>
-                  {c.tier ? c.tier.label : "Not rated yet"}
-                  {c.tier ? ` · ${c.tier.pct}%` : ""}
-                </b>
-                <span>
-                  {!c.tier
-                    ? "No verdict yet."
-                    : agrees
-                      ? "Readers and the AI panel agree with you."
-                      : answer === "yes"
-                        ? "Readers and the AI panel are less sure."
-                        : "Readers and the AI panel liked it more."}
-                  {!session && " Sign in so your votes count."}
-                </span>
-              </div>
-            )}
-          </div>
+        ) : null}
+        {[...(next ? [{ card: next, top: false }] : []), ...(c && !atEnd ? [{ card: c, top: true }] : [])].map(({ card, top }) =>
+          top ? (
+            <div
+              key={card.id}
+              className={`deck-card ${exit ? `deck-card--out-${exit}` : returning ? "deck-card--return" : ""}`}
+              style={style}
+              onPointerDown={onDown}
+              onPointerMove={onMove}
+              onPointerUp={onUp}
+              onPointerCancel={onUp}
+              onClickCapture={(e) => { if (dx !== 0 && !answer) e.preventDefault(); }}
+            >
+              <CardFace c={card}>
+                <span className="deck-stamp deck-stamp--yes" style={{ opacity: answer === "yes" ? 1 : Math.max(0, tilt * 1.6) }}>Worth it</span>
+                <span className="deck-stamp deck-stamp--no" style={{ opacity: answer === "no" ? 1 : Math.max(0, -tilt * 1.6) }}>Not for me</span>
+              </CardFace>
+              {answer && (
+                <div className={`deck-verdict tone-${card.tier?.tone ?? 1}`} role="status">
+                  <b>
+                    {card.tier ? card.tier.label : "Not rated yet"}
+                    {card.tier ? ` · ${card.tier.pct}%` : ""}
+                  </b>
+                  <span>
+                    {!card.tier
+                      ? "No verdict yet."
+                      : agrees
+                        ? "Readers and the AI panel agree with you."
+                        : answer === "yes"
+                          ? "Readers and the AI panel are less sure."
+                          : "Readers and the AI panel liked it more."}
+                    {!session && " Sign in so your votes count."}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div key={card.id} className="deck-card deck-card--next" aria-hidden="true">
+              <CardFace c={card} still />
+            </div>
+          ),
         )}
       </div>
       <div className="deck-buttons">

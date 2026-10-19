@@ -380,7 +380,7 @@ button.shelf-more::after { content: none; }
 .deck-card {
   grid-area: 1 / 1; position: relative; z-index: 2; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; overflow: hidden;
   border-radius: 20px; background: #1d2026; color: #f4f4f1; box-shadow: 0 24px 60px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(255, 255, 255, .06);
-  touch-action: pan-y; cursor: grab; transition: transform .22s ease; animation: deck-in .28s ease both;
+  touch-action: pan-y; cursor: grab; transition: transform .22s ease, filter .22s ease;
 }
 .deck-card:active { cursor: grabbing; }
 .deck-ghost { grid-area: 1 / 1; border-radius: 20px; background: #1d2026; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
@@ -388,17 +388,19 @@ button.shelf-more::after { content: none; }
 .deck-ghost--2 { z-index: 0; transform: translateY(24px) scale(.9); background: #22252b; }
 .deck-card--out-yes { animation: deck-out-yes .28s ease forwards; }
 .deck-card--out-no { animation: deck-out-no .28s ease forwards; }
-/* A new top card starts where the waiting card sat, so taking its place looks continuous. */
-@keyframes deck-in { from { transform: translateY(12px) scale(.95); } }
-.deck-card--next { z-index: 1; transform: translateY(12px) scale(.95); filter: brightness(.82); pointer-events: none; cursor: default; animation: none; transition: transform .28s ease, filter .28s ease; }
+@keyframes deck-in { from { opacity: 0; transform: translateY(10px); } }
+/* The card waiting behind. As the top card leaves it rises into place, and its own element
+   becomes the new top card, so there's no jump. A newly drawn waiting card fades in. */
+.deck-card--next { z-index: 1; transform: translateY(12px) scale(.95); filter: brightness(.82); pointer-events: none; cursor: default; transition: transform .28s ease, filter .28s ease; animation: deck-peek .3s ease both; }
+@keyframes deck-peek { from { opacity: 0; } }
 .deck-stage--leaving .deck-card--next { transform: none; filter: none; }
 @keyframes deck-out-yes { to { opacity: 0; transform: translateX(120%) rotate(14deg); } }
 @keyframes deck-out-no { to { opacity: 0; transform: translateX(-120%) rotate(-14deg); } }
 .deck-card--out-skip { animation: deck-out-skip .28s ease forwards; }
-.deck-card--out-back { animation: deck-out-back .28s ease forwards; }
 @keyframes deck-out-skip { to { opacity: 0; transform: translateY(-30%) scale(.95); } }
-@keyframes deck-out-back { to { opacity: 0; transform: translateY(12%) scale(.95); } }
-@media (prefers-reduced-motion: reduce) { .deck-card, .deck-card--out-yes, .deck-card--out-no, .deck-card--out-skip, .deck-card--out-back { animation: none; transition: none; } }
+.deck-card--return { animation: deck-return .28s ease both; }
+@keyframes deck-return { from { opacity: 0; transform: translateX(-120%) rotate(-14deg); } }
+@media (prefers-reduced-motion: reduce) { .deck-card, .deck-card--out-yes, .deck-card--out-no, .deck-card--out-skip, .deck-card--return, .deck-card--next { animation: none; transition: none; } }
 .deck-media { position: relative; aspect-ratio: 16 / 10; min-width: 0; background: #fff; display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; overflow: hidden; }
 .deck-media img { width: 100%; height: 100%; object-fit: contain; padding: .6rem; pointer-events: none; }
 .deck-media-empty { font: 800 1.3rem var(--display); color: #8a8f99; }
