@@ -6,12 +6,14 @@ import { AutoMore } from "@/components/AutoMore";
 import { ForYou } from "@/components/ForYou";
 import { HeroDeck } from "@/components/HeroDeck";
 import { PaperListCard } from "@/components/PaperListCard";
-import { Shelf } from "@/components/Shelf";
+import { MiniCard, Shelf } from "@/components/Shelf";
+import { ViewToggle } from "@/components/ViewToggle";
 import { AREAS } from "@/lib/areas";
 import { mergeByTopics, topicGroups, topicsFromCookie, TOPICS_COOKIE } from "@/lib/forYou";
 import { topUpTrending } from "@/lib/ingest";
 import { toDeckCard, type DeckCard } from "@/lib/deck";
 import { NEURIPS } from "@/lib/neurips";
+import { VIEW_COOKIE, type View } from "@/lib/view";
 import { serverClient } from "@/lib/supabase";
 import { WINDOWS, WINDOW_LABELS, homeShelves, oneTitleEach, openScoreIds, pickPaperOfTheDay, type Window } from "@/lib/trending";
 import type { Score } from "@/lib/types";
@@ -49,7 +51,9 @@ export default async function Home({ searchParams }: Props) {
   if (author) q = q.filter("authors", "cs", arrayHas(author));
   const filtered = activeArea ? AREAS[activeArea].label : org ? `papers from ${org}` : author ? `papers by ${author}` : null;
   // Signed-in readers: papers in their topics move up (lib/forYou.ts, mergeByTopics).
-  const topics = filtered ? new Map<string, number>() : topicsFromCookie((await cookies()).get(TOPICS_COOKIE)?.value);
+  const jar = await cookies();
+  const topics = filtered ? new Map<string, number>() : topicsFromCookie(jar.get(TOPICS_COOKIE)?.value);
+  const view: View = jar.get(VIEW_COOKIE)?.value === "grid" ? "grid" : "list";
   const [{ data }, ...mine] = await Promise.all([
     q,
     ...topicGroups(topics).flatMap((keys) => [list().in("area", keys), list().in("area", keys).is("published_on", null)]),
@@ -113,23 +117,29 @@ export default async function Home({ searchParams }: Props) {
             <Shelf id="debated" title="Most debated" note="Where the reviewers can't agree" papers={debated} openIds={openIds} more={{ href: "/shelf/debated", label: "See all" }} />
             <div className="section-head">
               <h2 className="section-title">All papers</h2>
-              {topics.size ? <span className="section-note">Your topics first, then the newest</span> : <Link href="/how">How scores work</Link>}
+              <span className="section-side">
+                {topics.size ? <span className="section-note">Your topics first, then the newest</span> : <Link href="/how">How scores work</Link>}
+                <ViewToggle view={view} />
+              </span>
             </div>
           </>
         )}
 
         {filtered && (
-          <p className="filter">
-            Showing <b>{filtered}</b> <Link href="/">Show all papers</Link>
-          </p>
+          <div className="filter-row">
+            <p className="filter">
+              Showing <b>{filtered}</b> <Link href="/">Show all papers</Link>
+            </p>
+            <ViewToggle view={view} />
+          </div>
         )}
-        <section aria-label="Papers" className="all-papers">
+        <section aria-label="Papers" className={view === "grid" ? "all-papers all-papers--grid" : "all-papers"}>
           {papers.length === 0 ? (
             <p className="empty">No rated papers{filtered ? " here" : ""} yet. Search for a paper you&apos;ve read and add the first verdict.</p>
           ) : (
             papers.map((s, i) => (
               <div key={s.id} id={`p${i}`} className="card-anchor">
-                <PaperListCard s={s} scoreOpen={openIds.includes(s.id)} />
+                {view === "grid" ? <MiniCard s={s} scoreOpen={openIds.includes(s.id)} /> : <PaperListCard s={s} scoreOpen={openIds.includes(s.id)} />}
               </div>
             ))
           )}

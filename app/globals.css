@@ -958,3 +958,16 @@ button.shelf-more::after { content: none; }
 .chat-compose textarea:focus { outline: none; border-color: var(--t5); }
 .account-badge { margin-left: .4rem; padding: 0 .35rem; border-radius: 999px; background: var(--lime); color: var(--lime-ink); font: 800 .7rem/1.1rem var(--body); }
 .bell-all { font-weight: 700; color: var(--link); border-top: 1px solid var(--line); border-radius: 0 0 8px 8px; }
+
+/* All papers: big cards or a grid (components/ViewToggle.tsx) */
+.section-side { display: inline-flex; align-items: center; gap: 1rem; }
+.filter-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.view-toggle { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.view-toggle button { display: grid; place-items: center; width: 2rem; height: 1.8rem; border: 0; border-radius: 7px; background: none; color: var(--muted); cursor: pointer; }
+.view-toggle button svg { width: 1rem; height: 1rem; fill: currentColor; }
+.view-toggle button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.view-toggle button:not([aria-pressed="true"]):hover { color: var(--ink); }
+.view-toggle[data-pending] { opacity: .6; }
+.all-papers--grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1.1rem; }
+.all-papers--grid .card-anchor { display: flex; }
+.all-papers--grid .mini { width: 100%; }
