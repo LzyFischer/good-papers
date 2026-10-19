@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { AuthButton } from "@/components/AuthButton";
 import { GateRevealer } from "@/components/GateRevealer";
 import { HeaderHeight } from "@/components/HeaderHeight";
+import { MessagesButton } from "@/components/MessagesButton";
 import { Notifications } from "@/components/Notifications";
 import { Onboarding } from "@/components/Onboarding";
 import { Icon, IconSprite } from "@/components/Icons";
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/how">How it works</Link>
             </nav>
             <SearchForm />
+            <MessagesButton />
             <Notifications />
             <GateRevealer />
             <Onboarding />

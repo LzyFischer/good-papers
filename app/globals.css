@@ -952,3 +952,4 @@ button.shelf-more::after { content: none; }
 .chat-compose textarea { flex: 1; font: inherit; color: var(--ink); padding: .7rem .9rem; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); resize: none; }
 .chat-compose textarea:focus { outline: none; border-color: var(--t5); }
 .account-badge { margin-left: .4rem; padding: 0 .35rem; border-radius: 999px; background: var(--lime); color: var(--lime-ink); font: 800 .7rem/1.1rem var(--body); }
+.bell-all { font-weight: 700; color: var(--link); border-top: 1px solid var(--line); border-radius: 0 0 8px 8px; }
