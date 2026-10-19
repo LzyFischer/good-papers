@@ -4,7 +4,7 @@
 import { getScores, PAPER_ID } from "@/lib/papers";
 import { TIERS } from "@/lib/types";
 
-const TONE = ["#7a7f99", "#7a7f99", "#5a77a8", "#2f8c99", "#3f9a6b", "#b07d0a"]; // index = tier tone (Must read is gold)
+const TONE = ["#6f7480", "#6f7480", "#6a58a8", "#3666b4", "#14857a", "#2e7d2e"]; // index = tier tone
 
 // Rough width of Verdana 11px text, as shields-style badges measure it.
 const width = (text: string) => Math.round(text.length * 6.6 + 14);

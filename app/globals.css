@@ -1,11 +1,11 @@
-/* Good Papers. Scores run through five tones, green to slate: a low score reads as niche, not as a failure. */
+/* Good Papers. Scores run through five tones, one hue each, dark green down to grey: a low score reads as niche, not as a failure. */
 :root {
   --bg: #f6f5f2; --surface: #fdfdfb; --ink: #14161a; --muted: #5e636b; --line: #e9e7e1;
   --night: #111316; --night-2: #1b1e23; --night-ink: #f6f5f2; --night-muted: #a3a7ae; --lime: #d2f54a; --lime-ink: #14161a;
   --fresh: #2f8a3e; --fresh-soft: #e3f2e5; --rotten: #8a6a2e; --rotten-soft: #f3ecdc;
   --mold: #7c8a3a; --head: #111316; --head-ink: #f6f5f2; --ai: #4a5bd4; --ai-soft: #e7eafb;
-  --t5: #2f8a3e; --t4: #3f9a6b; --t3: #2f8c99; --t2: #5a77a8; --t1: #7a7f99;
-  --t5-soft: #e3f2e5; --t4-soft: #e2f3ea; --t3-soft: #e0f1f3; --t2-soft: #e6ecf6; --t1-soft: #eceef3;
+  --t5: #2e7d2e; --t4: #14857a; --t3: #3666b4; --t2: #6a58a8; --t1: #6f7480;
+  --t5-soft: #e3f1e1; --t4-soft: #ddf1ee; --t3-soft: #e3ebf8; --t2-soft: #ece8f6; --t1-soft: #eceef1;
   --pick: #eef7cf; --pick-ink: #3b5208; --pick-line: #c9e27a; --line-strong: #d3d0c7;
   --link: #4f7a0c;
   /* Page width: wide screens use most of their width; the gutter grows with the screen. */
@@ -20,8 +20,8 @@
     --night: #08090b; --night-2: #14161a;
     --fresh: #5cc06b; --fresh-soft: #1d3322; --rotten: #d4ad62; --rotten-soft: #3a2f1c;
     --mold: #b5c46a; --head: #0b0f14; --head-ink: #e8edf2; --ai: #94a2ff; --ai-soft: #262c4d;
-    --t5: #5cc06b; --t4: #63c49a; --t3: #5bbccb; --t2: #8fa8d6; --t1: #a3a8c0;
-    --t5-soft: #1d3322; --t4-soft: #1b3329; --t3-soft: #18323a; --t2-soft: #222b3d; --t1-soft: #262a35;
+    --t5: #6cc46c; --t4: #4fc4b6; --t3: #7fa8ee; --t2: #a596e0; --t1: #a3a8b4;
+    --t5-soft: #1d331d; --t4-soft: #15302c; --t3-soft: #1c2a40; --t2-soft: #2a2540; --t1-soft: #262a31;
     --pick: #26300f; --pick-ink: #d2f54a; --pick-line: #4a5a1a; --line-strong: #3d424b;
     --link: #c3e85a;
   }
@@ -105,10 +105,10 @@ button { font: inherit; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.25rem; display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 1.25rem; margin-bottom: 1rem; }
 @media (max-width: 36rem) { .card { grid-template-columns: minmax(0, 1fr); } }
 .score { display: grid; justify-items: center; align-content: start; gap: .15rem; text-align: center; }
-/* Must read stands apart in gold; the other tiers stay cool. The vote buttons keep --t5 green. */
-:root { --gold: #b07d0a; --gold-soft: #fbf0d4; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="beach"]) { --gold: #e3b341; --gold-soft: #3a2f12; } }
-.tone-5 { --tone: var(--gold); --tone-soft: var(--gold-soft); }
+/* Gold is for the Top pick badge only (components/TopPick.tsx). */
+:root { --gold: #b07d0a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="beach"]) { --gold: #d9a52e; } }
+.tone-5 { --tone: var(--t5); --tone-soft: var(--t5-soft); }
 .tone-4 { --tone: var(--t4); --tone-soft: var(--t4-soft); }
 .tone-3 { --tone: var(--t3); --tone-soft: var(--t3-soft); }
 .tone-2 { --tone: var(--t2); --tone-soft: var(--t2-soft); }

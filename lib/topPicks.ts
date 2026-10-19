@@ -1,5 +1,6 @@
 // "Top pick": the top 5% of rated papers in each research area (lib/areas.ts). Worked out
-// once an hour from every paper's score, as one score cut-off per area, and served as a small
+// once a day, when the daily cron rescores papers (app/api/cron revalidates TOP_PICKS_TAG),
+// from every paper's score, as one score cut-off per area, and served as a small
 // cached JSON (app/api/top-picks) that the badges read (components/TopPick.tsx). Areas with
 // fewer than MIN_PAPERS papers get none, and a Top pick is always at least Highly rated.
 import { unstable_cache } from "next/cache";
@@ -8,6 +9,7 @@ import { serverClient } from "./supabase";
 const SHARE = 0.05;
 const MIN_PAPERS = 20;
 const FLOOR = 0.65; // Highly rated
+export const TOP_PICKS_TAG = "top-picks";
 
 export const topPickCutoffs = unstable_cache(
   async (): Promise<Record<string, number>> => {
@@ -38,5 +40,5 @@ export const topPickCutoffs = unstable_cache(
     return out;
   },
   ["top-pick-cutoffs"],
-  { revalidate: 3600 },
+  { revalidate: 86400, tags: [TOP_PICKS_TAG] }, // a day at most; the cron refreshes it sooner
 );

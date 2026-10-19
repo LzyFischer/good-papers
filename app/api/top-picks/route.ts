@@ -4,5 +4,5 @@ import { topPickCutoffs } from "@/lib/topPicks";
 
 export async function GET() {
   const cutoffs = await topPickCutoffs().catch(() => ({}));
-  return NextResponse.json(cutoffs, { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" } });
+  return NextResponse.json(cutoffs, { headers: { "Cache-Control": "public, s-maxage=21600, stale-while-revalidate=86400" } });
 }

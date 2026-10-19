@@ -1,7 +1,8 @@
 // Daily job (see vercel.json): pull Hugging Face's trending lists and the newest AI
 // papers from OpenAlex, give each new one an AI panel verdict, fill in any missing
-// one-line takes, refresh stored citation counts, and wake the discussion worker.
+// one-line takes, refresh stored citation counts and the Top picks, and wake the discussion worker.
 // Vercel Cron sends "Authorization: Bearer $CRON_SECRET" automatically.
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { arxivCategories, arxivIdOf, isML } from "@/lib/arxiv";
 import { nudgeWorker } from "@/lib/dispatch";
@@ -10,6 +11,7 @@ import { judgePaper, mapLimit } from "@/lib/judge";
 import { getNewestPapers } from "@/lib/openalex";
 import { fillMissingTakes, isAuthorized, refreshAiCurve, refreshCitations, storeJudgement, withStoredIds } from "@/lib/papers";
 import { serverClient } from "@/lib/supabase";
+import { TOP_PICKS_TAG } from "@/lib/topPicks";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -64,6 +66,8 @@ export async function GET(req: Request) {
   if (results.some((r) => r.ok)) await nudgeWorker(); // discussions, TL;DRs, thumbnails for the new papers
   const takesFilled = await fillMissingTakes(5);
   const citationsRefreshed = await refreshCitations().catch((e) => String(e));
+  // Top picks move once a day, with the rest of the scores (lib/topPicks.ts).
+  revalidateTag(TOP_PICKS_TAG);
 
   return NextResponse.json({
     judged: results.filter((r) => r.ok).length,
