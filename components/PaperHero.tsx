@@ -59,19 +59,18 @@ export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper
                 Code{score.github_stars ? ` ★ ${score.github_stars.toLocaleString("en-US")}` : ""}
               </a>
             ) : null}
+          </p>
+          {/* Where to read it, as one row of small buttons, with Share at the end. */}
+          <div className="ph-links">
             {paper.url && <a href={paper.url} target="_blank" rel="noopener noreferrer">{arxivId ? "arXiv" : /openreview/.test(paper.url) ? "OpenReview" : "Paper"} ↗</a>}
             {score?.openreview_url && score.openreview_url !== paper.url && (
               <a href={score.openreview_url} target="_blank" rel="noopener noreferrer">OpenReview ↗</a>
             )}
+            {arxivId && <a href={`https://www.alphaxiv.org/abs/${arxivId}`} target="_blank" rel="noopener noreferrer nofollow">alphaXiv ↗</a>}
+            {arxivId && <a href={`https://www.semanticscholar.org/arxiv/${arxivId}`} target="_blank" rel="noopener noreferrer nofollow">Semantic Scholar ↗</a>}
             <a href={`https://scholar.google.com/scholar?q=${encodeURIComponent(`"${paper.title}"`)}`} target="_blank" rel="noopener noreferrer nofollow">Google Scholar ↗</a>
-            {arxivId && (
-              <a href={`https://www.semanticscholar.org/arxiv/${arxivId}`} target="_blank" rel="noopener noreferrer nofollow">Semantic Scholar ↗</a>
-            )}
-            {arxivId && (
-              <a href={`https://www.alphaxiv.org/abs/${arxivId}`} target="_blank" rel="noopener noreferrer nofollow">alphaXiv ↗</a>
-            )}
             <ShareButton id={paper.id} title={paper.title} pct={t ? t.pct : null} />
-          </p>
+          </div>
         </div>
         {score?.thumbnail && (
           // Hotlinked arXiv figure; plain img keeps it out of Next's image proxy.
@@ -107,6 +106,7 @@ export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper
                 </span>
               )}
             </div>
+            <div className="sc-agree" data-agree-slot={paper.id} />
           </div>
         </Gate>
         <div className="sc">

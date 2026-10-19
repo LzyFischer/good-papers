@@ -10,6 +10,11 @@ export function ShareButton({ id, title, pct }: { id: string; title: string; pct
   const text = pct === null ? `${title}` : `${pct}% on Good Papers: ${title}`;
 
   async function share() {
+    // With a mouse the menu is already open from hovering; a click keeps it open.
+    if (matchMedia("(hover: hover)").matches) {
+      setOpen(true);
+      return;
+    }
     if (navigator.share) {
       try {
         await navigator.share({ title, text, url });
@@ -22,7 +27,9 @@ export function ShareButton({ id, title, pct }: { id: string; title: string; pct
   }
 
   return (
-    <span className="share">
+    // Hovering opens the menu on desktop; a click still works everywhere (and opens the
+    // system share sheet where there is one).
+    <span className="share" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
       <button className="share-btn" onClick={share} aria-expanded={open}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M12 3v13" />

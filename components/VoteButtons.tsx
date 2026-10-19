@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { browserClient } from "@/lib/supabase";
 import { signIn, useSession } from "./AuthButton";
@@ -124,7 +125,7 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
               {`${reveal.readerTotal} reader${reveal.readerTotal === 1 ? "" : "s"} voted. Vote to see how they split.`}
             </span>
           )}
-          {voted && vote !== null && <YouVsEveryone vote={vote} reveal={reveal} />}
+          {voted && vote !== null && <AgreeSlot id={paper.id}><YouVsEveryone vote={vote} reveal={reveal} /></AgreeSlot>}
         </>
       )}
       <div className="vote">
@@ -147,6 +148,14 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
       )}
     </div>
   );
+}
+
+// On the paper page the overall card has room under the score (data-agree-slot in
+// PaperHero); the "voters agree with you" line goes there, or stays here without one.
+function AgreeSlot({ id, children }: { id: string; children: React.ReactNode }) {
+  const [slot, setSlot] = useState<Element | null>(null);
+  useEffect(() => setSlot(document.querySelector(`[data-agree-slot="${CSS.escape(id)}"]`)), [id]);
+  return slot ? createPortal(children, slot) : <>{children}</>;
 }
 
 function YouVsEveryone({ vote, reveal }: { vote: boolean; reveal: Reveal }) {
