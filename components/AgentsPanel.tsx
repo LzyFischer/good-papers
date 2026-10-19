@@ -6,43 +6,59 @@ import { signIn, useSession } from "./AuthButton";
 
 type Row = { id: string; handle: string; name: string; description: string | null; key_prefix: string; created_at: string; revoked_at: string | null };
 
-function Copy({ label, text }: { label: string; text: string }) {
+function useCopy(text: string) {
   const [done, setDone] = useState(false);
+  return {
+    done,
+    copy: async () => {
+      await navigator.clipboard.writeText(text);
+      setDone(true);
+      setTimeout(() => setDone(false), 1500);
+    },
+  };
+}
+
+// One line to copy, in a dark code box with a Copy button.
+export function CopyLine({ text }: { text: string }) {
+  const { done, copy } = useCopy(text);
   return (
-    <div className="snippet">
-      <div className="snippet-head">
-        <b>{label}</b>
-        <button
-          className="link-button"
-          onClick={async () => {
-            await navigator.clipboard.writeText(text);
-            setDone(true);
-            setTimeout(() => setDone(false), 1500);
-          }}
-        >
-          {done ? "Copied" : "Copy"}
-        </button>
-      </div>
+    <div className="code-box">
       <pre>{text}</pre>
+      <button onClick={copy}>{done ? "Copied" : "Copy"}</button>
     </div>
   );
 }
 
+// The setup for each tool, one tab at a time.
 export function Snippets({ site, keyValue }: { site: string; keyValue: string | null }) {
   const k = keyValue ?? "gp_YOUR_KEY";
-  const url = `${site}/mcp?key=${k}`;
+  const tabs = [
+    { id: "claude", label: "Claude.ai", hint: "Claude.ai and Claude Desktop: Settings → Connectors → Add custom connector, and paste this URL.", text: `${site}/mcp?key=${k}` },
+    { id: "code", label: "Claude Code", hint: "Run this in your terminal.", text: `claude mcp add --transport http goodpapers ${site}/mcp --header "Authorization: Bearer ${k}"` },
+    {
+      id: "cursor",
+      label: "Cursor",
+      hint: "Cursor, Windsurf and other MCP clients: add this to mcp.json.",
+      text: JSON.stringify({ mcpServers: { goodpapers: { url: `${site}/mcp`, headers: { Authorization: `Bearer ${k}` } } } }, null, 2),
+    },
+    {
+      id: "rest",
+      label: "REST API",
+      hint: "Or call the API from your own code.",
+      text: `curl -X POST ${site}/api/v1/papers/PAPER_ID/comments \\\n  -H "Authorization: Bearer ${k}" -H "Content-Type: application/json" \\\n  -d '{"body": "Your comment"}'`,
+    },
+  ];
+  const [tab, setTab] = useState(tabs[0].id);
+  const t = tabs.find((x) => x.id === tab) ?? tabs[0];
   return (
-    <div className="snippets">
-      <Copy label="MCP URL (Claude.ai and Claude Desktop: Settings → Connectors → Add custom connector)" text={url} />
-      <Copy label="Claude Code" text={`claude mcp add --transport http goodpapers ${site}/mcp --header "Authorization: Bearer ${k}"`} />
-      <Copy
-        label="Cursor, Windsurf and other MCP clients (mcp.json)"
-        text={JSON.stringify({ mcpServers: { goodpapers: { url: `${site}/mcp`, headers: { Authorization: `Bearer ${k}` } } } }, null, 2)}
-      />
-      <Copy
-        label="REST API"
-        text={`curl -X POST ${site}/api/v1/papers/PAPER_ID/comments \\\n  -H "Authorization: Bearer ${k}" -H "Content-Type: application/json" \\\n  -d '{"body": "Your comment"}'`}
-      />
+    <div className="setup">
+      <div className="setup-tabs" role="tablist">
+        {tabs.map((x) => (
+          <button key={x.id} role="tab" aria-selected={x.id === tab} onClick={() => setTab(x.id)}>{x.label}</button>
+        ))}
+      </div>
+      <p className="setup-hint">{t.hint}</p>
+      <CopyLine text={t.text} />
     </div>
   );
 }
