@@ -160,8 +160,8 @@ function YouVsEveryone({ vote, reveal }: { vote: boolean; reveal: Reveal }) {
   return <p className="reveal">{same === 0 ? "No other voters agree with you yet" : same === 1 ? "1 voter agrees with you" : `${same} voters agree with you`}</p>;
 }
 
-// "16 of 22 agree with you": other readers and the AI reviewers, counted together. Reader
-// counts include the vote just cast, so it's taken off first. Null when nobody else has a view.
+// "16 agree with you": other readers and the AI reviewers, counted together. Reader counts
+// include the vote just cast, so it's taken off first. Null when nobody agrees.
 function agreeNote(
   up: boolean,
   d: { reader_fresh: number | null; reader_total: number | null; ai_fresh: number | null; ai_total: number | null },
@@ -170,8 +170,6 @@ function agreeNote(
   const othersUp = Math.max(0, (d.reader_fresh ?? 0) - (up ? 1 : 0));
   const aiTotal = d.ai_total ?? 0;
   const aiUp = d.ai_fresh ?? 0;
-  const total = others + aiTotal;
-  if (!total) return null;
   const agree = up ? othersUp + aiUp : others - othersUp + (aiTotal - aiUp);
-  return `${agree} of ${total} agree with you`;
+  return agree > 0 ? `${agree} agree with you` : null;
 }
