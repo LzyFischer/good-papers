@@ -373,6 +373,9 @@ button.shelf-more::after { content: none; }
 /* Home hero: "Would you read it?" deck, swiped like Tinder (components/HeroDeck.tsx) */
 .deck { width: 100%; max-width: 26rem; margin-inline: auto; display: grid; gap: .8rem; user-select: none; }
 .deck-stage { margin-bottom: 24px; }
+/* Until answered papers are filtered out, keep the space but show no card. */
+.deck--loading .deck-card { visibility: hidden; animation: none; }
+.deck-end:empty { min-height: 370px; }
 .deck-stage { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); }
 .deck-card {
   grid-area: 1 / 1; position: relative; z-index: 2; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; overflow: hidden;

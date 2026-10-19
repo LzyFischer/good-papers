@@ -6,13 +6,32 @@
 // visitor has answered first, so it can't sway them), before flying off;
 // ⏭ moves on without answering and ↺ goes back one. Not a vote (votes are for papers you've
 // read): a guest's "I'd read it" counts as interest for their For you shelf
-// (guestHistory.ts), like opening the paper would.
+// (guestHistory.ts), like opening the paper would. Papers answered here before, or voted on
+// by a signed-in reader, don't come back: the deck picks up where the visitor left off.
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toDeckCard, titleKey, type DeckCard } from "@/lib/deck";
 import { useSession } from "./AuthButton";
 import { useForYou } from "./ForYou";
 import { addToHistory } from "./guestHistory";
+import { getMyVotes } from "./myVotes";
+
+// Papers this browser has answered in the deck, newest last.
+const DONE_KEY = "gp_deck_done";
+const DONE_MAX = 600;
+function readDone(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(DONE_KEY) ?? "[]");
+    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+function markDone(id: string) {
+  try {
+    localStorage.setItem(DONE_KEY, JSON.stringify([...readDone().filter((x) => x !== id), id].slice(-DONE_MAX)));
+  } catch {}
+}
 
 type Answer = "yes" | "no";
 type Exit = Answer | "skip" | "back";
@@ -21,8 +40,10 @@ const REVEAL_MS = 1100;
 const OUT_MS = 280;
 
 export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
-  const { session } = useSession();
+  const { session, ready: sessionReady } = useSession();
   const { list: forYou } = useForYou(24);
+  const [ready, setReady] = useState(false); // answered papers filtered out
+  const done = useRef(new Set<string>());
   const [cards, setCards] = useState(initial);
   const [i, setI] = useState(0);
   const [answer, setAnswer] = useState<Answer | null>(null);
@@ -35,15 +56,33 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
 
   const fresh = (list: DeckCard[]) =>
     list.filter((c) => {
+      if (done.current.has(c.id)) return false;
       const k = titleKey(c.title);
       if (seen.current.has(k)) return false;
       seen.current.add(k);
       return true;
     });
 
+  // Pick up where the visitor left off: drop papers answered here before or already voted on.
+  useEffect(() => {
+    if (!sessionReady || ready) return;
+    let live = true;
+    (session ? getMyVotes(session.user.id).catch(() => new Map()) : Promise.resolve(new Map()))
+      .then((votes) => {
+        if (!live) return;
+        done.current = new Set([...readDone(), ...votes.keys()]);
+        setCards((all) => all.filter((c) => !done.current.has(c.id)));
+        setReady(true);
+      });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionReady, session]);
+
   // For you, once it arrives: alternate it with the cards still ahead.
   useEffect(() => {
-    if (!forYou || mixed.current) return;
+    if (!ready || !forYou || mixed.current) return;
     mixed.current = true;
     const mine = fresh(forYou.papers.map((s) => toDeckCard(s, forYou.reasons[s.id] ?? "For you")));
     if (!mine.length) return;
@@ -59,12 +98,12 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
     });
     // `i` is read once, when For you lands.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [forYou]);
+  }, [forYou, ready]);
 
   // Near the end: fetch the next page of recent papers.
   useEffect(() => {
     const p = paging.current;
-    if (cards.length - i > 4 || !p.more || p.busy) return;
+    if (!ready || cards.length - i > 4 || !p.more || p.busy) return;
     p.busy = true;
     fetch(`/api/deck?page=${p.page}`)
       .then((r) => (r.ok ? r.json() : { cards: [], more: false }))
@@ -77,12 +116,11 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
       .catch(() => (p.more = false))
       .finally(() => (p.busy = false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [i, cards.length]);
+  }, [i, cards.length, ready]);
 
-  if (!cards.length) return null;
   const c = cards[Math.min(i, cards.length - 1)];
-  const atEnd = i >= cards.length;
-  const busy = answer !== null || exit !== null;
+  const atEnd = ready && i >= cards.length;
+  const busy = !ready || !c || answer !== null || exit !== null;
 
   function leave(kind: Exit, then: () => void, delay = 0) {
     setTimeout(() => setExit(kind), delay);
@@ -99,6 +137,8 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
     setAnswer(a);
     setDx(a === "yes" ? 24 : -24);
     if (a === "yes" && !session) addToHistory(c.id, 30);
+    markDone(c.id);
+    done.current.add(c.id);
     leave(a, () => setI((n) => n + 1), REVEAL_MS);
   }
   const skip = () => !busy && !atEnd && leave("skip", () => setI((n) => n + 1));
@@ -127,22 +167,24 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
     else setDx(0);
   }
 
-  const agrees = c.tier && (answer === "yes" ? c.tier.tone >= 4 : c.tier.tone <= 3);
+  const agrees = c?.tier && (answer === "yes" ? c.tier.tone >= 4 : c.tier.tone <= 3);
   const tilt = Math.max(-1, Math.min(1, dx / 160));
   const style = exit ? undefined : { transform: `translateX(${dx}px) rotate(${tilt * 8}deg)`, transition: drag.current ? "none" : undefined };
 
   return (
-    <div className="deck">
+    <div className={ready && c ? "deck" : "deck deck--loading"}>
       <div className="deck-stage">
         <div className="deck-ghost deck-ghost--2" aria-hidden="true" />
         <div className="deck-ghost deck-ghost--1" aria-hidden="true" />
-        {atEnd ? (
+        {!c ? (
+          <div className="deck-card deck-end" aria-hidden="true" />
+        ) : atEnd ? (
           <div className="deck-card deck-end">
             <span className="deck-kicker">You&apos;ve seen them all</span>
             <p className="deck-end-title">That&apos;s every recent paper we have.</p>
             <div className="deck-end-actions">
               <a href="#trending" className="deck-pill deck-pill--lime">See all trending ↓</a>
-              <button className="deck-pill" onClick={() => setI(0)}>Start over</button>
+              <button className="deck-pill" onClick={() => { try { localStorage.removeItem(DONE_KEY); } catch {} location.reload(); }}>Start over</button>
             </div>
           </div>
         ) : (
