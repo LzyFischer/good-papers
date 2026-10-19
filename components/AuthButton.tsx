@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { browserClient } from "@/lib/supabase";
-import { connectOrcid } from "./orcidClient";
 import { rememberTopics } from "./topicsCookie";
 
 // Sends readers to the sign-in page (Google, GitHub or an email code), then back here.
@@ -60,7 +59,7 @@ function AccountMenu({ session }: { session: Session }) {
       document.removeEventListener("keydown", esc);
     };
   }, [open]);
-  // ORCID: "verified" once connected, else a way to connect (components/AuthorClaim.tsx).
+  // "ORCID verified" once connected (connecting is on paper pages and My papers).
   const [orcid, setOrcid] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     if (!open || orcid !== undefined) return;
@@ -108,10 +107,6 @@ function AccountMenu({ session }: { session: Session }) {
             <Link role="menuitem" href="/me" onClick={() => setOpen(false)} className="account-orcid">
               <span aria-hidden="true">✓</span> ORCID verified
             </Link>
-          ) : orcid === null ? (
-            <button role="menuitem" className="account-orcid" onClick={() => connectOrcid(session.access_token, window.location.pathname).then((err) => err && alert(err))}>
-              Verify with ORCID
-            </button>
           ) : null}
           <button role="menuitem" onClick={() =>
               browserClient().auth.signOut().then(() => {
