@@ -14,6 +14,17 @@ export const WINDOW_LABELS: Record<Window, string> = { day: "Today", week: "This
 
 const since = (days: number) => new Date(Date.now() - days * 86400_000).toISOString();
 
+// Some papers are stored twice (an OpenAlex id and an arXiv id): keep the first of each title.
+export function oneTitleEach<T extends { title: string }>(list: T[]): T[] {
+  const seen = new Set<string>();
+  return list.filter((p) => {
+    const key = p.title.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 // trending = 3 x reader votes + 2 x reader comments + likes (all within the window)
 //          + HF upvotes / 10 for papers published within the window
 //          + a bonus for the paper's place on Hugging Face's list for the same window
@@ -37,11 +48,11 @@ export async function trending(window: Window, n = 12): Promise<Score[]> {
   const hf = await hfNow;
   const stored = await storedIdsByArxiv(hf.map((t) => t.arxivId)).catch(() => new Map<string, string>());
   hf.forEach((t, rank) => add(stored.get(t.arxivId), hf.length - rank));
-  const ids = [...heat.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([id]) => id);
+  const ids = [...heat.entries()].sort((a, b) => b[1] - a[1]).slice(0, n + 6).map(([id]) => id);
   if (ids.length === 0) return [];
   const { data } = await db.from("paper_scores").select("*").in("id", ids).not("score", "is", null).not("area", "is", null);
   const byId = new Map(((data ?? []) as Score[]).map((s) => [s.id, s]));
-  return ids.map((id) => byId.get(id)).filter((s): s is Score => Boolean(s));
+  return oneTitleEach(ids.map((id) => byId.get(id)).filter((s): s is Score => Boolean(s))).slice(0, n);
 }
 
 export async function shelf(kind: "must" | "debated", n = 12): Promise<Score[]> {
@@ -56,8 +67,8 @@ export async function shelf(kind: "must" | "debated", n = 12): Promise<Score[]> 
     q = q.gte("score", 0.8).gte("published_on", since).order("score", { ascending: false });
   }
   if (kind === "debated") q = q.gt("comments", 0).order("comments", { ascending: false });
-  const { data } = await q.limit(n);
-  return (data ?? []) as Score[];
+  const { data } = await q.limit(n + 6);
+  return oneTitleEach((data ?? []) as Score[]).slice(0, n);
 }
 
 // Paper of the day: the highest-scored paper trending this week, one with a picture if possible.
