@@ -8,6 +8,7 @@ import type { AiVerdict, Paper, Score } from "@/lib/types";
 import { AiDots, AuthorLinks, formatPublished } from "./PaperCard";
 import { Gauge, tierOf } from "./Score";
 import { ShareButton } from "./ShareButton";
+import { TopPick } from "./TopPick";
 import { Gate } from "./Gate";
 import { VoteButtons } from "./VoteButtons";
 import { tex } from "@/lib/latex";
@@ -35,6 +36,7 @@ export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper
         <div className="ph-main">
           <div className="ph-tags">
             {!isPreprint(paper.venue) && <span className="tag venue">{venueLabel(paper.venue, paper.year)}</span>}
+            <TopPick area={score?.area ?? null} score={score?.score ?? null} className="tag" />
             {area && <Link href={`/?area=${area.key}`} className="tag tag--area">{area.label}</Link>}
             {paper.tags.map((x) => <span key={x} className={`tag ${x === "Oral" ? "oral" : ""}`}>{x}</span>)}
             {paper.orgs.slice(0, 6).map((o) => (

@@ -12,6 +12,7 @@ import { LiveGauge, LiveLabel } from "./LiveScore";
 import { AuthorLinks, formatPublished } from "./PaperCard";
 import { tierOf } from "./Score";
 import { Thumb } from "./Thumb";
+import { TopPick } from "./TopPick";
 import { VoteButtons } from "./VoteButtons";
 
 export function PaperListCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: boolean }) {
@@ -49,6 +50,7 @@ export function PaperListCard({ s, scoreOpen = false }: { s: Score; scoreOpen?: 
             <span className="lcard-tier">{t ? <LiveLabel id={s.id} score={s.score!} /> : "Not rated yet"}</span>
           </span>
         </Gate>
+        <TopPick area={s.area} score={s.score} />
       </div>
       <div className="lcard-main">
         <p className="lcard-eyebrow">

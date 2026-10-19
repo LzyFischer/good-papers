@@ -105,7 +105,10 @@ button { font: inherit; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.25rem; display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 1.25rem; margin-bottom: 1rem; }
 @media (max-width: 36rem) { .card { grid-template-columns: minmax(0, 1fr); } }
 .score { display: grid; justify-items: center; align-content: start; gap: .15rem; text-align: center; }
-.tone-5 { --tone: var(--t5); --tone-soft: var(--t5-soft); }
+/* Must read stands apart in gold; the other tiers stay cool. The vote buttons keep --t5 green. */
+:root { --gold: #b07d0a; --gold-soft: #fbf0d4; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="beach"]) { --gold: #e3b341; --gold-soft: #3a2f12; } }
+.tone-5 { --tone: var(--gold); --tone-soft: var(--gold-soft); }
 .tone-4 { --tone: var(--t4); --tone-soft: var(--t4-soft); }
 .tone-3 { --tone: var(--t3); --tone-soft: var(--t3-soft); }
 .tone-2 { --tone: var(--t2); --tone-soft: var(--t2-soft); }
@@ -971,3 +974,10 @@ button.shelf-more::after { content: none; }
 .all-papers--grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1.1rem; }
 .all-papers--grid .card-anchor { display: flex; }
 .all-papers--grid .mini { width: 100%; }
+
+/* Top pick: the top 5% of an area (components/TopPick.tsx) */
+.top-pick { display: inline-flex; align-items: center; gap: .25rem; padding: .18rem .55rem; border-radius: 999px; background: var(--gold); color: #fff; font: 800 .7rem/1.2 var(--body); letter-spacing: .02em; white-space: nowrap; }
+.top-pick span { font-size: .8em; }
+.lcard-side { flex-direction: column; justify-content: flex-start; align-items: center; gap: .6rem; }
+.top-pick--inline { margin-left: .35rem; padding: .1rem .45rem; font-size: .65rem; vertical-align: .05rem; }
+.ph-tags .top-pick.tag { background: var(--gold); color: #fff; border-color: transparent; }

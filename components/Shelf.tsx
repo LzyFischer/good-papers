@@ -4,6 +4,7 @@ import { isPreprint, venueLabel } from "@/lib/orgs";
 import type { Score } from "@/lib/types";
 import { Gate } from "./Gate";
 import { Thumb } from "./Thumb";
+import { TopPick } from "./TopPick";
 import { LiveGauge, LiveLabel } from "./LiveScore";
 import { VoteButtons } from "./VoteButtons";
 import { tierOf } from "./Score";
@@ -41,6 +42,7 @@ export function MiniCard({ s, scoreOpen = false, why }: { s: Score; scoreOpen?: 
             </span>
           )}
           {t && <LiveLabel id={s.id} score={s.score!} />}
+          <TopPick area={s.area} score={s.score} className="top-pick--inline" />
           <Gate id={s.id} open={scoreOpen || !t} mask={<span className="vote-to-see"> · vote to see score</span>}>
             {""}
           </Gate>
