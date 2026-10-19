@@ -47,7 +47,7 @@ type Answer = "yes" | "no";
 type Exit = Answer | "skip";
 const THROW = 90; // px of drag that counts as a decision
 const REVEAL_MS = 1100;
-const NUDGE_AFTER = 3; // guests: suggest signing in after this many answers, then every 10
+const NUDGE_AFTER = 1; // guests: suggest signing in after this many answers, then every 10
 const OUT_MS = 280;
 
 export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
@@ -278,7 +278,7 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
             <span className="deck-kicker">Your picks don&apos;t count yet</span>
             <p className="deck-nudge-title">Sign in to make them votes.</p>
             <p className="deck-nudge-sub">
-              You&apos;ve swiped {guestAnswers} papers. Signed in, every swipe is a real vote that moves the paper&apos;s score,
+              You&apos;ve swiped {guestAnswers} paper{guestAnswers === 1 ? "" : "s"}. Signed in, every swipe is a real vote that moves the paper&apos;s score,
               and your For you feed learns from it.
             </p>
             <div className="deck-end-actions">
