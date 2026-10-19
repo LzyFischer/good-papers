@@ -1105,7 +1105,3 @@ button.shelf-more::after { content: none; }
 .inbox-meta { margin: 0; font-size: .82rem; color: var(--muted); }
 /* First-visit swipe hint (components/HeroDeck.tsx) */
 .deck-card--demo { transition: transform .75s cubic-bezier(.45, 0, .25, 1); }
-.deck-coach { display: flex; align-items: center; justify-content: center; gap: 1.2rem; margin: -.4rem 0 -.2rem; font: 700 .85rem var(--body); color: #8a8f99; animation: deck-in .3s ease both; }
-.deck-coach span.on.yes { color: var(--lime); }
-.deck-coach span.on.no { color: #e06a6e; }
-.deck-coach-finger { width: 1.4rem; height: 1.4rem; border-radius: 50%; background: rgba(246, 245, 242, .9); box-shadow: 0 0 0 6px rgba(246, 245, 242, .18); transition: transform .75s cubic-bezier(.45, 0, .25, 1); }

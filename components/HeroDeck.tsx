@@ -313,13 +313,6 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
           ),
         )}
       </div>
-      {demo && (
-        <div className="deck-coach" aria-hidden="true">
-          <span className={dx < 0 ? "on no" : ""}>← Not for me</span>
-          <span className="deck-coach-finger" style={{ transform: `translateX(${dx * 1.4}px)` }} />
-          <span className={dx > 0 ? "on yes" : ""}>Worth reading →</span>
-        </div>
-      )}
       <div className="deck-buttons" onPointerDown={stopDemo}>
         <button className="deck-round deck-round--small deck-round--back" aria-label="Back to the last paper" title="Back" onClick={back} disabled={busy || i === 0}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></svg>
