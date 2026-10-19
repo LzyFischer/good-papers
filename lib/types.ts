@@ -59,8 +59,9 @@ export type AiVerdict = {
 };
 
 // How the headline score is computed (in SQL, the paper_scores view). Keep in sync.
-//   ai     = 0.4 + 0.5 * the paper's percentile rank by AI-panel share (0.5 if not judged):
-//            graded on a curve, because Jev rarely says no and raw shares bunch up high
+//   ai     = 0.45 + 0.47 * the paper's percentile rank by AI-panel share within its cohort
+//            (conference imports / last 90 days / older; ai_curve, migration 021), 0.5 if not
+//            judged: graded on a curve, because Jev rarely says no and raw shares bunch up high
 //   share  = readers' upvote share: reputation-weighted, without conflict-of-interest
 //            votes, or the cross-camp consensus once 8+ readers voted (worker/reputation.py)
 //   reader = (share * W + PRIOR_VOTES * ai) / (W + PRIOR_VOTES), W = summed reader weights

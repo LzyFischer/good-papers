@@ -682,15 +682,21 @@ where mine.user_id = auth.uid() and c.user_id is distinct from auth.uid();
 
 grant select on public.my_replies to authenticated;
 
--- 012_ai_curve
+-- 012_ai_curve, 021_cohort_curve
 create materialized view if not exists public.ai_curve as
 select a0.paper_id, a0.total, a0.fresh, a0.last_at,
-       -- Rank among all judged papers: Jev rarely says no, so raw shares bunch up high.
-       percent_rank() over (order by a0.fresh::float8 / a0.total) as pr
+       -- Rank within comparable papers (conference imports, the last 90 days, older):
+       -- Jev rarely says no, so raw shares bunch up high.
+       percent_rank() over (partition by a0.cohort order by a0.fresh::float8 / a0.total) as pr
 from (
-  select paper_id, count(*)::int as total, count(*) filter (where fresh)::int as fresh,
-         max(created_at) as last_at
-  from public.ai_verdicts group by paper_id
+  select v.paper_id, count(*)::int as total, count(*) filter (where v.fresh)::int as fresh,
+         max(v.created_at) as last_at,
+         case when p.conf_track is not null then 'conf'
+              when p.published_on >= current_date - 90 then 'recent'
+              else 'older' end as cohort
+  from public.ai_verdicts v
+  join public.papers p on p.id = v.paper_id
+  group by v.paper_id, p.conf_track, p.published_on
 ) a0;
 create unique index if not exists ai_curve_paper on public.ai_curve(paper_id);
 
