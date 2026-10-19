@@ -101,7 +101,7 @@ export default function Conversation() {
 
       <div className="chat-log" aria-live="polite">
         {thread && thread.messages.length === 0 && (
-          <p className="chat-empty">You read each other&apos;s work. Say hello: what caught your eye in their paper?</p>
+          <p className="chat-empty">You voted on each other&apos;s work. Say hello: what caught your eye in their paper?</p>
         )}
         {thread?.messages.map((m) => (
           <div key={m.id} className={`chat-msg ${m.mine ? "chat-msg--mine" : ""}`}>

@@ -53,7 +53,7 @@ export function MessagesButton() {
       {open && (
         <span className="bell-menu" role="menu">
           {threads.length === 0 ? (
-            <span className="bell-empty">No messages yet. Authors who read each other&apos;s papers can message on Matches.</span>
+            <span className="bell-empty">No messages yet. Authors who voted on each other&apos;s papers can message on Matches.</span>
           ) : (
             threads.map((t) => (
               <Link key={t.with} role="menuitem" href={`/matches/${t.with}`} className={t.unread ? "bell-item bell-item--new" : "bell-item"} onClick={() => setOpen(false)}>

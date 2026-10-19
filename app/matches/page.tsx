@@ -1,5 +1,5 @@
 "use client";
-// Matches: authors who read each other's papers (lib/matches.ts). Opt-in; needs papers
+// Matches: authors who voted on each other's papers (lib/matches.ts). Opt-in; needs papers
 // claimed through ORCID. Only mutual matches show, and never which way anyone voted.
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -57,7 +57,7 @@ export default function MatchesPage() {
     return (
       <main className="wrap page">
         <h1 className="page-title">Matches</h1>
-        <p className="empty">Sign in to find authors who read your papers, and whose papers you read.</p>
+        <p className="empty">Sign in to find authors who voted on your papers, and whose papers you voted on.</p>
         <button className="button-primary" onClick={() => signIn()}>Sign in</button>
       </main>
     );
@@ -97,7 +97,7 @@ export default function MatchesPage() {
         </p>
       )}
       {result?.status === "ok" && result.matches.length === 0 && (
-        <p className="empty">No matches yet. They show up once another author who turned matching on reads your papers, and you read theirs.</p>
+        <p className="empty">No matches yet. They show up once another author who turned matching on votes on your papers, and you vote on theirs.</p>
       )}
       {result?.status === "ok" && result.matches.length > 0 && (
         <ul className="match-list">{result.matches.map((m) => <MatchRow key={m.userId} m={m} unread={unread[m.userId] ?? 0} />)}</ul>
@@ -107,7 +107,7 @@ export default function MatchesPage() {
 }
 
 function MatchRow({ m, unread }: { m: Match; unread: number }) {
-  const strength = m.theyRead + m.youRead;
+  const strength = m.theyVoted + m.youVoted;
   return (
     <li className="match">
       <div className="match-top">
@@ -118,13 +118,13 @@ function MatchRow({ m, unread }: { m: Match; unread: number }) {
             m.name ?? "An author"
           )}
         </span>
-        <span className="match-strength" title="Papers read both ways">{strength} shared</span>
+        <span className="match-strength" title="Papers voted on both ways">{strength} shared</span>
         <Link href={`/matches/${m.userId}`} className="match-chat">
           Message{unread > 0 && <span className="match-unread">{unread}</span>}
         </Link>
       </div>
       <p className="match-why">
-        Read {m.theyRead} of your paper{m.theyRead === 1 ? "" : "s"} · you read {m.youRead} of theirs
+        Voted on {m.theyVoted} of your paper{m.theyVoted === 1 ? "" : "s"} · you voted on {m.youVoted} of theirs
       </p>
       {m.papers.length > 0 && (
         <ul className="match-papers">

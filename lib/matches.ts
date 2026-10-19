@@ -8,8 +8,8 @@ export type Match = {
   userId: string;
   name: string | null;
   orcid: string | null;
-  theyRead: number; // of your papers
-  youRead: number; // of theirs
+  theyVoted: number; // of your papers
+  youVoted: number; // of theirs
   papers: { id: string; title: string }[]; // a few of theirs
 };
 
@@ -26,7 +26,7 @@ async function chunked<T>(ids: string[], run: (chunk: string[]) => PromiseLike<{
 
 // Who voted on which of `papers` (either way, or "read it"), restricted to `readers` when
 // given: user id -> paper ids.
-async function readersOf(db: SupabaseClient, papers: string[], readers?: string[]): Promise<Map<string, Set<string>>> {
+async function votersOf(db: SupabaseClient, papers: string[], readers?: string[]): Promise<Map<string, Set<string>>> {
   const out = new Map<string, Set<string>>();
   const votes = await chunked<{ user_id: string; paper_id: string }>(papers, (c) => {
     const q = db.from("ratings").select("user_id, paper_id").in("paper_id", c);
@@ -45,28 +45,28 @@ export async function matchesFor(db: SupabaseClient, me: string): Promise<Matche
   const myPapers = (mine ?? []).map((r) => r.paper_id as string);
   if (!myPapers.length) return { status: "no-claims" };
 
-  // Opted-in readers who read my papers, leaving out anyone either of us blocked.
+  // Opted-in readers who voted on my papers, leaving out anyone either of us blocked.
   const { data: blocks } = await db.from("match_blocks").select("blocker, blocked").or(`blocker.eq.${me},blocked.eq.${me}`);
   const blocked = new Set((blocks ?? []).map((b) => (b.blocker === me ? b.blocked : b.blocker) as string));
   const others = [...opted].filter((u) => u !== me && !blocked.has(u));
   if (!others.length) return { status: "ok", matches: [] };
-  const readMine = await readersOf(db, myPapers, others);
-  const candidates = [...readMine.keys()].filter((u) => u !== me);
+  const votedMine = await votersOf(db, myPapers, others);
+  const candidates = [...votedMine.keys()].filter((u) => u !== me);
   if (!candidates.length) return { status: "ok", matches: [] };
 
-  // Their claimed papers, and which of those I read.
+  // Their claimed papers, and which of those I voted on.
   const theirClaims = await chunked<{ user_id: string; paper_id: string }>(candidates, (c) =>
     db.from("paper_claims").select("user_id, paper_id").in("user_id", c),
   );
   const theirs = new Map<string, string[]>();
   for (const r of theirClaims) theirs.set(r.user_id, [...(theirs.get(r.user_id) ?? []), r.paper_id]);
   const allTheirs = [...new Set(theirClaims.map((r) => r.paper_id))];
-  const iRead = (await readersOf(db, allTheirs, [me])).get(me) ?? new Set<string>();
+  const iVoted = (await votersOf(db, allTheirs, [me])).get(me) ?? new Set<string>();
 
   const pairs = candidates
-    .map((u) => ({ u, theyRead: readMine.get(u)?.size ?? 0, youRead: (theirs.get(u) ?? []).filter((p) => iRead.has(p)).length }))
-    .filter((m) => m.theyRead > 0 && m.youRead > 0)
-    .sort((a, b) => b.theyRead + b.youRead - (a.theyRead + a.youRead));
+    .map((u) => ({ u, theyVoted: votedMine.get(u)?.size ?? 0, youVoted: (theirs.get(u) ?? []).filter((p) => iVoted.has(p)).length }))
+    .filter((m) => m.theyVoted > 0 && m.youVoted > 0)
+    .sort((a, b) => b.theyVoted + b.youVoted - (a.theyVoted + a.youVoted));
   if (!pairs.length) return { status: "ok", matches: [] };
 
   const ids = pairs.map((p) => p.u);
@@ -85,8 +85,8 @@ export async function matchesFor(db: SupabaseClient, me: string): Promise<Matche
       userId: p.u,
       name: acct.get(p.u)?.name ?? null,
       orcid: acct.get(p.u)?.orcid ?? null,
-      theyRead: p.theyRead,
-      youRead: p.youRead,
+      theyVoted: p.theyVoted,
+      youVoted: p.youVoted,
       papers: (theirs.get(p.u) ?? []).slice(0, 3).flatMap((id) => (title.has(id) ? [{ id, title: title.get(id)! }] : [])),
     })),
   };
