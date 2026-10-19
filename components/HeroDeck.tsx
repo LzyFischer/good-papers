@@ -102,21 +102,24 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forYou, ready]);
 
-  // Near the end: fetch the next page of recent papers.
+  // Near the end: fetch more. A page can be all papers the reader already voted on or saw, so
+  // keep going (up to 10 pages at a time) until there are new ones or nothing is left.
   useEffect(() => {
     const p = paging.current;
     if (!ready || cards.length - i > 4 || !p.more || p.busy) return;
     p.busy = true;
-    fetch(`/api/deck?page=${p.page}`)
-      .then((r) => (r.ok ? r.json() : { cards: [], more: false }))
-      .then((r: { cards: DeckCard[]; more: boolean }) => {
+    (async () => {
+      const add: DeckCard[] = [];
+      for (let k = 0; k < 10 && p.more && add.length < 6; k++) {
+        const r = (await fetch(`/api/deck?page=${p.page}`)
+          .then((x) => (x.ok ? x.json() : { cards: [], more: false }))
+          .catch(() => ({ cards: [], more: false }))) as { cards: DeckCard[]; more: boolean };
         p.page += 1;
         p.more = r.more;
-        const add = fresh(r.cards);
-        if (add.length) setCards((all) => [...all, ...add]);
-      })
-      .catch(() => (p.more = false))
-      .finally(() => (p.busy = false));
+        add.push(...fresh(r.cards));
+      }
+      if (add.length) setCards((all) => [...all, ...add]);
+    })().finally(() => (p.busy = false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i, cards.length, ready]);
 
