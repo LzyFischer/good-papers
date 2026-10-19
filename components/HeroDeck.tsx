@@ -277,12 +277,19 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
 
 // A card's picture, kicker, title and TL;DR. `still`: the card waiting behind, with no link.
 function CardFace({ c, still = false, children }: { c: DeckCard; still?: boolean; children?: React.ReactNode }) {
+  // Some extracted "figures" are just a legend or a caption strip: drop very wide or very tall
+  // pictures, or ones that fail to load, and show the area instead.
+  const [badPic, setBadPic] = useState(false);
+  const checkPic = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+    if (!w || !h || w / h > 3.2 || h / w > 2.5) setBadPic(true);
+  };
   return (
     <>
       <div className="deck-media">
-        {c.thumbnail ? (
+        {c.thumbnail && !badPic ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={c.thumbnail} alt="" draggable={false} />
+          <img src={c.thumbnail} alt="" draggable={false} onLoad={checkPic} onError={() => setBadPic(true)} />
         ) : (
           <span className="deck-media-empty">{c.area ?? "Paper"}</span>
         )}
