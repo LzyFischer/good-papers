@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
+import { isAdmin } from "@/lib/admin";
 import { browserClient } from "@/lib/supabase";
 import { rememberTopics } from "./topicsCookie";
 
@@ -70,6 +71,21 @@ function AccountMenu({ session }: { session: Session }) {
       .maybeSingle()
       .then(({ data }) => setOrcid(data?.orcid ?? null));
   }, [open, orcid, session.user.id]);
+  // The owner: unread feedback from the Contact page, checked on load and when it's read.
+  const admin = isAdmin(session.user.id);
+  const [feedback, setFeedback] = useState(0);
+  useEffect(() => {
+    if (!admin) return;
+    const check = () =>
+      fetch("/api/feedback/inbox?count=1", { headers: { Authorization: `Bearer ${session.access_token}` } })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j: { unread: number } | null) => setFeedback(j?.unread ?? 0))
+        .catch(() => {});
+    check();
+    window.addEventListener("gp-feedback-read", check);
+    return () => window.removeEventListener("gp-feedback-read", check);
+  }, [admin, session.access_token]);
+
   // Unread messages from matches, counted when the menu opens.
   const [unread, setUnread] = useState(0);
   useEffect(() => {
@@ -92,6 +108,7 @@ function AccountMenu({ session }: { session: Session }) {
           <span className="account-initial">{name.trim()[0]?.toUpperCase() ?? "?"}</span>
         )}
         <span aria-hidden="true" className="account-caret">▾</span>
+        {feedback > 0 && <span className="account-dot" aria-label={`${feedback} new feedback`} />}
         <span className="sr-only">Account menu</span>
       </button>
       {open && (
@@ -108,6 +125,11 @@ function AccountMenu({ session }: { session: Session }) {
               <span aria-hidden="true">✓</span> ORCID verified
             </Link>
           ) : null}
+          {admin && (
+            <Link role="menuitem" href="/admin/feedback" onClick={() => setOpen(false)}>
+              Feedback{feedback ? <span className="account-badge">{feedback}</span> : null}
+            </Link>
+          )}
           <Link role="menuitem" href="/contact" onClick={() => setOpen(false)}>Contact</Link>
           <button role="menuitem" onClick={() =>
               browserClient().auth.signOut().then(() => {

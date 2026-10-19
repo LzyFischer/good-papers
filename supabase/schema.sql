@@ -1339,7 +1339,8 @@ create table if not exists public.feedback (
   page       text check (char_length(page) <= 300),    -- where they came from
   kind       text not null default 'other' check (kind in ('bug', 'score', 'idea', 'other')),
   body       text not null check (char_length(body) between 1 and 4000),
-  ip_hash    text                                        -- for rate limiting, not the address itself
+  ip_hash    text,                                       -- for rate limiting, not the address itself
+  read_at    timestamptz                                 -- when the owner read it (app/admin/feedback)
 );
 create index if not exists feedback_recent on public.feedback (created_at desc);
 alter table public.feedback enable row level security; -- no policies: service role only

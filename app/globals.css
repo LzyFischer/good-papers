@@ -1086,3 +1086,20 @@ button.shelf-more::after { content: none; }
 .contact-sent { display: grid; gap: .4rem; padding: 1.2rem 1.3rem; margin-bottom: 1.6rem; border-radius: 16px; background: var(--t5-soft); }
 .contact-sent b { font: 800 1.2rem var(--display); color: var(--t5); }
 .contact-sent p { margin: 0; }
+
+/* The owner's feedback inbox (app/admin/feedback) and the dot on the avatar */
+.account-btn { position: relative; }
+.account-dot { position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 2px var(--head); }
+.inbox { max-width: 52rem; }
+.inbox-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .8rem; }
+.inbox-list li { padding: 1rem 1.2rem; border-radius: 16px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.inbox-list li.inbox-new { box-shadow: 0 0 0 2px var(--t5); }
+.inbox-head { display: flex; align-items: center; gap: .6rem; font-size: .82rem; color: var(--muted); }
+.inbox-head time { margin-left: auto; }
+.inbox-kind { padding: .15rem .6rem; border-radius: 999px; background: var(--t3-soft); color: var(--t3); font: 700 .75rem var(--body); }
+.inbox-kind--bug { background: var(--rotten-soft); color: var(--rotten); }
+.inbox-kind--score { background: var(--t4-soft); color: var(--t4); }
+.inbox-kind--idea { background: var(--t5-soft); color: var(--t5); }
+.inbox-dot { padding: .1rem .5rem; border-radius: 999px; background: var(--lime); color: var(--lime-ink); font: 800 .7rem var(--body); }
+.inbox-body { margin: .6rem 0 .5rem; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; }
+.inbox-meta { margin: 0; font-size: .82rem; color: var(--muted); }
