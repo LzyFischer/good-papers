@@ -17,6 +17,9 @@ import { useForYou } from "./ForYou";
 import { addToHistory } from "./guestHistory";
 import { getMyVotes, setMyVote } from "./myVotes";
 
+// First visit: the top card leans right, then left, to show it can be swiped (once per browser).
+const HINT_KEY = "gp_deck_hint_seen";
+
 // Papers this browser has answered in the deck, newest last.
 const DONE_KEY = "gp_deck_done";
 const DONE_MAX = 600;
@@ -52,6 +55,8 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
   const [exit, setExit] = useState<Exit | null>(null);
   const [dx, setDx] = useState(0);
   const [returning, setReturning] = useState(false);
+  const [demo, setDemo] = useState(false);
+  const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [guestAnswers, setGuestAnswers] = useState(0);
   const [nudge, setNudge] = useState(false);
   const drag = useRef<{ x: number; id: number; moved: boolean } | null>(null);
@@ -126,6 +131,32 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i, cards.length, ready]);
 
+  // The swipe hint: once, a moment after the first card shows, unless motion is reduced.
+  useEffect(() => {
+    if (!ready || !cards.length) return;
+    try {
+      if (localStorage.getItem(HINT_KEY) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      localStorage.setItem(HINT_KEY, "1");
+    } catch {
+      return;
+    }
+    const steps: [number, () => void][] = [
+      [900, () => { setDemo(true); setDx(70); }],
+      [1900, () => setDx(-70)],
+      [2900, () => setDx(0)],
+      [3600, () => setDemo(false)],
+    ];
+    demoTimers.current = steps.map(([ms, fn]) => setTimeout(fn, ms));
+    return () => demoTimers.current.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
+  const stopDemo = () => {
+    if (!demo) return;
+    demoTimers.current.forEach(clearTimeout);
+    setDemo(false);
+    setDx(0);
+  };
+
   const c = cards[Math.min(i, cards.length - 1)];
   const atEnd = ready && i >= cards.length;
   const busy = !ready || !c || answer !== null || exit !== null || nudge;
@@ -178,6 +209,7 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
   }
 
   function onDown(e: React.PointerEvent) {
+    stopDemo();
     if (busy) return;
     drag.current = { x: e.clientX, id: e.pointerId, moved: false };
   }
@@ -243,7 +275,7 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
           top ? (
             <div
               key={card.id}
-              className={`deck-card ${exit ? `deck-card--out-${exit}` : returning ? "deck-card--return" : ""}`}
+              className={`deck-card ${exit ? `deck-card--out-${exit}` : returning ? "deck-card--return" : demo ? "deck-card--demo" : ""}`}
               style={style}
               onPointerDown={onDown}
               onPointerMove={onMove}
@@ -281,7 +313,14 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
           ),
         )}
       </div>
-      <div className="deck-buttons">
+      {demo && (
+        <div className="deck-coach" aria-hidden="true">
+          <span className={dx < 0 ? "on no" : ""}>← Not for me</span>
+          <span className="deck-coach-finger" style={{ transform: `translateX(${dx * 1.4}px)` }} />
+          <span className={dx > 0 ? "on yes" : ""}>Worth reading →</span>
+        </div>
+      )}
+      <div className="deck-buttons" onPointerDown={stopDemo}>
         <button className="deck-round deck-round--small deck-round--back" aria-label="Back to the last paper" title="Back" onClick={back} disabled={busy || i === 0}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></svg>
         </button>
