@@ -10,7 +10,7 @@ export type DeckCard = {
   thumbnail: string | null;
   area: string | null;
   tier: { label: string; tone: number; pct: number } | null;
-  open: boolean; // the score itself shows (paper of the day, top of Trending)
+  open: boolean; // the score is public anyway (paper of the day, top of Trending)
   kicker: string;
 };
 

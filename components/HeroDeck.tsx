@@ -2,7 +2,8 @@
 // The home hero's "Would you read it?" deck, swiped like Tinder. It never runs out: the
 // paper of the day and this week's trending first, For you papers mixed in as they arrive,
 // then pages of recent papers (/api/deck). Drag right (or ♥) if you'd read it, left (or ✕)
-// if not, and the card shows what readers and the AI panel made of it before flying off;
+// if not, and the card shows what readers and the AI panel made of it, score included (the
+// visitor has answered first, so it can't sway them), before flying off;
 // ⏭ moves on without answering and ↺ goes back one. Not a vote (votes are for papers you've
 // read): a guest's "I'd read it" counts as interest for their For you shelf
 // (guestHistory.ts), like opening the paper would.
@@ -177,7 +178,7 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
               <div className={`deck-verdict tone-${c.tier?.tone ?? 1}`} role="status">
                 <b>
                   {c.tier ? c.tier.label : "Not rated yet"}
-                  {c.tier && c.open ? ` · ${c.tier.pct}%` : ""}
+                  {c.tier ? ` · ${c.tier.pct}%` : ""}
                 </b>
                 <span>
                   {!c.tier
