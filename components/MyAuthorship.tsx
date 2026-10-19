@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { browserClient } from "@/lib/supabase";
-import { connectOrcid } from "./AuthorClaim";
+import { connectOrcid } from "./orcidClient";
 
 type Me = { orcid: string; name: string | null; synced_at: string };
 type Claim = { paper_id: string; papers: { id: string; title: string; year: number | null; venue: string | null } | null };

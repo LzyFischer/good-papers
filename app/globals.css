@@ -904,3 +904,7 @@ button.shelf-more::after { content: none; }
 }
 :root[data-theme="beach"] .lcard { border-radius: 18px; box-shadow: 0 10px 26px -16px rgba(31, 59, 77, .28), 0 1px 2px rgba(31, 59, 77, .05); }
 :root[data-theme="beach"] .lcard-tldr { font-family: var(--read); font-size: 1.02rem; color: var(--ink); }
+
+/* Account menu: ORCID status */
+.account-menu .account-orcid { color: #6a8d12; font-weight: 700; }
+.account-menu .account-orcid span { display: inline-grid; place-items: center; width: 1rem; height: 1rem; margin-right: .2rem; border-radius: 50%; background: #a6ce39; color: #fff; font-size: .62rem; }
