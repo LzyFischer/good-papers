@@ -510,7 +510,27 @@ button.shelf-more::after { content: none; }
 .abstract p { margin: 0; line-height: 1.65; max-width: none; }
 
 /* Author badge, under the abstract */
-.badge-snippet { margin-top: -1.2rem; font-size: .85rem; color: var(--muted); }
+/* Under the abstract: verified authors, the ORCID claim and the badge */
+.for-authors { margin-top: -1.2rem; display: grid; gap: .55rem; font-size: .85rem; color: var(--muted); }
+.claim { display: grid; gap: .35rem; }
+.claim p { margin: 0; }
+.claim-authors { color: var(--ink); }
+.claim-authors a { font-weight: 600; color: var(--ink); }
+.claim-check { display: inline-grid; place-items: center; width: 1.1rem; height: 1.1rem; margin-right: .4rem; border-radius: 50%; background: #a6ce39; color: #fff; font: 800 .7rem/1 var(--body); vertical-align: -.1rem; }
+.claim-btn { display: inline-flex; align-items: center; gap: .35rem; margin-left: .2rem; padding: .3rem .75rem; border: 0; border-radius: 999px; background: #a6ce39; color: #fff; font: 700 .8rem var(--body); cursor: pointer; }
+.claim-btn:hover { filter: brightness(.95); }
+.claim-btn:disabled { opacity: .6; cursor: default; }
+.claim-note { color: var(--ink); font-weight: 600; }
+.badge-snippet { font-size: .85rem; color: var(--muted); }
+/* My papers: "Papers you wrote" (components/MyAuthorship.tsx) */
+.authorship { margin: 0 0 2rem; padding: 1.1rem 1.25rem; border-radius: 16px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.authorship h2, .me-section { font: 800 1.2rem var(--display); margin: 0 0 .5rem; }
+.authorship-intro { margin: 0; line-height: 1.6; }
+.authorship-id { color: var(--muted); font-size: .85rem; }
+.authorship-list { list-style: none; margin: .8rem 0 0; padding: 0; display: grid; gap: .1rem; }
+.authorship-list li { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; padding: .5rem 0; border-top: 1px solid var(--line); }
+.authorship-list a { font-weight: 600; color: var(--ink); }
+.authorship-list .link-button { margin-left: auto; font-size: .82rem; }
 .badge-snippet summary { display: flex; align-items: center; gap: .6rem; cursor: pointer; list-style: none; }
 .badge-snippet summary::-webkit-details-marker { display: none; }
 .badge-snippet summary:hover span { color: var(--ink); }

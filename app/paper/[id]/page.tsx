@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { AuthorClaim } from "@/components/AuthorClaim";
 import { BadgeSnippet } from "@/components/BadgeSnippet";
 import { Comments } from "@/components/Comments";
 import { NoteBox } from "@/components/NoteBox";
@@ -9,7 +10,7 @@ import { PaperHero } from "@/components/PaperHero";
 import { RelatedPapers } from "@/components/RelatedPapers";
 import { tierOf } from "@/components/Score";
 import { arxivIdOf } from "@/lib/arxiv";
-import { getPaperAnywhere, getScores, getVerdicts, relatedPapers, storedIdsByArxiv } from "@/lib/papers";
+import { getPaperAnywhere, getScores, getVerdicts, relatedPapers, storedIdsByArxiv, verifiedAuthors } from "@/lib/papers";
 import { openScoreIds } from "@/lib/trending";
 import { SITE_URL } from "@/lib/site";
 import type { Score } from "@/lib/types";
@@ -70,9 +71,10 @@ export default async function PaperPage({ params }: Props) {
   // A paper with no AI verdicts yet is judged once a reader has the page open for a few
   // seconds (components/WarmUp.tsx, /api/warm), not while rendering: crawlers fetching
   // thousands of paper pages used to spend the whole judging budget.
-  const [score, related] = await Promise.all([
+  const [score, related, claimants] = await Promise.all([
     getScores([id]).then((m) => m.get(id) ?? null),
     relatedPapers(id, paper.title).catch(() => []),
+    verifiedAuthors(id).catch(() => []),
   ]);
 
   return (
@@ -94,7 +96,10 @@ export default async function PaperPage({ params }: Props) {
             <p>{tex(paper.abstract)}</p>
           </section>
         )}
-        <BadgeSnippet id={paper.id} site={SITE_URL} />
+        <div className="for-authors">
+          <AuthorClaim paperId={paper.id} authors={claimants} />
+          <BadgeSnippet id={paper.id} site={SITE_URL} />
+        </div>
         <Comments
           paper={{ id: paper.id, title: paper.title, authors: paper.authors, year: paper.year, venue: paper.venue, url: paper.url }}
         />

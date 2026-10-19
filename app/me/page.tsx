@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { signIn, useSession } from "@/components/AuthButton";
 import { Icon } from "@/components/Icons";
+import { MyAuthorship } from "@/components/MyAuthorship";
 import { browserClient } from "@/lib/supabase";
 
 type Row = {
@@ -43,6 +44,8 @@ export default function MyPapers() {
   return (
     <main className="wrap page">
       <h1 className="page-title">My papers</h1>
+      <MyAuthorship session={session} />
+      <h2 className="me-section">Your reading log</h2>
       {rows === null ? null : rows.length === 0 ? (
         <p className="empty">
           You haven&apos;t voted yet. <Link href="/">Find a paper you&apos;ve read</Link> to start your reading log.

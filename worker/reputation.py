@@ -278,6 +278,18 @@ def run(db, dry: bool) -> str:
                 if reason:
                     coi.append({"user_id": uid, "paper_id": x["paper_id"], "reason": reason})
 
+    # Papers a reader claimed through ORCID (migration 022) are their own, whatever their name.
+    try:
+        claims = {(c["user_id"], c["paper_id"]) for c in db.get_all("paper_claims", "user_id,paper_id", select="user_id,paper_id")}
+    except httpx.HTTPError:
+        claims = set()  # before migration 022
+    have = {(c["user_id"], c["paper_id"]) for c in coi}
+    for x in ratings:
+        k = (x["user_id"], x["paper_id"])
+        if k in claims and k not in have:
+            coi.append({"user_id": k[0], "paper_id": k[1], "reason": "author"})
+            have.add(k)
+
     coi_keys = {(c["user_id"], c["paper_id"]) for c in coi}
     clean = [(x["user_id"], x["paper_id"], bool(x["worth_reading"])) for x in ratings
              if (x["user_id"], x["paper_id"]) not in coi_keys]
