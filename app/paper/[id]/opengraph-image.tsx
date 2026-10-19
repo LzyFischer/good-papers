@@ -17,7 +17,7 @@ const BRAND = `data:image/svg+xml;base64,${Buffer.from(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="19" fill="none" stroke="#2b2f36" stroke-width="7"/><circle cx="24" cy="24" r="19" fill="none" stroke="#d2f54a" stroke-width="7" stroke-linecap="round" stroke-dasharray="102 200" transform="rotate(-90 24 24)"/><path d="M16.5 24.5l5.2 5.2 10-11" fill="none" stroke="#f6f5f2" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
 ).toString("base64")}`;
 
-const TONES = { 5: "#6cc46c", 4: "#4fc4b6", 3: "#7fa8ee", 2: "#a596e0", 1: "#a3a8b4" } as Record<number, string>;
+const TONES = { 5: "#6cc46c", 4: "#4cb8dc", 3: "#8f95ee", 2: "#c58ad2", 1: "#a3a8b4" } as Record<number, string>;
 // Cut at a word boundary.
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n).replace(/\s+\S*$/, "").replace(/[,;:.]$/, "")}…` : s);
 

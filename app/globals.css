@@ -4,8 +4,8 @@
   --night: #111316; --night-2: #1b1e23; --night-ink: #f6f5f2; --night-muted: #a3a7ae; --lime: #d2f54a; --lime-ink: #14161a;
   --fresh: #2f8a3e; --fresh-soft: #e3f2e5; --rotten: #8a6a2e; --rotten-soft: #f3ecdc;
   --mold: #7c8a3a; --head: #111316; --head-ink: #f6f5f2; --ai: #4a5bd4; --ai-soft: #e7eafb;
-  --t5: #2e7d2e; --t4: #14857a; --t3: #3666b4; --t2: #6a58a8; --t1: #6f7480;
-  --t5-soft: #e3f1e1; --t4-soft: #ddf1ee; --t3-soft: #e3ebf8; --t2-soft: #ece8f6; --t1-soft: #eceef1;
+  --t5: #2e7d2e; --t4: #1586b0; --t3: #4a50b8; --t2: #8a3f98; --t1: #6f7480;
+  --t5-soft: #e3f1e1; --t4-soft: #e0f1f7; --t3-soft: #e8e9f8; --t2-soft: #f3e6f5; --t1-soft: #eceef1;
   --pick: #eef7cf; --pick-ink: #3b5208; --pick-line: #c9e27a; --line-strong: #d3d0c7;
   --link: #4f7a0c;
   /* Page width: wide screens use most of their width; the gutter grows with the screen. */
@@ -20,8 +20,8 @@
     --night: #08090b; --night-2: #14161a;
     --fresh: #5cc06b; --fresh-soft: #1d3322; --rotten: #d4ad62; --rotten-soft: #3a2f1c;
     --mold: #b5c46a; --head: #0b0f14; --head-ink: #e8edf2; --ai: #94a2ff; --ai-soft: #262c4d;
-    --t5: #6cc46c; --t4: #4fc4b6; --t3: #7fa8ee; --t2: #a596e0; --t1: #a3a8b4;
-    --t5-soft: #1d331d; --t4-soft: #15302c; --t3-soft: #1c2a40; --t2-soft: #2a2540; --t1-soft: #262a31;
+    --t5: #6cc46c; --t4: #4cb8dc; --t3: #8f95ee; --t2: #c58ad2; --t1: #a3a8b4;
+    --t5-soft: #1d331d; --t4-soft: #133040; --t3-soft: #23264a; --t2-soft: #34223a; --t1-soft: #262a31;
     --pick: #26300f; --pick-ink: #d2f54a; --pick-line: #4a5a1a; --line-strong: #3d424b;
     --link: #c3e85a;
   }
