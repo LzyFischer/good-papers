@@ -1,13 +1,13 @@
 "use client";
-// The home hero's "Would you read it?" deck, swiped like Tinder. It never runs out: the
+// The home hero's deck of papers to vote on, swiped like Tinder. It never runs out: the
 // paper of the day and this week's trending first, For you papers mixed in as they arrive,
-// then pages of recent papers (/api/deck). Drag right (or ♥) if you'd read it, left (or ✕)
-// if not, and the card shows what readers and the AI panel made of it, score included (the
-// visitor has answered first, so it can't sway them), before flying off;
-// ⏭ moves on without answering and ↺ goes back one. Not a vote (votes are for papers you've
-// read): "I'd read it" counts as interest, kept in the browser for guests (guestHistory.ts)
-// and in paper_interest for signed-in readers. Papers answered here before, or voted on
-// by a signed-in reader, don't come back: the deck picks up where the visitor left off.
+// then pages of recent papers (/api/deck). Drag right (or ♥) for "Worth reading", left (or
+// ✕) for "Not for me": for a signed-in reader that's a real vote, the same as the buttons on
+// the paper page, and it moves the score. The card then shows what readers and the AI panel
+// made of it, score included (the vote is in, so it can't sway it), before flying off.
+// ⏭ skips a paper you haven't read; ↺ goes back one. Guests can play, but their picks only
+// count as interest (guestHistory.ts) until they sign in. Papers answered here before, or
+// voted on anywhere, don't come back: the deck picks up where the reader left off.
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toDeckCard, titleKey, type DeckCard } from "@/lib/deck";
@@ -15,7 +15,7 @@ import { browserClient } from "@/lib/supabase";
 import { useSession } from "./AuthButton";
 import { useForYou } from "./ForYou";
 import { addToHistory } from "./guestHistory";
-import { getMyVotes } from "./myVotes";
+import { getMyVotes, setMyVote } from "./myVotes";
 
 // Papers this browser has answered in the deck, newest last.
 const DONE_KEY = "gp_deck_done";
@@ -133,13 +133,25 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
     }, delay + OUT_MS);
   }
 
+  // A real vote, as VoteButtons casts it: the rating, then the new score for the page.
+  async function vote(paperId: string, up: boolean) {
+    const db = browserClient();
+    const uid = session!.user.id;
+    const { error } = await db.from("ratings").upsert({ user_id: uid, paper_id: paperId, worth_reading: up }, { onConflict: "user_id,paper_id" });
+    if (error) return;
+    await setMyVote(uid, paperId, up);
+    window.dispatchEvent(new CustomEvent("gp-voted", { detail: { id: paperId, prev: undefined, next: up } }));
+    const { data } = await db.from("paper_scores").select("score, reader_fresh, reader_total").eq("id", paperId).maybeSingle();
+    if (data) window.dispatchEvent(new CustomEvent("gp-score", { detail: { id: paperId, score: data.score, fresh: data.reader_fresh, total: data.reader_total } }));
+    fetch("/api/voted", { method: "POST" }).catch(() => {});
+  }
+
   function decide(a: Answer) {
     if (busy || atEnd) return;
     setAnswer(a);
     setDx(a === "yes" ? 24 : -24);
-    if (a === "yes" && !session) addToHistory(c.id, 30);
-    // Signed in: kept as interest (migration 024), for For you and Matches.
-    if (a === "yes" && session) browserClient().from("paper_interest").upsert({ paper_id: c.id }, { onConflict: "user_id,paper_id", ignoreDuplicates: true }).then(() => {});
+    if (session) vote(c.id, a === "yes");
+    else if (a === "yes") addToHistory(c.id, 30);
     markDone(c.id);
     done.current.add(c.id);
     leave(a, () => setI((n) => n + 1), REVEAL_MS);
@@ -208,7 +220,7 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
               ) : (
                 <span className="deck-media-empty">{c.area ?? "Paper"}</span>
               )}
-              <span className="deck-stamp deck-stamp--yes" style={{ opacity: answer === "yes" ? 1 : Math.max(0, tilt * 1.6) }}>Read it</span>
+              <span className="deck-stamp deck-stamp--yes" style={{ opacity: answer === "yes" ? 1 : Math.max(0, tilt * 1.6) }}>Worth it</span>
               <span className="deck-stamp deck-stamp--no" style={{ opacity: answer === "no" ? 1 : Math.max(0, -tilt * 1.6) }}>Not for me</span>
             </div>
             <div className="deck-body">
@@ -233,6 +245,7 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
                       : answer === "yes"
                         ? "Readers and the AI panel are less sure."
                         : "Readers and the AI panel liked it more."}
+                  {!session && " Sign in so your votes count."}
                 </span>
               </div>
             )}
@@ -246,14 +259,14 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
         <button className="deck-round deck-round--no" aria-label="Not for me" title="Not for me" onClick={() => decide("no")} disabled={busy || atEnd}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
-        <button className="deck-round deck-round--yes" aria-label="I'd read it" title="I'd read it" onClick={() => decide("yes")} disabled={busy || atEnd}>
+        <button className="deck-round deck-round--yes" aria-label="Worth reading" title="Worth reading" onClick={() => decide("yes")} disabled={busy || atEnd}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" /></svg>
         </button>
-        <button className="deck-round deck-round--small deck-round--skip" aria-label="Skip without answering" title="Skip" onClick={skip} disabled={busy || atEnd}>
+        <button className="deck-round deck-round--small deck-round--skip" aria-label="Skip: haven't read it" title="Haven't read it" onClick={skip} disabled={busy || atEnd}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l8 7-8 7" /><path d="M13 5l6 7-6 7" /></svg>
         </button>
       </div>
-      <p className="deck-hint">Would you read it? Swipe, or skip if you&apos;re not sure.</p>
+      <p className="deck-hint">Read it? Swipe right if it&apos;s worth reading, left if not. Skip the ones you haven&apos;t read.</p>
     </div>
   );
 }

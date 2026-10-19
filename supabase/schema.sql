@@ -1276,8 +1276,7 @@ where mine.user_id = auth.uid() and c.user_id is distinct from auth.uid();
 grant select on public.my_replies to authenticated;
 
 -- 2. Matches (lib/matches.ts): readers who opted in, with papers claimed through ORCID, who
---    each read the other's papers. Reading counts in any direction: a vote either way, a ♥
---    in the home deck, or a minute on the paper page. Directions are never shown.
+--    each voted on the other's papers, either way. Directions are never shown.
 create table if not exists public.match_optin (
   user_id    uuid primary key default auth.uid() references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
@@ -1285,16 +1284,4 @@ create table if not exists public.match_optin (
 alter table public.match_optin enable row level security;
 drop policy if exists "own match opt-in" on public.match_optin;
 create policy "own match opt-in" on public.match_optin for all to authenticated
-  using (user_id = auth.uid()) with check (user_id = auth.uid());
-
--- "I'd read it" in the home deck, for signed-in readers (guests keep theirs in the browser).
-create table if not exists public.paper_interest (
-  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  paper_id   text not null references public.papers(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  primary key (user_id, paper_id)
-);
-alter table public.paper_interest enable row level security;
-drop policy if exists "own interest" on public.paper_interest;
-create policy "own interest" on public.paper_interest for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());

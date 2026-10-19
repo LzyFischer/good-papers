@@ -1,8 +1,7 @@
 // Matches between authors (server only, service role). Two readers match when both opted in
-// (match_optin), both claimed papers through ORCID (paper_claims), and each read at least one
-// of the other's papers. "Read" is any of: a vote either way (or "read it"), a ♥ in the home
-// deck (paper_interest), or a minute on the paper page (reader_views). The more of each
-// other's papers they read, the stronger the match. Which way anyone voted is never shown.
+// (match_optin), both claimed papers through ORCID (paper_claims), and each voted on at least
+// one of the other's papers, either way (the home deck's ♥ and ✕ are votes too). The more of
+// each other's papers they voted on, the stronger the match. Which way is never shown.
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type Match = {
@@ -19,34 +18,21 @@ export type MatchesResult =
   | { status: "no-claims" } // nothing claimed yet
   | { status: "ok"; matches: Match[] };
 
-const READ_SECONDS = 60;
-
 async function chunked<T>(ids: string[], run: (chunk: string[]) => PromiseLike<{ data: T[] | null }>): Promise<T[]> {
   const out: T[] = [];
   for (let i = 0; i < ids.length; i += 100) out.push(...((await run(ids.slice(i, i + 100))).data ?? []));
   return out;
 }
 
-// Who read which of `papers`, restricted to `readers` when given: user id -> paper ids.
+// Who voted on which of `papers` (either way, or "read it"), restricted to `readers` when
+// given: user id -> paper ids.
 async function readersOf(db: SupabaseClient, papers: string[], readers?: string[]): Promise<Map<string, Set<string>>> {
   const out = new Map<string, Set<string>>();
-  const add = (u: string, p: string) => out.set(u, (out.get(u) ?? new Set()).add(p));
-  type Row = { user_id: string; paper_id: string; seconds?: number };
-  const rows = (table: string, cols: string) =>
-    chunked<Row>(papers, (c) => {
-      const q = db.from(table).select(cols).in("paper_id", c);
-      return (readers ? q.in("user_id", readers) : q) as unknown as PromiseLike<{ data: Row[] | null }>;
-    });
-  const [votes, hearts, views] = await Promise.all([
-    rows("ratings", "user_id, paper_id"),
-    rows("paper_interest", "user_id, paper_id"),
-    rows("reader_views", "user_id, paper_id, seconds"),
-  ]);
-  for (const r of votes) add(r.user_id, r.paper_id);
-  for (const r of hearts) add(r.user_id, r.paper_id);
-  const seconds = new Map<string, number>();
-  for (const r of views) seconds.set(`${r.user_id}|${r.paper_id}`, (seconds.get(`${r.user_id}|${r.paper_id}`) ?? 0) + (r.seconds ?? 0));
-  for (const [k, s] of seconds) if (s >= READ_SECONDS) add(k.split("|")[0], k.split("|")[1]);
+  const votes = await chunked<{ user_id: string; paper_id: string }>(papers, (c) => {
+    const q = db.from("ratings").select("user_id, paper_id").in("paper_id", c);
+    return readers ? q.in("user_id", readers) : q;
+  });
+  for (const r of votes) out.set(r.user_id, (out.get(r.user_id) ?? new Set()).add(r.paper_id));
   return out;
 }
 
