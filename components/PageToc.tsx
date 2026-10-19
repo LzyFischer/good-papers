@@ -29,6 +29,7 @@ export function PageToc({ items }: { items: { id: string; label: string }[] }) {
           {it.label}
         </a>
       ))}
+      <a href="/contact" className="page-toc-contact">Contact →</a>
     </nav>
   );
 }

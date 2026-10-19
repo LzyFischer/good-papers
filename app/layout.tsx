@@ -68,7 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="foot wrap">
           Paper data from <a href="https://openalex.org">OpenAlex</a>, arXiv and Hugging Face. AI panel verdicts by Jev;
           AI comments, TL;DRs and consensus lines by a language model. <a href="/how">How scores work</a> ·{" "}
-          <a href="/privacy">Privacy</a>.
+          <a href="/privacy">Privacy</a> · <a href="/contact">Contact</a>.
         </footer>
         <Analytics />
       </body>

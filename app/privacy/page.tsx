@@ -51,6 +51,10 @@ export default function Privacy() {
           a match only when it goes both ways, never which way anyone voted. Messages between matches are private to the
           two of you; we read one only if it&apos;s reported to us.
         </li>
+        <li>
+          To read what you send on the Contact page, and to reply if you leave an email address. Messages are seen only by
+          the person who runs Good Papers.
+        </li>
         <li>To send you sign-in codes by email. We don&apos;t send newsletters unless you ask for them.</li>
       </ul>
 

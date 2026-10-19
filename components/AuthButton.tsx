@@ -108,9 +108,7 @@ function AccountMenu({ session }: { session: Session }) {
               <span aria-hidden="true">✓</span> ORCID verified
             </Link>
           ) : null}
-          <a role="menuitem" href="https://github.com/LzyFischer/good-papers/issues/new" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>
-            Contact <span aria-hidden="true">↗</span>
-          </a>
+          <Link role="menuitem" href="/contact" onClick={() => setOpen(false)}>Contact</Link>
           <button role="menuitem" onClick={() =>
               browserClient().auth.signOut().then(() => {
                 setOpen(false);

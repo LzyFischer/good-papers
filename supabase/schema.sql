@@ -1329,3 +1329,17 @@ drop policy if exists "file a report" on public.message_reports;
 create policy "file a report" on public.message_reports for insert to authenticated
   with check (reporter = auth.uid() and exists (
     select 1 from public.match_messages m where m.id = message_id and m.recipient = auth.uid()));
+
+-- 026_feedback
+create table if not exists public.feedback (
+  id         uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  user_id    uuid references auth.users(id) on delete set null,
+  email      text check (char_length(email) <= 200),   -- optional, to reply to
+  page       text check (char_length(page) <= 300),    -- where they came from
+  kind       text not null default 'other' check (kind in ('bug', 'score', 'idea', 'other')),
+  body       text not null check (char_length(body) between 1 and 4000),
+  ip_hash    text                                        -- for rate limiting, not the address itself
+);
+create index if not exists feedback_recent on public.feedback (created_at desc);
+alter table public.feedback enable row level security; -- no policies: service role only

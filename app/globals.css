@@ -1067,3 +1067,22 @@ button.shelf-more::after { content: none; }
 .deck-nudge { grid-area: 1 / 1; position: relative; z-index: 6; display: grid; align-content: center; gap: .7rem; padding: 1.6rem; border-radius: 20px; background: #1d2026; color: #f4f4f1; box-shadow: 0 24px 60px rgba(0, 0, 0, .45), inset 0 0 0 2px var(--lime); animation: deck-in .28s ease both; }
 .deck-nudge-title { margin: 0; font: 800 1.7rem/1.15 var(--display); letter-spacing: -.02em; color: #fff; }
 .deck-nudge-sub { margin: 0 0 .3rem; color: #b9bdc5; line-height: 1.5; }
+
+/* Contact (app/contact) */
+.page-toc-contact { margin-top: .8rem; font-weight: 700; color: var(--link) !important; }
+.contact-form { display: grid; gap: .6rem; max-width: 40rem; padding-bottom: 1.6rem; }
+.contact-form fieldset { margin: 0 0 .6rem; padding: 0; border: 0; }
+.contact-form legend, .contact-form > label { font: 800 1rem var(--display); margin-bottom: .4rem; }
+.contact-form > label span { font: 400 .85rem var(--body); color: var(--muted); }
+.contact-kinds { display: flex; flex-wrap: wrap; gap: .5rem; }
+.contact-kinds label { display: inline-flex; align-items: center; padding: .5rem .9rem; border-radius: 999px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font: 600 .9rem var(--body); cursor: pointer; }
+.contact-kinds label.on { background: var(--ink); color: var(--bg); box-shadow: none; }
+.contact-kinds input { position: absolute; opacity: 0; pointer-events: none; }
+.contact-kinds label:focus-within { outline: 2px solid var(--t5); outline-offset: 2px; }
+.contact-form textarea, .contact-form input[type="email"] { width: 100%; box-sizing: border-box; padding: .8rem 1rem; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 400 1rem/1.5 var(--body); }
+.contact-form textarea:focus, .contact-form input[type="email"]:focus { outline: none; border-color: var(--t5); box-shadow: 0 0 0 4px var(--t5-soft); }
+.contact-form .button-primary { justify-self: start; margin-top: .4rem; }
+.contact-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.contact-sent { display: grid; gap: .4rem; padding: 1.2rem 1.3rem; margin-bottom: 1.6rem; border-radius: 16px; background: var(--t5-soft); }
+.contact-sent b { font: 800 1.2rem var(--display); color: var(--t5); }
+.contact-sent p { margin: 0; }
