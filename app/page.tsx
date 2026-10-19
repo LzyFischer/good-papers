@@ -4,13 +4,13 @@ import { after } from "next/server";
 import { AskBox } from "@/components/AskBox";
 import { AutoMore } from "@/components/AutoMore";
 import { ForYou } from "@/components/ForYou";
-import { HeroDeck, type DeckCard } from "@/components/HeroDeck";
+import { HeroDeck } from "@/components/HeroDeck";
 import { PaperListCard } from "@/components/PaperListCard";
-import { tierOf } from "@/components/Score";
 import { Shelf } from "@/components/Shelf";
 import { AREAS } from "@/lib/areas";
 import { mergeByTopics, topicGroups, topicsFromCookie, TOPICS_COOKIE } from "@/lib/forYou";
 import { topUpTrending } from "@/lib/ingest";
+import { toDeckCard, type DeckCard } from "@/lib/deck";
 import { NEURIPS } from "@/lib/neurips";
 import { serverClient } from "@/lib/supabase";
 import { WINDOWS, WINDOW_LABELS, homeShelves, oneTitleEach, openScoreIds, pickPaperOfTheDay, type Window } from "@/lib/trending";
@@ -72,22 +72,11 @@ export default async function Home({ searchParams }: Props) {
   const [hotNow, must, debated, nips] = browsing ? await homeShelves(window) : [[], [], [], []];
   const week = browsing ? (window === "week" ? hotNow : (await homeShelves("week"))[0]) : [];
   const spot = pickPaperOfTheDay(week) ?? must[0];
-  // The hero deck: the paper of the day, then the rest of this week's trending.
-  const deck: DeckCard[] = oneTitleEach([spot, ...week].filter((p): p is Score => Boolean(p)))
-    .slice(0, 8)
-    .map((p, k) => {
-      const t = tierOf(p);
-      return {
-        id: p.id,
-        title: p.title,
-        tldr: p.tldr,
-        thumbnail: p.thumbnail,
-        area: p.area && AREAS[p.area] ? AREAS[p.area].label : null,
-        tier: t ? { label: t.label, tone: t.tone, pct: t.pct } : null,
-        open: k === 0 || openIds.includes(p.id),
-        kicker: k === 0 ? "Paper of the day" : "Trending this week",
-      };
-    });
+  // The hero deck starts with the paper of the day and this week's trending; HeroDeck mixes in
+  // For you and then pages of recent papers (/api/deck) as the visitor swipes on.
+  const deck: DeckCard[] = oneTitleEach([spot, ...week].filter((p): p is Score => Boolean(p))).map((p, k) =>
+    toDeckCard(p, k === 0 ? "Paper of the day" : "Trending this week", k === 0 || openIds.includes(p.id)),
+  );
 
   return (
     <main>

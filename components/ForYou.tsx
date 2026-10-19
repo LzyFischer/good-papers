@@ -39,6 +39,8 @@ async function moveHistoryIntoAccount() {
   clearHistory();
 }
 
+const inflight = new Map<string, Promise<ForYouList | null>>();
+
 export function useForYou(limit: number): { list: ForYouList | null; fresh: boolean; guest: boolean } {
   const { session, ready } = useSession();
   const router = useRouter();
@@ -54,11 +56,19 @@ export function useForYou(limit: number): { list: ForYouList | null; fresh: bool
     if (!uid && history.length < GUEST_MIN_PAPERS) return;
     setList(cached(who, limit));
     let live = true;
-    const request = uid
-      ? moveHistoryIntoAccount().then(() => fetch(`/api/for-you?limit=${limit}`, { headers: { Authorization: `Bearer ${token}` } }))
-      : fetch("/api/for-you/guest", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ papers: history, limit }) });
+    // One request per page load for each list, however many components ask (shelf, hero deck).
+    const key = `${who}:${limit}`;
+    let request = inflight.get(key);
+    if (!request) {
+      request = (
+        uid
+          ? moveHistoryIntoAccount().then(() => fetch(`/api/for-you?limit=${limit}`, { headers: { Authorization: `Bearer ${token}` } }))
+          : fetch("/api/for-you/guest", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ papers: history, limit }) })
+      ).then((r) => (r.ok ? (r.json() as Promise<ForYouList>) : null));
+      inflight.set(key, request);
+      setTimeout(() => inflight.delete(key), 60_000); // later visits to the page ask again
+    }
     request
-      .then((r) => (r.ok ? (r.json() as Promise<ForYouList>) : null))
       .then((r) => {
         if (!live || !r) return;
         setList(r);
