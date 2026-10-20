@@ -1128,3 +1128,25 @@ button.shelf-more::after { content: none; }
 .inbox-meta { margin: 0; font-size: .82rem; color: var(--muted); }
 /* First-visit swipe hint (components/HeroDeck.tsx) */
 .deck-card--demo { transition: transform .75s cubic-bezier(.45, 0, .25, 1); }
+/* The swipe hint (components/HeroDeck.tsx): a hand drags right, left and back, in step with the
+   card's lean (3.3s, from the demo timers); copies of the fingertip trail behind it and fade. */
+.deck-swipe { position: absolute; left: 50%; top: 46%; z-index: 4; width: 0; height: 0; pointer-events: none; }
+.deck-swipe-hand { position: absolute; left: -17px; top: -4px; fill: #fff; stroke: #14161a; stroke-width: 1.4; stroke-linejoin: round; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .35)); animation: deck-swipe-move 3.3s cubic-bezier(.45, 0, .25, 1) both, deck-swipe-hand 3.3s ease both; }
+.deck-swipe-trail { position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; border-radius: 50%; background: color-mix(in srgb, var(--lime) calc(100% - var(--n) * 13%), transparent); box-shadow: 0 0 12px color-mix(in srgb, var(--lime) 50%, transparent); scale: calc(1 - var(--n) * .11); animation: deck-swipe-move 3.3s cubic-bezier(.45, 0, .25, 1) both, deck-swipe-trail 3.3s ease both; animation-delay: calc(var(--n) * 85ms); }
+@keyframes deck-swipe-move {
+  0%, 14% { translate: 0 0; }
+  36%, 44% { translate: 70px 0; }
+  66%, 74% { translate: -70px 0; }
+  96%, 100% { translate: 0 0; }
+}
+@keyframes deck-swipe-hand {
+  0% { opacity: 0; transform: translateY(12px) scale(1.1); }
+  9% { opacity: 1; transform: translateY(0) scale(1.1); }
+  14%, 90% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: translateY(-6px) scale(1.1); }
+}
+@keyframes deck-swipe-trail {
+  0%, 12% { opacity: 0; }
+  16%, 88% { opacity: 1; }
+  100% { opacity: 0; }
+}

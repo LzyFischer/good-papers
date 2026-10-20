@@ -149,10 +149,12 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
     }
     const play = () => {
       const steps: [number, () => void][] = [
-        [600, () => { setDemo(true); setDx(70); }],
-        [1600, () => setDx(-70)],
-        [2600, () => setDx(0)],
-        [3300, () => setDemo(false)],
+        // The finger (CSS, 3.3s) lands first, then the card leans right, left and back.
+        [600, () => setDemo(true)],
+        [1050, () => setDx(70)],
+        [2050, () => setDx(-70)],
+        [3050, () => setDx(0)],
+        [3900, () => setDemo(false)],
       ];
       demoTimers.current = steps.map(([ms, fn]) => setTimeout(fn, ms));
     };
@@ -273,6 +275,15 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
             cards are keyed by paper, so when the top one flies off, the waiting card's own
             element becomes the top card: it just keeps moving, nothing is redrawn. */}
         {!next && <div className="deck-ghost deck-ghost--1" aria-hidden="true" />}
+        {/* Swipe hint: a hand drags across the card, its fingertip leaving a fading trail. */}
+        {demo && (
+          <div className="deck-swipe" aria-hidden="true">
+            {[6, 5, 4, 3, 2, 1].map((n) => <span key={n} className="deck-swipe-trail" style={{ "--n": n } as React.CSSProperties} />)}
+            <svg className="deck-swipe-hand" viewBox="0 0 24 24" width="52" height="52">
+              <path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15V4a2 2 0 0 1 4 0v5.5V9a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v1" />
+            </svg>
+          </div>
+        )}
         {nudge && (
           <div className="deck-nudge" role="dialog" aria-label="Sign in to vote">
             <span className="deck-kicker">Your picks don&apos;t count yet</span>
