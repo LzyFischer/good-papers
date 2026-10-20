@@ -152,8 +152,10 @@ export function dedupeByTitle<T>(items: T[], title: (x: T) => string): T[] {
 // OpenAlex often splits one person into several author records. Start from the
 // record on the paper the reader clicked (when known), then merge same-name
 // AI/CS records that share an institution with it; unrelated namesakes stay out.
-export async function getAuthorWorks(name: string, fromWork: string | null, page = 1) {
-  let primary: string | null = null;
+export async function getAuthorWorks(name: string, fromWork: string | null, page = 1, authorId: string | null = null) {
+  // Records picked in search results (findAuthors, "A1,A2"): exactly those, no merging by institution.
+  const picked = (authorId ?? "").split(",").filter((x) => /^A\d+$/.test(x)).slice(0, 15);
+  let primary: string | null = picked[0] ?? null;
   if (fromWork && /^W\d+$/.test(fromWork)) {
     const w = await oa(`/works/${fromWork}`, {}, "authorships").catch(() => null);
     const hit = (w?.authorships ?? []).find((a: any) => norm(a.author?.display_name ?? "") === norm(name));
@@ -181,7 +183,7 @@ export async function getAuthorWorks(name: string, fromWork: string | null, page
   // Merge only records sharing the clicked record's current institution.
   const mainInst = new Set<string>((main.last_known_institutions ?? []).map((i: any) => i.id));
   if (mainInst.size === 0) for (const i of instOf(main)) mainInst.add(i);
-  const ids = [primary, ...same.filter((a: any) => shortId(a.id) !== primary && [...instOf(a)].some((i) => mainInst.has(i))).map((a: any) => shortId(a.id))].slice(0, 15);
+  const ids = picked.length ? picked : [primary, ...same.filter((a: any) => shortId(a.id) !== primary && [...instOf(a)].some((i) => mainInst.has(i))).map((a: any) => shortId(a.id))].slice(0, 15);
   const institutions = (main.last_known_institutions ?? []).map((i: any) => i.display_name).filter(Boolean);
 
   // OpenAlex records can still lump several namesakes together. Keep the works
@@ -216,8 +218,8 @@ export async function getAuthorWorks(name: string, fromWork: string | null, page
       if (!grew) break;
     }
     kept = all.filter((w) => inCircle.has(shortId(w.id)));
-  } else {
-    // No paper to start from: the core is the work OpenAlex files under Computer Science (or
+  } else if (!picked.length) {
+    // A namesake picked in search keeps all its work. No paper to start from: the core is the work OpenAlex files under Computer Science (or
     // an ML-adjacent subfield). New papers often have no topic yet; they stay only if they
     // share a co-author with the core. Work filed elsewhere goes: namesakes in physics,
     // medicine or policy otherwise mix in (a fluid-dynamics paper on an ML author's page).
@@ -229,6 +231,45 @@ export async function getAuthorWorks(name: string, fromWork: string | null, page
   kept = dedupeByTitle(kept, (w) => w.display_name ?? "");
   const papers = kept.filter(isPaper).slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(toPaper) as Paper[];
   return { name: main.display_name ?? name, institutions, records: ids.length, papers, total: kept.length };
+}
+
+// Authors a search query names, for readers to tell namesakes apart. OpenAlex often splits one
+// person into several small records, so same-name records with the same current institution
+// become one hit. Computer scientists first, then by citations. Only for queries that look like a name.
+export type AuthorHit = { ids: string[]; name: string; institution: string | null; topic: string | null; works: number };
+export async function findAuthors(query: string): Promise<AuthorHit[]> {
+  const q = query.trim();
+  if (!/^[\p{L}][\p{L}.'’ -]{2,60}$/u.test(q)) return [];
+  const words = q.split(/\s+/);
+  if (words.length < 2 || words.length > 4) return [];
+  const res = await oa("/authors", { search: q, per_page: "50" },
+    "id,display_name,display_name_alternatives,last_known_institutions,topics,works_count,cited_by_count");
+  const groups = new Map<string, { recs: any[]; works: number; cited: number; cs: boolean }>();
+  for (const a of res.results ?? []) {
+    const names = [a.display_name, ...(a.display_name_alternatives ?? [])].map(norm);
+    const fields = (a.topics ?? []).slice(0, 5).map((t: any) => t.field?.display_name);
+    if (!names.includes(norm(q)) || !a.works_count) continue;
+    const key = a.last_known_institutions?.[0]?.id ?? a.id;
+    const g = groups.get(key) ?? { recs: [], works: 0, cited: 0, cs: false };
+    g.recs.push(a);
+    g.cs ||= fields.includes("Computer Science");
+    g.works += a.works_count;
+    g.cited += a.cited_by_count ?? 0;
+    groups.set(key, g);
+  }
+  return [...groups.values()]
+    .sort((a, b) => Number(b.cs) - Number(a.cs) || b.cited - a.cited)
+    .slice(0, 20)
+    .map((g): AuthorHit => {
+      const recs = g.recs.sort((a: any, b: any) => b.works_count - a.works_count);
+      return {
+        ids: recs.map((a: any) => shortId(a.id)),
+        name: recs[0].display_name,
+        institution: recs[0].last_known_institutions?.[0]?.display_name ?? null,
+        topic: recs[0].topics?.[0]?.display_name ?? null,
+        works: g.works,
+      };
+    });
 }
 
 export async function getInstitutionWorks(name: string, page = 1) {

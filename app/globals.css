@@ -585,6 +585,14 @@ button.shelf-more::after { content: none; }
 /* My papers: let the vote chip size itself instead of overflowing a fixed column */
 .paper-row { grid-template-columns: max-content minmax(0, 1fr); }
 .paper-row .chip { white-space: nowrap; }
+/* In a list, every row shares one chip column (the widest chip), so titles line up. */
+.paper-list { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 1rem; }
+.paper-list > .paper-row { grid-column: 1 / -1; grid-template-columns: subgrid; }
+@media (max-width: 36rem) {
+  .paper-list { grid-template-columns: minmax(0, 1fr); }
+  .paper-list > .paper-row { gap: .45rem; }
+  .paper-list > .paper-row > :first-child, .paper-list > .paper-row .chip { justify-self: start; width: fit-content; }
+}
 
 /* Venue tags: conferences stand out, preprints stay quiet */
 .tag.venue--preprint { background: var(--bg); color: var(--muted); border-color: var(--line); }
@@ -794,8 +802,23 @@ button.shelf-more::after { content: none; }
 .profile-orgs { display: flex; flex-wrap: wrap; gap: .35rem; margin: .45rem 0 0; }
 .profile-orgs span { font-size: .78rem; color: var(--muted); background: var(--bg); border-radius: 999px; padding: .2rem .6rem; }
 .profile-stat { margin: 0; text-align: right; color: var(--muted); font-size: .85rem; }
+.profile-stat a { display: block; margin-top: .4rem; font-size: .8rem; color: var(--link); }
 .profile-stat b { display: block; font: 800 1.6rem/1 var(--display); color: var(--ink); font-variant-numeric: tabular-nums; }
 @media (max-width: 36rem) { .profile { grid-template-columns: auto minmax(0, 1fr); } .profile-stat { grid-column: 1 / -1; text-align: left; } .profile-stat b { display: inline; font-size: 1.1rem; margin-right: .3rem; } }
+
+.chip-lock { margin-left: .3rem; vertical-align: -1px; opacity: .7; }
+
+/* ---------- Author matches above search results (app/search/page.tsx) ---------- */
+.author-hits { margin: 0 0 1.4rem; }
+.author-hits h2 { margin: 0 0 .55rem; font: 700 .78rem var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+/* One row that scrolls sideways when there are many namesakes, like the home shelves. */
+.author-hits ul { list-style: none; margin: 0; padding: 0 0 .5rem; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(14rem, 16rem); gap: .6rem; overflow-x: auto; scroll-snap-type: x proximity; }
+.author-hits li { scroll-snap-align: start; }
+.author-hits a { display: flex; flex-direction: column; gap: .2rem; height: 100%; box-sizing: border-box; padding: .8rem .95rem; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); text-decoration: none; transition: border-color .15s ease; }
+.author-hits a:hover { border-color: var(--line-strong); }
+.author-hits b { font: 700 1rem var(--display); }
+.author-hits span { font-size: .84rem; color: var(--ink); }
+.author-hits small { font-size: .76rem; color: var(--muted); }
 
 /* ---------- Theme picker (components/ThemePicker.tsx) ---------- */
 .theme-picker { position: relative; display: inline-flex; }
