@@ -94,6 +94,7 @@ export function SignIn({ next }: { next: string }) {
             We emailed <b>{email}</b>. Click the link in the email, or enter the 6-digit code here. It expires in an
             hour.
           </p>
+          <p className="signin-fine">Not there after a minute? Check your spam or junk folder.</p>
           <input
             inputMode="numeric"
             autoComplete="one-time-code"

@@ -8,16 +8,28 @@ const FIELDS = "title,authors,year,venue,externalIds,abstract,publicationDate,ci
 
 export const s2Configured = () => Boolean(process.env.S2_API_KEY);
 
+// Rate-limited (429) or briefly down (5xx): wait 1, then 2 seconds and try again, as the
+// API terms ask. Search waits for this, so no retry starts after 5 seconds.
+async function fetchWithBackoff(url: string, tries = 3): Promise<Response> {
+  const start = Date.now();
+  for (let i = 0; ; i++) {
+    const res = await fetch(url, {
+      headers: { "x-api-key": process.env.S2_API_KEY! },
+      signal: AbortSignal.timeout(8000),
+      next: { revalidate: 3600 },
+    });
+    const wait = 1000 * 2 ** i;
+    if (i === tries - 1 || (res.status !== 429 && res.status < 500) || Date.now() - start + wait > 5000) return res;
+    await new Promise((r) => setTimeout(r, wait));
+  }
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Only results with an arXiv id: anything else OpenAlex already has.
 export async function searchS2(query: string): Promise<Paper[]> {
   if (!s2Configured()) return [];
   const p = new URLSearchParams({ query, limit: "20", fields: FIELDS });
-  const res = await fetch(`https://api.semanticscholar.org/graph/v1/paper/search?${p}`, {
-    headers: { "x-api-key": process.env.S2_API_KEY! },
-    signal: AbortSignal.timeout(8000),
-    next: { revalidate: 3600 },
-  });
+  const res = await fetchWithBackoff(`https://api.semanticscholar.org/graph/v1/paper/search?${p}`);
   if (!res.ok) throw new Error(`Semantic Scholar search failed (${res.status})`);
   const data = await res.json();
   return (data.data ?? [])
