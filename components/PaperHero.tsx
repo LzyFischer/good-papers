@@ -101,12 +101,6 @@ export function PaperHero({ paper, score, verdicts, scoreOpen = false }: { paper
             <div>
               <span className="sc-label">Overall</span>
               <span className="sc-tier">{t ? t.label : "Not rated yet"}</span>
-              {t && !paper.abstract && score?.conf_track && (
-                <span className="sc-note">
-                  {score.ai_total ? "First read from the title only." : `Starting score from its ${score.venue} track.`} The AI panel
-                  reads it properly once the abstract is public.
-                </span>
-              )}
             </div>
             <div className="sc-agree" data-agree-slot={paper.id} />
           </div>

@@ -23,9 +23,12 @@ export type Reveal = { readerFresh: number; readerTotal: number; aiYes: number; 
 // compact: just the two buttons, for cards on the home page shelves.
 export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperStub; reveal?: Reveal; compact?: boolean }) {
   const router = useRouter();
-  const { session } = useSession();
+  const { session, ready } = useSession();
   // undefined: no vote; true/false: fresh/rotten; null: read it, abstained.
   const [vote, setVote] = useState<Vote | undefined>(undefined);
+  // Whether we know yet if this reader voted: until then the "vote to see" line stays hidden,
+  // or it flashes for readers who did (the page refreshes after a vote and this remounts).
+  const [known, setKnown] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // compact cards: a short "who agrees with you" note that pops up after a vote.
@@ -34,10 +37,14 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
   useEffect(() => {
     if (!session) {
       setVote(undefined);
+      setKnown(ready);
       return;
     }
-    getMyVotes(session.user.id).then((m) => setVote(m.has(paper.id) ? m.get(paper.id) : undefined));
-  }, [session, paper.id]);
+    getMyVotes(session.user.id).then((m) => {
+      setVote(m.has(paper.id) ? m.get(paper.id) : undefined);
+      setKnown(true);
+    });
+  }, [session, ready, paper.id]);
 
   async function cast(choice: Vote) {
     if (!session) {
@@ -120,7 +127,7 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
       {reveal && (
         <>
           <span className="sc-num">{pct === null ? "–" : !shown ? "?" : `${pct}%`}</span>
-          {reveal.readerTotal > 0 && !shown && (
+          {reveal.readerTotal > 0 && !shown && known && (
             <span className="sc-sub">
               {`${reveal.readerTotal} reader${reveal.readerTotal === 1 ? "" : "s"} voted. Vote to see how they split.`}
             </span>

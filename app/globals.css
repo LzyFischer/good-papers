@@ -519,7 +519,9 @@ button.shelf-more::after { content: none; }
 
 /* Author badge, under the abstract */
 /* Under the abstract: verified authors, the ORCID claim and the badge */
-.for-authors { margin-top: -1.2rem; display: grid; gap: .55rem; font-size: .85rem; color: var(--muted); }
+/* Tucked up under the abstract; without one it would ride up into the note hint above. */
+.abstract + .for-authors { margin-top: -1.2rem; }
+.for-authors { display: grid; gap: .55rem; font-size: .85rem; color: var(--muted); }
 .claim { display: grid; gap: .35rem; }
 .claim p { margin: 0; }
 .claim-authors { color: var(--ink); }
@@ -637,7 +639,6 @@ button.shelf-more::after { content: none; }
 .bell-empty { padding: .7rem; color: var(--muted); font-size: .88rem; }
 .vote-wrap { display: grid; gap: .3rem; }
 .vote-wrap .sc-num, .vote-wrap .sc-sub { display: block; }
-.sc-note { display: block; font-size: .78rem; opacity: .8; margin-top: .3rem; max-width: 16rem; }
 
 /* Hidden scores (components/Gate.tsx) */
 .gate { display: contents; }
