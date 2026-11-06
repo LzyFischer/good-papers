@@ -1151,3 +1151,109 @@ button.shelf-more::after { content: none; }
   16%, 88% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* ---------- NeurIPS Quest (components/NeuripsQuest.tsx): a pixel-art game screen, dark in every theme ---------- */
+.quest { --q-bg: #1b1d2b; --q-panel: #262a3d; --q-panel-2: #30354d; --q-ink: #f4efe2; --q-muted: #a4a8c0; --q-line: #11131d; --q-lime: #d2f54a; --q-gold: #ffcc33;
+  --q-pixel: "Press Start 2P", monospace; --q-term: "VT323", monospace;
+  background: var(--q-bg); color: var(--q-ink); font: 20px/1.15 var(--q-term); min-height: 80vh; }
+.quest-wrap { max-width: 76rem; margin: 0 auto; padding: 1.2rem var(--gutter) 2.5rem; }
+.quest a { color: inherit; }
+.quest-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+.quest-crumb { margin: 0 0 8px; font-size: 18px; color: var(--q-muted); }
+.quest-crumb a { text-decoration: none; }
+.quest h1 { margin: 0; font: 22px/1.3 var(--q-pixel); color: var(--q-lime); text-shadow: 3px 3px 0 var(--q-line); }
+.quest-sub { margin: 6px 0 0; color: var(--q-muted); }
+.quest-player { min-width: 260px; padding: 10px 12px; background: var(--q-panel); border: 3px solid var(--q-line); box-shadow: 4px 4px 0 var(--q-line); display: grid; gap: 6px; }
+.quest-player b { font: 10px var(--q-pixel); color: var(--q-gold); }
+.quest-player small { font-size: 16px; color: var(--q-muted); }
+.quest-xp { display: block; height: 10px; background: var(--q-line); border: 2px solid var(--q-line); }
+.quest-xp i { display: block; height: 100%; background: var(--q-lime); transition: width .4s steps(8); }
+.quest-tabs, .quest-sessions, .quest-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.quest-tabs a { font: 10px var(--q-pixel); text-decoration: none; padding: 10px 14px; background: var(--q-panel); border: 3px solid var(--q-line); box-shadow: 3px 3px 0 var(--q-line); }
+.quest-tabs a[aria-current="page"] { background: var(--q-lime); color: #14161a; }
+.quest-sessions a { display: grid; text-decoration: none; padding: 4px 10px; background: var(--q-panel-2); border: 3px solid var(--q-line); }
+.quest-sessions a b { font: 9px/1.6 var(--q-pixel); }
+.quest-sessions a small { font-size: 15px; color: var(--q-muted); }
+.quest-sessions a[aria-current="page"] { outline: 3px solid var(--q-gold); }
+.quest-when { margin: 0 0 10px; color: var(--q-gold); }
+.quest-chips button { font: 18px var(--q-term); color: var(--q-ink); background: var(--q-panel); border: 3px solid var(--q-line); padding: 2px 10px; cursor: pointer; box-shadow: 3px 3px 0 var(--q-line); }
+.quest-chips button[aria-pressed="true"] { background: var(--q-lime); color: #14161a; }
+.quest-chips button:active, .quest-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--q-line); }
+.quest-game { display: grid; grid-template-columns: minmax(0, 1fr) 21rem; gap: 16px; align-items: start; }
+@media (max-width: 54rem) { .quest-game { grid-template-columns: minmax(0, 1fr); } }
+.quest-screen { position: relative; background: var(--q-line); border: 4px solid var(--q-line); box-shadow: 6px 6px 0 #0a0b12; }
+.quest-screen canvas { display: block; width: 100%; image-rendering: pixelated; cursor: pointer; }
+/* Under the map, not over it, so the boards and the explorer stay in view. */
+.quest-card { margin-top: 12px; padding: 12px; background: var(--q-panel); border: 4px solid var(--q-line); box-shadow: 6px 6px 0 #0a0b12; }
+.quest-card-top { display: flex; align-items: center; gap: 8px; }
+.quest-card h3 { margin: 8px 0 4px; font-size: 22px; line-height: 1.05; font-weight: normal; }
+.quest-x { margin-left: auto; background: none; border: 0; color: var(--q-muted); font: 16px var(--q-pixel); cursor: pointer; }
+.quest-board { font: 9px/1.5 var(--q-pixel); padding: 3px 6px; background: var(--q-line); color: var(--q-ink); white-space: nowrap; }
+.quest-tier { font: 8px/1.5 var(--q-pixel); padding: 3px 5px; color: #14161a; white-space: nowrap; }
+.quest-meta { margin: 0 0 8px; color: var(--q-muted); font-size: 17px; }
+.quest-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.quest-btn { display: inline-block; font: 10px var(--q-pixel); color: #14161a; background: var(--q-lime); border: 3px solid var(--q-line); padding: 10px 12px; cursor: pointer; box-shadow: 4px 4px 0 var(--q-line); text-decoration: none; }
+.quest-btn.alt { background: var(--q-panel-2); color: var(--q-ink); }
+.quest-btn[aria-pressed="true"] { outline: 3px solid var(--q-gold); }
+.quest-link { background: none; border: 0; padding: 0; color: var(--q-lime); font: inherit; text-decoration: underline; cursor: pointer; }
+.quest-hud { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.quest-count { font: 10px var(--q-pixel); color: var(--q-gold); }
+.quest-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; color: var(--q-muted); font-size: 17px; }
+.quest-legend i { display: inline-block; width: 12px; height: 12px; margin-right: 5px; border: 2px solid var(--q-line); vertical-align: -1px; }
+.quest-side { background: var(--q-panel); border: 4px solid var(--q-line); box-shadow: 6px 6px 0 #0a0b12; padding: 12px; }
+.quest-side h2 { margin: 0 0 10px; font: 10px/1.5 var(--q-pixel); color: var(--q-gold); }
+.quest-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.quest-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 6px; background: var(--q-panel-2); border: 2px solid var(--q-line); cursor: pointer; }
+.quest-list li.done { opacity: .5; }
+.quest-list li.done .quest-title { text-decoration: line-through; }
+.quest-list li.here { outline: 3px solid var(--q-gold); }
+.quest-title { font-size: 18px; line-height: 1.05; }
+.quest-badges-h { margin-top: 16px !important; }
+.quest-badges { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.quest-badges li { display: grid; grid-template-columns: auto 1fr; column-gap: 6px; padding: 6px; background: var(--q-panel-2); border: 2px solid var(--q-line); filter: grayscale(1); opacity: .45; }
+.quest-badges li.got { filter: none; opacity: 1; outline: 2px solid var(--q-gold); }
+.quest-badges span { grid-row: span 2; font-size: 22px; }
+.quest-badges b { font: 7px/1.5 var(--q-pixel); }
+.quest-badges small { font-size: 14px; color: var(--q-muted); }
+.quest-note, .quest-empty { margin-top: 18px; color: var(--q-muted); font-size: 17px; }
+.quest-toast { position: fixed; left: 50%; bottom: 24px; z-index: 60; transform: translateX(-50%); font: 10px/1.6 var(--q-pixel); background: var(--q-gold); color: #14161a; border: 3px solid var(--q-line); padding: 10px 14px; box-shadow: 4px 4px 0 var(--q-line); animation: quest-pop .25s steps(3); }
+.quest-modal { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: rgba(10, 11, 18, .7); }
+.quest-modal-box { max-width: 24rem; text-align: center; padding: 22px; background: var(--q-panel); border: 4px solid var(--q-line); box-shadow: 8px 8px 0 #0a0b12; animation: quest-pop .3s steps(4); }
+.quest-modal-box h3 { margin: 8px 0; font: 12px/1.6 var(--q-pixel); }
+.quest-modal-box .quest-row { justify-content: center; }
+.quest-kicker { margin: 0; font: 11px var(--q-pixel); color: var(--q-gold); }
+.quest-big { font-size: 56px; line-height: 1.2; color: var(--q-gold); }
+@keyframes quest-pop { from { transform: translateX(var(--qx, 0)) scale(.6); opacity: 0; } }
+.quest-toast { --qx: -50%; }
+.quest-bubble { position: absolute; z-index: 3; width: max-content; max-width: min(14rem, 60%); transform: translate(-50%, -100%); padding: 6px 8px; background: #f4efe2; color: #14161a; border: 3px solid var(--q-line); font: 17px/1.05 var(--q-term); pointer-events: none; animation: quest-pop .2s steps(3); }
+.quest-bubble::after { content: ""; position: absolute; left: 50%; bottom: -9px; width: 8px; height: 8px; margin-left: -4px; background: #f4efe2; border: solid var(--q-line); border-width: 0 3px 3px 0; transform: rotate(45deg); }
+.quest-mute { margin-left: auto; padding: 6px 10px; font-size: 16px; }
+.quest-toast { top: 76px; bottom: auto; }
+.quest-here { color: var(--q-lime); }
+.quest-chat { display: grid; gap: 8px; }
+.quest-chat-list { list-style: none; margin: 0; padding: 8px; display: grid; gap: 4px; max-height: 13rem; overflow: auto; background: var(--q-line); font-size: 18px; line-height: 1.05; }
+.quest-chat-list b { font-weight: normal; }
+.quest-chat-form { display: flex; gap: 6px; }
+.quest-chat-form input { flex: 1; min-width: 0; padding: 6px 8px; font: 18px var(--q-term); color: var(--q-ink); background: var(--q-panel-2); border: 3px solid var(--q-line); }
+.quest-chat-form .quest-btn { padding: 8px 10px; }
+.quest-target { pointer-events: auto; display: grid; gap: 4px; text-align: left; }
+.quest-target b { font: 9px/1.5 var(--q-pixel); }
+.quest-target small { font-size: 15px; color: #4a4f66; }
+.quest-target .quest-btn { padding: 7px 8px; font-size: 8px; }
+.quest-duel { max-width: 40rem; width: 100%; }
+.quest-duel h3 { font-size: 10px; }
+.quest-duel-score { display: flex; justify-content: space-between; margin: 10px 0 6px; font: 9px/1.6 var(--q-pixel); color: var(--q-muted); }
+.quest-duel-score b { color: var(--q-lime); font-size: 14px; margin-left: 6px; }
+.quest-duel-timer { margin-bottom: 8px; }
+.quest-duel-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+@media (max-width: 36rem) { .quest-duel-pair { grid-template-columns: 1fr; } }
+.quest-duel-card { position: relative; display: grid; gap: 8px; align-content: start; min-height: 9rem; padding: 10px; text-align: left; color: var(--q-ink); background: var(--q-panel-2); border: 3px solid var(--q-line); box-shadow: 4px 4px 0 var(--q-line); cursor: pointer; font: inherit; }
+.quest-duel-card:hover:not(:disabled) { outline: 3px solid var(--q-lime); }
+.quest-duel-card:disabled { cursor: default; }
+.quest-duel-card.picked { outline: 3px solid var(--q-gold); }
+.quest-duel-card.right { background: #2f5a35; outline: 3px solid #4fbf4f; }
+.quest-duel-card.wrong { opacity: .6; }
+.quest-duel-tier { font: 8px var(--q-pixel); color: var(--q-gold); }
+.quest-duel-marks { display: flex; gap: 6px; }
+.quest-duel-marks em { font: normal 8px/1.6 var(--q-pixel); padding: 2px 4px; background: var(--q-line); color: var(--q-lime); }
+.nav-game { color: var(--lime) !important; }

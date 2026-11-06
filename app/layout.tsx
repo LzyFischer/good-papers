@@ -52,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <nav className="nav" aria-label="Sections">
               <Link href="/neurips">NeurIPS 2026</Link>
+              <Link href="/neurips/quest" className="nav-game">🎮 Game</Link>
               <Link href="/how">How it works</Link>
             </nav>
             <SearchForm />

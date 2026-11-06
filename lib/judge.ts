@@ -122,6 +122,19 @@ export async function judgePaper(
   return { area, paperType, model, textSource: full?.source ?? null, verdicts };
 }
 
+// Only the fine area inside a known group, e.g. after new areas were added to lib/areas.ts
+// (scripts/reclassify-areas.ts). One Jev call; null when it fails or picks nothing.
+export async function pickFineArea(paper: Paper, group: string): Promise<string | null> {
+  const fine = AREA_GROUPS[group]?.areas ?? {};
+  if (!paper.abstract || !Object.keys(fine).length) return null;
+  const { answers } = await systemOne(
+    { title: paper.title, abstract: paper.abstract, venue: paper.venue ?? "unknown" },
+    { area: { type: "choice", instructions: "Which topic best fits the paper described by `title` and `abstract`?", criteria: fine } },
+  );
+  const a = answers.area;
+  return a?.type === "choice" && a.choice in fine ? a.choice : null;
+}
+
 // Run async work over items with a small concurrency limit.
 export async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const out: R[] = [];

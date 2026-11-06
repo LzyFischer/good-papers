@@ -25,6 +25,8 @@ export const AREA_GROUPS: Record<string, Group> = {
       reward_modeling: "Reward models & LLM-as-a-judge",
       test_time_compute: "Test-time compute",
       tokenization: "Tokenization",
+      latent_reasoning: "Latent & looped reasoning",
+      diffusion_lm: "Diffusion language models",
     },
   },
   agents: {
@@ -39,6 +41,9 @@ export const AREA_GROUPS: Record<string, Group> = {
       software_agents: "Software engineering agents",
       embodied_agents: "Embodied agents",
       agent_eval: "Agent benchmarks & environments",
+      self_improvement: "Self-improving agents & RSI",
+      agent_harness: "Agent harnesses & scaffolding",
+      deep_research: "Deep research agents",
     },
   },
   efficiency: {
@@ -95,6 +100,7 @@ export const AREA_GROUPS: Record<string, Group> = {
       ai_oversight: "AI oversight & deception",
       uncertainty: "Uncertainty & calibration",
       ood: "Distribution shift & OOD detection",
+      reward_hacking: "Reward hacking & specification gaming",
     },
   },
   generative: {
@@ -110,6 +116,7 @@ export const AREA_GROUPS: Record<string, Group> = {
       gans_vaes: "GANs & VAEs",
       autoregressive_gen: "Autoregressive generation",
       controllable_gen: "Controllable generation",
+      world_models: "World models",
     },
   },
   vision: {
@@ -211,6 +218,7 @@ export const AREA_GROUPS: Record<string, Group> = {
       exploration: "Exploration",
       bandits: "Bandits & online learning",
       games: "Game playing",
+      rl_environments: "RL environments & verifiable rewards",
     },
   },
   robotics: {

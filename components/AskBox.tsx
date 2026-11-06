@@ -23,6 +23,8 @@ export function AskBox({ value = "", dark = false }: { value?: string; dark?: bo
           <Link href="/neurips?track=oral">Orals</Link>
           <Link href="/neurips?track=spotlight">Spotlights</Link>
           <Link href="/neurips?track=poster">Posters</Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/neurips/quest">🎮 Game mode</Link>
         </span>
         {SUGGESTIONS.map((s) => (
           <Link key={s} href={`/ask?q=${encodeURIComponent(s)}`} className="ask-chip">

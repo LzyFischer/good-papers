@@ -90,7 +90,7 @@ export default async function NeuripsPage({ searchParams }: Props) {
       </div>
       <p className="page-sub">
         The best-rated papers in every poster session{total ? `, from ${total.toLocaleString("en-US")} presentations` : ""}. Plan your walk
-        through the halls.
+        through the halls, or <Link href="/neurips/quest">play NeurIPS Quest 🎮</Link>.
       </p>
       {sessions.length === 0 && <p className="empty">The NeurIPS 2026 papers are on their way.</p>}
       {sessions.map((s) => (
