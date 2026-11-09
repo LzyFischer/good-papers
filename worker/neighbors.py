@@ -76,6 +76,10 @@ def compute(ids, areas, dates, m) -> list[dict]:
 
 
 STALE_HOURS = 20
+# A full recompute downloads every vector (~10k papers, ~70 MB). It used to run after every
+# worker run with even one new vector, ~17 times a day, which blew the Supabase egress quota.
+# Now only once a day, or when a big batch (e.g. an import) arrives.
+BIG_BATCH = 200
 
 
 def stale(http: httpx.Client) -> bool:
@@ -90,11 +94,12 @@ def stale(http: httpx.Client) -> bool:
 
 
 def run(http: httpx.Client, dry_run: bool = False, new_vectors: int | None = None) -> None:
-    """Recompute everything. Reading every vector costs real database IO, so a run after the
-    worker skips it unless there are new vectors or the table is getting old (papers age out
-    of the recent window daily). new_vectors=None (run by hand) always recomputes."""
-    if new_vectors == 0 and not dry_run and not stale(http):
-        print("neighbours: no new vectors and the table is recent; skipped", flush=True)
+    """Recompute everything. Reading every vector costs real egress, so a run after the
+    worker skips it unless the table is older than STALE_HOURS or BIG_BATCH new vectors came
+    in; a few new papers wait for the next daily recompute. new_vectors=None (run by hand)
+    always recomputes."""
+    if new_vectors is not None and new_vectors < BIG_BATCH and not dry_run and not stale(http):
+        print(f"neighbours: {new_vectors} new vectors and the table is recent; skipped", flush=True)
         return
     ids, areas, dates, m = load(http)
     started = dt.datetime.now(dt.timezone.utc).isoformat()
