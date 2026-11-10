@@ -2,7 +2,7 @@
 // The home hero's deck of papers to vote on, swiped like Tinder. It never runs out: the
 // paper of the day and this week's trending first, For you papers mixed in as they arrive,
 // then pages of recent papers (/api/deck). Drag right (or ♥) for "Worth reading", left (or
-// ✕) for "Not for me": for a signed-in reader that's a real vote, the same as the buttons on
+// ✕) for "Not worth it": for a signed-in reader that's a real vote, the same as the buttons on
 // the paper page, and it moves the score. The card then shows what readers and the AI panel
 // made of it, score included (the vote is in, so it can't sway it), before flying off.
 // ⏭ skips a paper you haven't read; ↺ goes back one. Guests can play, but their picks only
@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { toDeckCard, titleKey, type DeckCard } from "@/lib/deck";
 import { browserClient } from "@/lib/supabase";
 import { signIn, useSession } from "./AuthButton";
+import { skipPaper } from "./hidden";
 import { useForYou } from "./ForYou";
 import { addToHistory } from "./guestHistory";
 import { getMyVotes, setMyVote } from "./myVotes";
@@ -227,6 +228,7 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
   const skip = () => {
     if (busy || atEnd) return;
     markUsed();
+    if (session && c) skipPaper(session.user.id, c.id); // a very weak "not interested" for For you
     leave("skip", () => setI((n) => n + 1));
   };
   // Back: the last card comes in again from the left; the current one drops behind it.
@@ -324,7 +326,7 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
             >
               <CardFace c={card}>
                 <span className="deck-stamp deck-stamp--yes" style={{ opacity: answer === "yes" ? 1 : Math.max(0, tilt * 1.6) }}>Worth it</span>
-                <span className="deck-stamp deck-stamp--no" style={{ opacity: answer === "no" ? 1 : Math.max(0, -tilt * 1.6) }}>Not for me</span>
+                <span className="deck-stamp deck-stamp--no" style={{ opacity: answer === "no" ? 1 : Math.max(0, -tilt * 1.6) }}>Not worth it</span>
               </CardFace>
               {answer && (
                 <div className={`deck-verdict tone-${card.tier?.tone ?? 1}`} role="status">
@@ -356,7 +358,7 @@ export function HeroDeck({ cards: initial }: { cards: DeckCard[] }) {
         <button className="deck-round deck-round--small deck-round--back" aria-label="Back to the last paper" title="Back" onClick={back} disabled={busy || i === 0}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></svg>
         </button>
-        <button className="deck-round deck-round--no" aria-label="Not for me" title="Not for me" onClick={() => decide("no")} disabled={busy || atEnd}>
+        <button className="deck-round deck-round--no" aria-label="Not worth it" title="Not worth it" onClick={() => decide("no")} disabled={busy || atEnd}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
         <button className="deck-round deck-round--yes" aria-label="Worth reading" title="Worth reading" onClick={() => decide("yes")} disabled={busy || atEnd}>

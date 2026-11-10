@@ -22,9 +22,13 @@ export async function loadPrefs(db: SupabaseClient, uid: string): Promise<Prefs 
   return (data as Prefs | null) ?? null;
 }
 
+// Papers to leave out: the ones they voted on and the ones they marked "Not relevant to me".
 async function votedOn(db: SupabaseClient, uid: string): Promise<Set<string>> {
-  const { data } = await db.from("ratings").select("paper_id").eq("user_id", uid).limit(5000);
-  return new Set((data ?? []).map((r) => r.paper_id as string));
+  const [votes, hides] = await Promise.all([
+    db.from("ratings").select("paper_id").eq("user_id", uid).limit(5000),
+    db.from("paper_hides").select("paper_id").eq("user_id", uid).eq("kind", "hide").limit(5000),
+  ]);
+  return new Set([...(votes.data ?? []), ...(hides.data ?? [])].map((r) => r.paper_id as string));
 }
 
 // What a reader's own activity says about their interests, area by area: votes, comments
@@ -36,14 +40,16 @@ export type Affinity = {
   area: Map<string, number>; // -1..1
   group: Map<string, number>; // -1..1
   papers: Map<string, number>; // net weight per paper: the seeds for papers close in content
+  hidden?: string[]; // marked "Not relevant to me": the papers closest to them rank lower
 };
 
 export async function learnedAffinity(db: SupabaseClient, uid: string): Promise<Affinity> {
   const since = new Date(Date.now() - WINDOW_DAYS * 86400_000).toISOString();
-  const [votes, comments, views] = await Promise.all([
+  const [votes, comments, views, hides] = await Promise.all([
     db.from("ratings").select("paper_id, worth_reading, updated_at").eq("user_id", uid).gte("updated_at", since).limit(1000),
     db.from("comments").select("paper_id, created_at").eq("user_id", uid).gte("created_at", since).limit(1000),
     db.from("reader_views").select("paper_id, seconds, day").eq("user_id", uid).gte("day", since.slice(0, 10)).limit(2000),
+    db.from("paper_hides").select("paper_id, kind, created_at").eq("user_id", uid).gte("created_at", since).limit(2000),
   ]);
   const decay = (iso: string) => Math.pow(0.5, (Date.now() - Date.parse(iso)) / 86400_000 / HALF_LIFE_DAYS);
   const signals: Signal[] = [];
@@ -52,7 +58,12 @@ export async function learnedAffinity(db: SupabaseClient, uid: string): Promise<
   for (const c of comments.data ?? []) signals.push({ paper: c.paper_id, w: 2 * decay(c.created_at) });
   // Reading time: a glance counts little, five minutes or more counts most.
   for (const r of views.data ?? []) signals.push({ paper: r.paper_id, w: Math.min(5, r.seconds / 60) * decay(r.day) });
-  return affinityFromSignals(db, signals);
+  // "Not relevant to me" pulls its topic down more than a "Not worth it" vote (which is about
+  // quality, not interest); a skip in the hero deck ("haven't read it") barely does.
+  for (const h of hides.data ?? []) signals.push({ paper: h.paper_id, w: (h.kind === "hide" ? -0.4 : -0.05) * decay(h.created_at) });
+  const out = await affinityFromSignals(db, signals);
+  out.hidden = (hides.data ?? []).filter((h) => h.kind === "hide").map((h) => h.paper_id as string).slice(0, 50);
+  return out;
 }
 
 export type Signal = { paper: string; w: number };
@@ -151,7 +162,7 @@ export async function rankForYou(
   const venues = prefs?.venues ?? [];
   // Single topics picked by hand (not whole groups), at most 8.
   const pickedFine = (prefs?.areas ?? []).filter((a) => AREAS[a]).slice(0, 8);
-  const [hot, mine, chosenTopics, conf, voted, near, byTopic, seedRows] = await Promise.all([
+  const [hot, mine, chosenTopics, conf, voted, near, byTopic, seedRows, avoidNear] = await Promise.all([
     // What's hot this month in any area: the timely part.
     db.from("paper_scores").select("*").not("score", "is", null).not("area", "is", null).gte("published_on", since)
       .order("hf_upvotes", { ascending: false, nullsFirst: false }).limit(Math.max(120, limit * 3)),
@@ -175,7 +186,11 @@ export async function rankForYou(
     neighborsOf(db, seeds.ids),
     neighborsOf(db, pickedFine.map((a) => `area:${a}`)),
     seeds.ids.length ? db.from("papers").select("id, title").in("id", seeds.ids) : Promise.resolve({ data: [] }),
+    // Papers closest to the ones they marked "Not relevant to me".
+    neighborsOf(db, learned?.hidden ?? []),
   ]);
+  const avoid = new Map<string, number>();
+  for (const n of avoidNear) avoid.set(n.neighbor_id, Math.max(avoid.get(n.neighbor_id) ?? 0, byRank(n.rank)));
   // Close to a picked topic: the closest one, by rank.
   const topicNear = new Map<string, { closeness: number; topic: string }>();
   for (const n of byTopic) {
@@ -234,7 +249,8 @@ export async function rankForYou(
     const similar = 0.6 * (closeness.get(s.id) ?? 0);
     // Close to a picked topic: between the topic itself (1) and what activity suggests (<= 0.6).
     const nearPicked = 0.9 * (topicNear.get(s.id)?.closeness ?? 0);
-    const interest = Math.max(-0.5, Math.min(1, Math.max(chosen, nearPicked, similar, Math.min(0.5, activity)) + Math.min(0, activity) * 0.5));
+    // Close to a paper marked "Not relevant to me": pulled down (up to 0.35), even in a picked topic.
+    const interest = Math.max(-0.5, Math.min(1, Math.max(chosen, nearPicked, similar, Math.min(0.5, activity)) + Math.min(0, activity) * 0.5) - 0.35 * (avoid.get(s.id) ?? 0));
     const venue = venues.some((v) => s.venue?.startsWith(v)) ? 0.1 : 0;
     return 0.6 * interest + 0.25 * timely + 0.15 * (s.score ?? 0) + venue;
   };

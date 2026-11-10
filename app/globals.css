@@ -1257,3 +1257,18 @@ button.shelf-more::after { content: none; }
 .quest-duel-marks { display: flex; gap: 6px; }
 .quest-duel-marks em { font: normal 8px/1.6 var(--q-pixel); padding: 2px 4px; background: var(--q-line); color: var(--q-lime); }
 .nav-game { color: var(--lime) !important; }
+
+/* "Not relevant to me" on For you cards (components/HideButton.tsx): an eye-off button in the
+   thumbnail's corner, shown on hover (always, faintly, on touch screens); its label on hover. */
+.hideable { position: relative; display: flex; flex-direction: column; scroll-snap-align: start; }
+.hideable > .mini { flex: 1; }
+.hide-btn { position: absolute; top: 1rem; right: 1rem; z-index: 2; width: 30px; height: 30px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 999px; background: rgba(20, 22, 26, .62); color: #fff; cursor: pointer; opacity: 0; transition: opacity .15s ease, transform .35s cubic-bezier(.2, .8, .2, 1), background .15s ease; }
+.hide-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.hideable:hover .hide-btn, .hide-btn:focus-visible { opacity: 1; transform: translateY(-6px); }
+.hide-btn:hover { background: rgba(20, 22, 26, .85); }
+.hide-btn::after { content: attr(data-tip); position: absolute; top: calc(100% + 6px); right: 0; white-space: nowrap; font-size: .75rem; font-weight: 600; padding: .3rem .55rem; border-radius: 6px; background: rgba(20, 22, 26, .88); color: #fff; opacity: 0; pointer-events: none; transition: opacity .12s ease; }
+.hide-btn:hover::after, .hide-btn:focus-visible::after { opacity: 1; }
+@media (hover: none) { .hide-btn { opacity: .85; } .hideable:hover .hide-btn { transform: none; } }
+.mini--hidden { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: .4rem; min-height: 8rem; color: var(--muted); font-size: .9rem; border-style: dashed; box-shadow: none; }
+.mini--hidden:hover { transform: none; box-shadow: none; }
+.mini--hidden p { margin: 0; }

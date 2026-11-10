@@ -135,7 +135,7 @@ export default function How() {
             </li>
           </ol>
           <p className="how-small">
-            Signed-in readers vote <b>Worth reading</b> or <b>Not for me</b> on papers they have read, on the paper
+            Signed-in readers vote <b>Worth reading</b> or <b>Not worth it</b> on papers they have read, on the paper
             page or by swiping the cards on the home page.
           </p>
         </section>

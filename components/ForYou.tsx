@@ -126,6 +126,7 @@ export function ForYou() {
       note="Your topics first, then papers like the ones you read"
       papers={papers}
       reasons={reasons}
+      hideable
       more={{ href: "/for-you", label: "See all" }}
     />
   );

@@ -3,6 +3,7 @@ import { AREAS } from "@/lib/areas";
 import { isPreprint, venueLabel } from "@/lib/orgs";
 import type { Score } from "@/lib/types";
 import { Gate } from "./Gate";
+import { Hideable } from "./HideButton";
 import { Thumb } from "./Thumb";
 import { TopPick } from "./TopPick";
 import { LiveGauge, LiveLabel } from "./LiveScore";
@@ -55,10 +56,11 @@ export function MiniCard({ s, scoreOpen = false, why }: { s: Score; scoreOpen?: 
   );
 }
 
-export function Shelf({ id, title, note, papers, children, more, openIds, reasons }: {
+export function Shelf({ id, title, note, papers, children, more, openIds, reasons, hideable = false }: {
   id?: string; title: string; note?: string; papers: Score[]; children?: React.ReactNode; more?: { href: string; label: string };
   openIds?: string[]; // papers whose score shows without voting (top of Trending)
   reasons?: Record<string, string>; // For you: why each paper is here
+  hideable?: boolean; // For you: a "Not relevant to me" button on each card (signed-in readers)
 }) {
   if (papers.length === 0 && !children) return null;
   return (
@@ -75,10 +77,11 @@ export function Shelf({ id, title, note, papers, children, more, openIds, reason
         <p className="hint">Nothing here yet.</p>
       ) : (
         <div className="shelf-row">
-          {papers.map((s, i) => (
+          {papers.map((s, i) => {
             // The first half of every shelf shows its scores; the rest after you vote.
-            <MiniCard key={s.id} s={s} scoreOpen={i < Math.ceil(papers.length / 2) || openIds?.includes(s.id)} why={reasons?.[s.id]} />
-          ))}
+            const card = <MiniCard s={s} scoreOpen={i < Math.ceil(papers.length / 2) || openIds?.includes(s.id)} why={reasons?.[s.id]} />;
+            return hideable ? <Hideable key={s.id} id={s.id}>{card}</Hideable> : <span key={s.id} style={{ display: "contents" }}>{card}</span>;
+          })}
         </div>
       )}
     </section>

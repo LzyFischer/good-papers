@@ -1357,3 +1357,21 @@ create table if not exists public.quest_chat (
 create index if not exists quest_chat_session on public.quest_chat (session, created_at desc);
 create index if not exists quest_chat_user on public.quest_chat (user_id, created_at desc);
 alter table public.quest_chat enable row level security;
+
+-- From migration 028_paper_hides.sql
+create table if not exists public.paper_hides (
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  paper_id   text not null references public.papers(id) on delete cascade,
+  kind       text not null default 'hide' check (kind in ('hide', 'skip')),
+  created_at timestamptz not null default now(),
+  primary key (user_id, paper_id)
+);
+alter table public.paper_hides enable row level security;
+drop policy if exists "read own hides" on public.paper_hides;
+drop policy if exists "add own hides" on public.paper_hides;
+drop policy if exists "change own hides" on public.paper_hides;
+drop policy if exists "remove own hides" on public.paper_hides;
+create policy "read own hides" on public.paper_hides for select to authenticated using (user_id = auth.uid());
+create policy "add own hides" on public.paper_hides for insert to authenticated with check (user_id = auth.uid());
+create policy "change own hides" on public.paper_hides for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "remove own hides" on public.paper_hides for delete to authenticated using (user_id = auth.uid());

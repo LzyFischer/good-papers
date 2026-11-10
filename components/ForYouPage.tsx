@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { signIn, useSession } from "./AuthButton";
 import { useForYou } from "./ForYou";
+import { Hideable } from "./HideButton";
 import { MiniCard } from "./Shelf";
 
 export function ForYouPage() {
@@ -28,7 +29,9 @@ export function ForYouPage() {
     <div className="grid-cards">
       {r.papers.map((s) => (
         <div key={s.id} className="card-anchor">
-          <MiniCard s={s} why={r.reasons[s.id]} />
+          <Hideable id={s.id}>
+            <MiniCard s={s} why={r.reasons[s.id]} />
+          </Hideable>
         </div>
       ))}
     </div>

@@ -116,7 +116,7 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
         </button>
         <button className="vbtn r" aria-pressed={vote === false} aria-label="Downvote: not for me" disabled={busy} onClick={() => cast(false)}>
           <Icon name="down" />
-          <span>Not for me</span>
+          <span>Not worth it</span>
         </button>
       </div>
     );
@@ -142,7 +142,7 @@ export function VoteButtons({ paper, reveal, compact = false }: { paper: PaperSt
         </button>
         <button className="vbtn r" aria-pressed={vote === false} aria-label="Downvote: not for me" disabled={busy} onClick={() => cast(false)}>
           <Icon name="down" />
-          <span>Not for me</span>
+          <span>Not worth it</span>
         </button>
       </div>
       <p className="hint">
