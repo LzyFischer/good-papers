@@ -3,6 +3,7 @@
 // the HTML don't set it off):
 //   - a paper with no AI verdicts yet gets judged by the panel (inside the hourly budget);
 //   - a bulk-imported conference paper gets its AI discussion queued.
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { nudgeWorker } from "@/lib/dispatch";
 import { jevConfigured } from "@/lib/jev";
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
         await storeJudgement(paper, await judgePaper(paper, { withTakes: false }));
         await refreshAiCurve(); // the reader is waiting for this score
         judged = true;
+        revalidatePath(`/paper/${id}`); // the page is cached (ISR): drop the unstored shell or the unscored copy
       } catch (e) {
         console.warn("Judging on view failed:", e);
       }

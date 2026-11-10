@@ -9,9 +9,10 @@ import { ReadTracker } from "@/components/ReadTracker";
 import { WarmUp } from "@/components/WarmUp";
 import { PaperHero } from "@/components/PaperHero";
 import { RelatedPapers } from "@/components/RelatedPapers";
+import { UnstoredPaper } from "@/components/UnstoredPaper";
 import { tierOf } from "@/components/Score";
 import { arxivIdOf } from "@/lib/arxiv";
-import { getPaperAnywhere, getScores, getVerdicts, relatedPapers, storedIdsByArxiv, verifiedAuthors } from "@/lib/papers";
+import { getPaperAnywhere, getScores, getStoredPaper, PAPER_ID, getVerdicts, relatedPapers, storedIdsByArxiv, verifiedAuthors } from "@/lib/papers";
 import { openScoreIds } from "@/lib/trending";
 import { SITE_URL } from "@/lib/site";
 import type { Score } from "@/lib/types";
@@ -26,7 +27,10 @@ export function generateStaticParams() {
   return []; // none at build time; each paper is rendered on its first visit, then cached
 }
 
-// generateMetadata and the page share one fetch per render.
+// generateMetadata and the page share one fetch per render. A paper we haven't stored gets
+// an empty shell (components/UnstoredPaper.tsx) instead: crawlers walking author and paper
+// links into OpenAlex's millions of works cost one primary-key read, not five queries plus OpenAlex.
+const storedOf = cache((id: string) => getStoredPaper(id));
 const paperOf = cache((id: string) => getPaperAnywhere(id));
 const scoreOf = cache((id: string) => getScores([id]).then((m) => m.get(id) ?? null));
 
@@ -34,6 +38,7 @@ type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
+  if (!(await storedOf(id).catch(() => null))) return { title: "Paper", robots: { index: false } };
   const [paper, s] = await Promise.all([paperOf(id).catch(() => null), scoreOf(id).catch(() => null)]);
   if (!paper) return { title: "Paper" };
   const t = tierOf(s);
@@ -68,6 +73,8 @@ function articleJsonLd(paper: { id: string; title: string; authors: string[]; ab
 
 export default async function PaperPage({ params }: Props) {
   const { id } = await params;
+  if (!PAPER_ID.test(id)) notFound();
+  if (!(await storedOf(id))) return <UnstoredPaper id={id} />;
   const paper = await paperOf(id);
   if (!paper) notFound();
 

@@ -41,6 +41,13 @@ function rowToPaper(r: any): Paper {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+// Only our database: null for a paper we have never stored (one primary-key read).
+export async function getStoredPaper(id: string): Promise<Paper | null> {
+  if (!PAPER_ID.test(id)) return null;
+  const { data } = await serverClient().from("papers").select(PAPER_COLUMNS).eq("id", id).maybeSingle();
+  return data ? rowToPaper(data) : null;
+}
+
 // Our database first (it may hold manual papers), then OpenAlex or arXiv.
 export async function getPaperAnywhere(id: string): Promise<Paper | null> {
   if (!PAPER_ID.test(id)) return null;
