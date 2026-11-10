@@ -1272,3 +1272,12 @@ button.shelf-more::after { content: none; }
 .mini--hidden { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: .4rem; min-height: 8rem; color: var(--muted); font-size: .9rem; border-style: dashed; box-shadow: none; }
 .mini--hidden:hover { transform: none; box-shadow: none; }
 .mini--hidden p { margin: 0; }
+
+/* Replies in the feedback inbox (app/admin/feedback) */
+.inbox-reply { margin-top: .7rem; padding: .6rem .9rem; border-left: 3px solid var(--t5); background: rgba(20, 22, 26, .03); border-radius: 0 10px 10px 0; }
+.inbox-reply .inbox-body { margin: .2rem 0 0; }
+.inbox-reply-open { margin-top: .5rem; }
+.inbox-reply-form { margin-top: .7rem; display: grid; gap: .5rem; }
+.inbox-reply-form textarea { width: 100%; font: inherit; padding: .7rem .8rem; border-radius: 10px; border: 1px solid var(--line); background: var(--bg, #fff); resize: vertical; }
+.inbox-reply-actions { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+.inbox-reply-actions .inbox-meta { margin: 0 auto 0 0; }

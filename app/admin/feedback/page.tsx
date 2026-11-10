@@ -5,7 +5,10 @@ import { useEffect, useState } from "react";
 import { signIn, useSession } from "@/components/AuthButton";
 import { isAdmin } from "@/lib/admin";
 
-type Item = { id: string; created_at: string; kind: string; body: string; email: string | null; page: string | null; user_id: string | null; read_at: string | null };
+type Item = {
+  id: string; created_at: string; kind: string; body: string; email: string | null; page: string | null; user_id: string | null; read_at: string | null;
+  reply_body?: string | null; replied_at?: string | null;
+};
 const KIND: Record<string, string> = { bug: "Bug", score: "Score", idea: "Idea", other: "Other" };
 
 export default function FeedbackInbox() {
@@ -51,9 +54,68 @@ export default function FeedbackInbox() {
               {x.user_id ? " · signed in" : " · guest"}
               {x.page ? <> · from {x.page}</> : null}
             </p>
+            {x.reply_body && (
+              <div className="inbox-reply">
+                <p className="inbox-meta">You replied {x.replied_at ? new Date(x.replied_at).toLocaleString() : ""}</p>
+                <p className="inbox-body">{x.reply_body}</p>
+              </div>
+            )}
+            {x.email && session && (
+              <ReplyBox
+                key={x.reply_body ? "again" : "first"}
+                again={Boolean(x.reply_body)}
+                send={async (body) => {
+                  const r = await fetch("/api/feedback/reply", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: x.id, body }),
+                  });
+                  const j = (await r.json().catch(() => ({}))) as { error?: string; replied_at?: string };
+                  if (!r.ok) return j.error ?? "Couldn't send.";
+                  setItems((all) => all?.map((y) => (y.id === x.id ? { ...y, reply_body: body, replied_at: j.replied_at ?? null } : y)) ?? null);
+                  return null;
+                }}
+              />
+            )}
           </li>
         ))}
       </ul>
     </main>
+  );
+}
+
+// Write a reply in place; it goes out by email from hello@goodpapers.org (app/api/feedback/reply).
+function ReplyBox({ again, send }: { again: boolean; send: (body: string) => Promise<string | null> }) {
+  const [open, setOpen] = useState(false);
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (!open)
+    return (
+      <button className="link-button inbox-reply-open" onClick={() => setOpen(true)}>
+        {again ? "Reply again" : "Reply by email"}
+      </button>
+    );
+  return (
+    <form
+      className="inbox-reply-form"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        setBusy(true);
+        setErr(null);
+        const problem = await send(body.trim());
+        setBusy(false);
+        if (problem) setErr(problem);
+        else setOpen(false);
+      }}
+    >
+      <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={7} maxLength={8000} placeholder="Hi, thanks for writing…" autoFocus />
+      <div className="inbox-reply-actions">
+        <span className="inbox-meta">Sent from hello@goodpapers.org, with their message quoted below.</span>
+        <button type="button" className="link-button" onClick={() => setOpen(false)} disabled={busy}>Cancel</button>
+        <button type="submit" className="button-primary" disabled={busy || !body.trim()}>{busy ? "Sending…" : "Send"}</button>
+      </div>
+      {err && <p className="claim-note">{err}</p>}
+    </form>
   );
 }

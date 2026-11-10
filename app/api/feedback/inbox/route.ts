@@ -11,11 +11,11 @@ export async function GET(req: Request) {
   if (!me || !isAdmin(me.uid)) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const { count } = await me.db.from("feedback").select("id", { count: "exact", head: true }).is("read_at", null);
   if (new URL(req.url).searchParams.get("count")) return NextResponse.json({ unread: count ?? 0 }, noStore);
-  const { data } = await me.db
-    .from("feedback")
-    .select("id, created_at, kind, body, email, page, user_id, read_at")
-    .order("created_at", { ascending: false })
-    .limit(100);
+  const list = (cols: string) => me.db.from("feedback").select(cols).order("created_at", { ascending: false }).limit(100);
+  const base = "id, created_at, kind, body, email, page, user_id, read_at";
+  // reply_body and replied_at come with migration 029; before it, the inbox works without them.
+  let { data, error } = await list(`${base}, reply_body, replied_at`);
+  if (error) ({ data } = await list(base));
   return NextResponse.json({ unread: count ?? 0, items: data ?? [] }, noStore);
 }
 

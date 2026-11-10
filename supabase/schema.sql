@@ -1375,3 +1375,7 @@ create policy "read own hides" on public.paper_hides for select to authenticated
 create policy "add own hides" on public.paper_hides for insert to authenticated with check (user_id = auth.uid());
 create policy "change own hides" on public.paper_hides for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy "remove own hides" on public.paper_hides for delete to authenticated using (user_id = auth.uid());
+
+-- From migration 029_feedback_replies.sql
+alter table public.feedback add column if not exists reply_body text check (char_length(reply_body) <= 8000);
+alter table public.feedback add column if not exists replied_at timestamptz;
