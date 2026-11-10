@@ -11,6 +11,11 @@ import { tex } from "@/lib/latex";
 export const alt = "Good Papers rating";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+// Cached an hour, like the page (10 min): crawlers fetch the share card with every paper page.
+export const revalidate = 3600;
+export function generateStaticParams() {
+  return [];
+}
 
 // The brand ring (components/Icons.tsx), as an image the renderer can draw.
 const BRAND = `data:image/svg+xml;base64,${Buffer.from(

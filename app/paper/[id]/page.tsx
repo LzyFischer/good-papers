@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { AuthorClaim } from "@/components/AuthorClaim";
 import { BadgeSnippet } from "@/components/BadgeSnippet";
@@ -16,16 +17,25 @@ import { SITE_URL } from "@/lib/site";
 import type { Score } from "@/lib/types";
 import { tex } from "@/lib/latex";
 
-export const dynamic = "force-dynamic";
+// Cached for 10 minutes (ISR): a crawler opening thousands of paper pages, five queries
+// each, took the Nano database down (Nov 2026). Votes, comments and the reader's own state
+// load in the browser, so a cached page only shows a slightly older aggregate score.
+export const revalidate = 600;
 export const maxDuration = 60;
+export function generateStaticParams() {
+  return []; // none at build time; each paper is rendered on its first visit, then cached
+}
+
+// generateMetadata and the page share one fetch per render.
+const paperOf = cache((id: string) => getPaperAnywhere(id));
+const scoreOf = cache((id: string) => getScores([id]).then((m) => m.get(id) ?? null));
 
 type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const [paper, scores] = await Promise.all([getPaperAnywhere(id).catch(() => null), getScores([id]).catch(() => new Map())]);
+  const [paper, s] = await Promise.all([paperOf(id).catch(() => null), scoreOf(id).catch(() => null)]);
   if (!paper) return { title: "Paper" };
-  const s = scores.get(id) ?? null;
   const t = tierOf(s);
   // Search results show the verdict label, not the number (the score is revealed on the page).
   const lead = [t?.label, s?.conf_track && paper.venue ? `${paper.venue} ${s.conf_track}` : null].filter(Boolean).join(" · ");
@@ -58,7 +68,7 @@ function articleJsonLd(paper: { id: string; title: string; authors: string[]; ab
 
 export default async function PaperPage({ params }: Props) {
   const { id } = await params;
-  const paper = await getPaperAnywhere(id);
+  const paper = await paperOf(id);
   if (!paper) notFound();
 
   const verdicts = (await getVerdicts([id])).get(id) ?? [];
@@ -72,7 +82,7 @@ export default async function PaperPage({ params }: Props) {
   // seconds (components/WarmUp.tsx, /api/warm), not while rendering: crawlers fetching
   // thousands of paper pages used to spend the whole judging budget.
   const [score, related, claimants] = await Promise.all([
-    getScores([id]).then((m) => m.get(id) ?? null),
+    scoreOf(id),
     relatedPapers(id, paper.title).catch(() => []),
     verifiedAuthors(id).catch(() => []),
   ]);
