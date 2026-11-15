@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PaperRow } from "@/components/PaperRow";
-import { findAuthors } from "@/lib/openalex";
+import { findAuthors, normTitle, type AuthorHit } from "@/lib/openalex";
 import { findPapers } from "@/lib/search";
 import { openScoreIds } from "@/lib/trending";
 
@@ -19,10 +19,16 @@ export default async function SearchPage({ searchParams }: Props) {
   const { q = "" } = await searchParams;
   const query = q.trim();
 
-  const [{ results, scores, failed }, authors] = await Promise.all([
+  const [{ results, scores, failed }, found] = await Promise.all([
     findPapers(query),
-    findAuthors(query).catch(() => []),
+    findAuthors(query).catch(() => null),
   ]);
+  // OpenAlex down (usually its daily budget): one card for the name, if the papers found
+  // carry it exactly, linking to the author page (which then lists our stored papers).
+  const key = normTitle(query);
+  const exact = found ? null : results.flatMap((r) => r.authors).find((n) => normTitle(n) === key);
+  const authors: AuthorHit[] =
+    found ?? (exact ? [{ ids: [], name: exact, institution: null, topic: null, works: results.filter((r) => r.authors.includes(exact)).length }] : []);
 
   return (
     <main className="wrap page">
@@ -35,11 +41,11 @@ export default async function SearchPage({ searchParams }: Props) {
           </h2>
           <ul>
             {authors.map((a) => (
-              <li key={a.ids[0]}>
-                <Link href={`/author/${encodeURIComponent(a.name)}?a=${a.ids.join(",")}`} rel="nofollow">
+              <li key={a.ids[0] ?? a.name}>
+                <Link href={`/author/${encodeURIComponent(a.name)}${a.ids.length ? `?a=${a.ids.join(",")}` : ""}`} rel="nofollow">
                   <b>{a.name}</b>
                   <span>{[a.institution, a.topic].filter(Boolean).join(" · ") || "Institution unknown"}</span>
-                  <small>{a.works.toLocaleString("en-US")} papers</small>
+                  <small>{a.ids.length ? `${a.works.toLocaleString("en-US")} papers` : `${a.works} found here`}</small>
                 </Link>
               </li>
             ))}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PaperList } from "@/components/PaperList";
 import { getAuthorWorks } from "@/lib/openalex";
+import { storedPapersByAuthor } from "@/lib/papers";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,8 @@ export default async function AuthorPage({ params, searchParams }: Props) {
   const { from = null, page = "1", a: authorId = null } = await searchParams;
   const p = Math.max(1, Number(page) || 1);
   const a = await getAuthorWorks(name, from, p, authorId).catch(() => null);
+  // OpenAlex down (usually its daily budget): the papers by this name we already have.
+  const stored = a ? [] : await storedPapersByAuthor(name).catch(() => []);
   const keep = new URLSearchParams({ ...(from ? { from } : {}), ...(authorId ? { a: authorId } : {}) }).toString();
   const base = `/author/${encodeURIComponent(name)}${keep ? `?${keep}` : ""}`;
   return (
@@ -42,7 +45,16 @@ export default async function AuthorPage({ params, searchParams }: Props) {
           </p>
         )}
       </header>
-      {a ? <PaperList papers={a.papers} total={a.total} page={p} baseHref={base} /> : <p className="empty">OpenAlex isn&apos;t responding. Try again in a minute.</p>}
+      {a ? (
+        <PaperList papers={a.papers} total={a.total} page={p} baseHref={base} />
+      ) : stored.length ? (
+        <>
+          <p className="hint">OpenAlex isn&apos;t responding, so this is only what Good Papers has rated. The full list will be back later.</p>
+          <PaperList papers={stored} total={stored.length} page={1} baseHref={base} />
+        </>
+      ) : (
+        <p className="empty">OpenAlex isn&apos;t responding. Try again later.</p>
+      )}
     </main>
   );
 }

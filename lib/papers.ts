@@ -41,6 +41,18 @@ function rowToPaper(r: any): Paper {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+// Papers we've stored with this exact author name, newest first: the author page when
+// OpenAlex is down (its daily budget runs out), so a reader still sees something.
+export async function storedPapersByAuthor(name: string, limit = 50): Promise<Paper[]> {
+  const { data } = await serverClient()
+    .from("papers")
+    .select(PAPER_COLUMNS)
+    .contains("authors", [name])
+    .order("published_on", { ascending: false, nullsFirst: false })
+    .limit(limit);
+  return (data ?? []).map(rowToPaper);
+}
+
 // Only our database: null for a paper we have never stored (one primary-key read).
 export async function getStoredPaper(id: string): Promise<Paper | null> {
   if (!PAPER_ID.test(id)) return null;
