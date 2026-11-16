@@ -44,7 +44,7 @@ export default async function SearchPage({ searchParams }: Props) {
               <li key={a.ids[0] ?? a.name}>
                 <Link href={`/author/${encodeURIComponent(a.name)}${a.ids.length ? `?a=${a.ids.join(",")}` : ""}`} rel="nofollow">
                   <b>{a.name}</b>
-                  <span>{[a.institution, a.topic].filter(Boolean).join(" · ") || "Institution unknown"}</span>
+                  <span>{[a.institution, a.topic].filter(Boolean).join(" · ") || (a.ids.length ? "Institution unknown" : "Papers on Good Papers")}</span>
                   <small>{a.ids.length ? `${a.works.toLocaleString("en-US")} papers` : `${a.works} found here`}</small>
                 </Link>
               </li>
