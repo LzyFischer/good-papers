@@ -18,10 +18,15 @@ function params(extra: Record<string, string>) {
 
 // With our key, OpenAlex bills each request against a daily budget; when that's spent
 // (429), retry once without the key, on the shared anonymous budget.
+// OpenAlex support asked for our own user agent: Vercel and GitHub Actions share networks
+// with other projects, and without it our key gets grouped with other people's accounts.
+export const OA_USER_AGENT = "GoodPapers/1.0 (+https://www.goodpapers.org)";
+
 async function oaFetch(url: string, init?: RequestInit & { next?: { revalidate?: number } }): Promise<Response> {
-  const res = await fetch(url, init);
+  const opts = { ...init, headers: { ...(init?.headers as Record<string, string> | undefined), "User-Agent": OA_USER_AGENT } };
+  const res = await fetch(url, opts);
   if (res.status !== 429 || !url.includes("api_key=")) return res;
-  return fetch(url.replace(/([?&])api_key=[^&]*&?/, "$1").replace(/[?&]$/, ""), init);
+  return fetch(url.replace(/([?&])api_key=[^&]*&?/, "$1").replace(/[?&]$/, ""), opts);
 }
 
 // OpenAlex stores abstracts as { word: [positions] }; rebuild the text.

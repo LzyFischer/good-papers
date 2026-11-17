@@ -125,7 +125,7 @@ def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     print(f"{len(titles)} papers, {len(titles) - len(todo)} already have an abstract, looking up {len(todo)}", flush=True)
 
-    with httpx.Client(timeout=30, headers={"User-Agent": "GoodPapers/0.2"}) as client:
+    with httpx.Client(timeout=30, headers={"User-Agent": "GoodPapers/1.0 (+https://www.goodpapers.org)"}) as client:
         def one(forum: str) -> tuple[str, str | None]:
             return forum, lookup(client, titles[forum])
 
@@ -146,7 +146,7 @@ def main() -> None:
     # SKIP_ARXIV=1 when arXiv is rate-limiting us (429): OpenAlex only this time.
     rest = [] if os.environ.get("SKIP_ARXIV") else [f for f in titles if not (data.get(f) or {}).get("abstract")]
     print(f"arXiv: looking up {len(rest)}", flush=True)
-    with httpx.Client(timeout=30, headers={"User-Agent": "GoodPapers/0.2 (mailto:" + env().get("OPENALEX_MAILTO", "") + ")"}) as client:
+    with httpx.Client(timeout=30, headers={"User-Agent": "GoodPapers/1.0 (+https://www.goodpapers.org)"}) as client:
         hits = 0
         for i, forum in enumerate(rest, 1):
             a = arxiv_lookup(client, titles[forum])

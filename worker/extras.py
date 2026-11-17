@@ -24,6 +24,7 @@ CONSENSUS_MIN = 3     # comments before a paper gets a consensus line
 CONSENSUS_EVERY = 3   # new comments before it is rewritten
 RECHECK = timedelta(hours=20)
 # OpenAlex's anonymous budget is shared and runs out; use our key when there is one.
+OA_HEADERS = {"User-Agent": "GoodPapers/1.0 (+https://www.goodpapers.org)"}
 OA_AUTH = {k: v for k, v in {"api_key": os.environ.get("OPENALEX_API_KEY"), "mailto": os.environ.get("OPENALEX_MAILTO")}.items() if v}  # HF upvotes and stars move; refresh about daily
 WORKERS = 8
 
@@ -149,7 +150,7 @@ def openalex_venues(ids: list[str]) -> tuple[dict[str, list[str]], dict[str, str
     works = [i for i in ids if re.fullmatch(r"W\d+", i)]
     for i in range(0, len(works), 50):
         try:
-            r = httpx.get("https://api.openalex.org/works", timeout=30, params={
+            r = httpx.get("https://api.openalex.org/works", timeout=30, headers=OA_HEADERS, params={
                 "filter": "openalex_id:" + "|".join(works[i:i + 50]), "per_page": "50", "select": "id,locations", **OA_AUTH})
             r.raise_for_status()
         except httpx.HTTPError:
@@ -173,7 +174,7 @@ def openalex_by_arxiv(aids: list[str]) -> dict[str, dict]:
     for i in range(0, len(aids), 50):
         batch = aids[i:i + 50]
         try:
-            r = httpx.get("https://api.openalex.org/works", timeout=30, params={
+            r = httpx.get("https://api.openalex.org/works", timeout=30, headers=OA_HEADERS, params={
                 "filter": "doi:" + "|".join(f"10.48550/arxiv.{a}" for a in batch), "per_page": "50",
                 "select": "doi,authorships,locations", **OA_AUTH})
             r.raise_for_status()

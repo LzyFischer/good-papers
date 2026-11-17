@@ -5,6 +5,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { arxivIdOf } from "./arxiv";
+import { OA_USER_AGENT } from "./openalex";
 import { storedIdsByArxiv } from "./papers";
 
 const ORCID = "https://orcid.org";
@@ -84,13 +85,14 @@ async function orcidWorks(orcid: string, ids: Ids) {
 // The reader's works on OpenAlex (whose author profiles carry ORCID iDs), newest first.
 async function openalexWorks(orcid: string, ids: Ids) {
   const mailto = process.env.OPENALEX_MAILTO ? `&mailto=${encodeURIComponent(process.env.OPENALEX_MAILTO)}` : "";
-  const a = await fetch(`https://api.openalex.org/authors/orcid:${orcid}?select=id${mailto}`);
+  const a = await fetch(`https://api.openalex.org/authors/orcid:${orcid}?select=id${mailto}`, { headers: { "User-Agent": OA_USER_AGENT } });
   if (!a.ok) return;
   const author = ((await a.json()) as { id?: string }).id?.replace("https://openalex.org/", "") ?? null;
   if (!author) return;
   ids.openalexAuthor = author;
   const w = await fetch(
     `https://api.openalex.org/works?filter=author.id:${author}&sort=publication_date:desc&per-page=200&select=id,doi,ids${mailto}`,
+    { headers: { "User-Agent": OA_USER_AGENT } },
   );
   if (!w.ok) return;
   const j = (await w.json()) as { results?: { id: string; doi?: string | null; ids?: { arxiv?: string } }[] };

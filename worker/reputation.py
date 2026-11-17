@@ -60,7 +60,8 @@ def domain(s: str | None) -> str | None:
 
 class OpenAlex:
     def __init__(self) -> None:
-        self.http = httpx.Client(base_url="https://api.openalex.org", timeout=30)
+        self.http = httpx.Client(base_url="https://api.openalex.org", timeout=30,
+                                 headers={"User-Agent": "GoodPapers/1.0 (+https://www.goodpapers.org)"})
         self.mail = os.environ.get("OPENALEX_MAILTO")
         self._inst: dict[str, dict] = {}
 
