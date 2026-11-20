@@ -1379,3 +1379,8 @@ button.shelf-more::after { content: none; }
   .iclr-split, .iclr-sum, .iclr-ft { grid-template-columns: 1fr; }
   .iclr-results li { flex-direction: column; gap: .2rem; }
 }
+.iclr-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.iclr-top .page-title { margin-bottom: 1.5rem; }
+.iclr-lang { flex: none; margin-top: .35rem; padding: .3rem .7rem; border: 1px solid var(--line-strong); border-radius: 999px; font-size: .82rem; color: var(--ink); background: var(--surface); }
+.iclr-lang:hover { border-color: var(--ink); }
+.iclr-top .iclr-crumb { margin: .4rem 0 1rem; }

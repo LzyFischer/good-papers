@@ -1,69 +1,77 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { IclrDistribution, IclrStanding } from "@/components/IclrStanding";
 import { ICLR_YEAR, iclrPaper, iclrPool, iclrSearch, iclrStats, openreviewId } from "@/lib/iclr";
+import { ICLR_COPY, type IclrCopy, type Lang } from "@/lib/iclrCopy";
 
-export const revalidate = 3600;
+type Props = { searchParams: Promise<{ id?: string; q?: string; lang?: string }> };
 
-type Props = { searchParams: Promise<{ id?: string; q?: string }> };
+/** ?lang=zh|en wins; otherwise a browser that prefers Chinese gets Chinese. */
+async function langOf(param?: string): Promise<Lang> {
+  if (param === "zh" || param === "en") return param;
+  return /^zh\b/i.test((await headers()).get("accept-language") ?? "") ? "zh" : "en";
+}
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const { id, q } = await searchParams;
+  const { id, q, lang } = await searchParams;
+  const zh = (await langOf(lang)) === "zh";
   return {
-    title: `ICLR ${ICLR_YEAR}: where does your paper stand?`,
-    description: `Chance of acceptance, score rank and a simulated area-chair batch for every ICLR ${ICLR_YEAR} submission, from public OpenReview scores.`,
+    title: ICLR_COPY[zh ? "zh" : "en"].title(ICLR_YEAR),
+    description: zh
+      ? `每篇 ICLR ${ICLR_YEAR} 投稿的录用概率、分数排名和模拟 AC 批次，基于 OpenReview 公开分数。`
+      : `Chance of acceptance, score rank and a simulated area-chair batch for every ICLR ${ICLR_YEAR} submission, from public OpenReview scores.`,
     // submissions under review are anonymous: keep single-paper and search views out of search engines
     ...(id || q ? { robots: { index: false, follow: false } } : {}),
   };
 }
 
-const OUTCOME: Record<string, string> = {
-  withdrawn: "This submission was withdrawn.",
-  desk_rejected: "This submission was desk rejected.",
-  rejected: "This submission was rejected.",
-  poster: "Accepted as a poster.",
-  spotlight: "Accepted as a spotlight.",
-  oral: "Accepted as an oral.",
-};
-
-function Findings() {
+function Findings({ t }: { t: IclrCopy }) {
+  const f = t.f;
   return (
-    <section className="iclr-finding" aria-label="What decides it">
-      <h2>What decides it, and what doesn&apos;t</h2>
-      <p>Three things people believe about ICLR decisions, tested on ICLR 2024–2026 (28,000 decided papers).</p>
-      <h3>“A weak batch helps.” It doesn&apos;t.</h3>
-      <p>Papers with exactly the same scores (say 4, 4, 6, 6), split by how strong their 10 nearest neighbours were:</p>
+    <section className="iclr-finding" aria-label={f.title}>
+      <h2>{f.title}</h2>
+      <p>{f.intro}</p>
+      <h3>{f.batchH}</h3>
+      <p>{f.batchP}</p>
       <div className="iclr-ft">
-        <div><small>2024</small><b>49.7% / 49.8%</b><span>accepted, strong / weak neighbours</span></div>
-        <div><small>2025</small><b>47.0% / 49.9%</b><span>accepted, strong / weak neighbours</span></div>
-        <div><small>2026</small><b>42.5% / 44.5%</b><span>accepted, strong / weak neighbours</span></div>
+        {[["2024", "49.7% / 49.8%"], ["2025", "47.0% / 49.9%"], ["2026", "42.5% / 44.5%"]].map(([y, v]) => (
+          <div key={y}><small>{y}</small><b>{v}</b><span>{f.batchLabel}</span></div>
+        ))}
       </div>
-      <h3>“Some areas are easier.” Barely, and not the same ones each year.</h3>
-      <p>At equal scores, primary areas differ by 2 to 6 points, and the lenient ones change year to year (transfer learning was among the strictest in 2024 and the most lenient in 2025).</p>
-      <h3>“Only the average matters.” No: agreement does.</h3>
+      <h3>{f.areaH}</h3>
+      <p>{f.areaP}</p>
+      <h3>{f.agreeH}</h3>
       <div className="iclr-ft">
-        <div><small>2024</small><b>87% / 63%</b><span>accepted, reviewers agree / split</span></div>
-        <div><small>2025</small><b>61% / 36%</b><span>accepted, reviewers agree / split</span></div>
-        <div><small>2026</small><b>43% / 36%</b><span>accepted, reviewers agree / split</span></div>
+        {[["2024", "87% / 63%"], ["2025", "61% / 36%"], ["2026", "43% / 36%"]].map(([y, v]) => (
+          <div key={y}><small>{y}</small><b>{v}</b><span>{f.agreeLabel}</span></div>
+        ))}
       </div>
-      <p>Same total score, e.g. 4, 6, 6 versus 2, 6, 8.</p>
+      <p>{f.agreeP}</p>
     </section>
   );
 }
 
 export default async function IclrPage({ searchParams }: Props) {
-  const { id, q = "" } = await searchParams;
+  const { id, q = "", lang: langParam } = await searchParams;
+  const lang = await langOf(langParam);
+  const t = ICLR_COPY[lang];
+  const zh = lang === "zh" ? "&lang=zh" : "";
   const query = q.trim();
   const pasted = query ? openreviewId(query) : null;
-  if (pasted && !id) redirect(`/iclr?id=${pasted}`);
+  if (pasted && !id) redirect(`/iclr?id=${pasted}${zh}`);
+
+  // the switch keeps the paper or search in view
+  const here = new URLSearchParams({ ...(id ? { id } : {}), ...(query ? { q: query } : {}), lang: lang === "zh" ? "en" : "zh" });
+  const Switch = <Link className="iclr-lang" href={`/iclr?${here}`} hrefLang={lang === "zh" ? "en" : "zh"}>{t.switchTo}</Link>;
 
   const stats = await iclrStats();
   if (!stats) {
     return (
-      <main className="wrap page iclr">
-        <h1 className="page-title">ICLR {ICLR_YEAR}: where does your paper stand?</h1>
-        <p className="empty">The ICLR data isn&apos;t loaded yet. Check back soon.</p>
+      <main className="wrap page iclr" lang={lang === "zh" ? "zh-CN" : "en"}>
+        <h1 className="page-title">{t.title(ICLR_YEAR)}</h1>
+        <p className="empty">{t.notLoaded}</p>
       </main>
     );
   }
@@ -72,24 +80,26 @@ export default async function IclrPage({ searchParams }: Props) {
   if (id && !paper) notFound();
   const pool = paper ? await iclrPool(paper.neighbors) : [];
   const results = !paper && query ? await iclrSearch(query) : [];
-  const updated = new Date(stats.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  const updated = new Date(stats.updated_at).toLocaleDateString(lang === "zh" ? "zh-CN" : "en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
   return (
-    <main className="wrap page iclr">
-      {!paper && (
+    <main className="wrap page iclr" lang={lang === "zh" ? "zh-CN" : "en"}>
+      {paper ? (
+        <div className="iclr-top"><p className="iclr-crumb"><Link href={`/iclr${zh ? "?lang=zh" : ""}`}>{t.crumb(ICLR_YEAR)}</Link></p>{Switch}</div>
+      ) : (
         <>
-          <h1 className="page-title">ICLR {ICLR_YEAR}: where does your paper stand?</h1>
+          <div className="iclr-top"><h1 className="page-title">{t.title(ICLR_YEAR)}</h1>{Switch}</div>
           <p className="iclr-lede">
-            {s.counts.submitted.toLocaleString("en-US")} submissions, {s.counts.withdrawn.toLocaleString("en-US")} already withdrawn.
-            Public review scores from OpenReview via <a href="https://papercopilot.com" target="_blank" rel="noopener noreferrer">Paper Copilot</a>, updated daily (last {updated}).
+            {t.lede(s.counts.submitted, s.counts.withdrawn)}{" "}
+            <a href="https://papercopilot.com" target="_blank" rel="noopener noreferrer">Paper Copilot</a>{t.ledeTail(updated)}
           </p>
         </>
       )}
-      {paper && <p className="iclr-crumb"><Link href="/iclr">← All ICLR {ICLR_YEAR} submissions</Link></p>}
 
       <form className="iclr-search" action="/iclr">
-        <input name="q" defaultValue={paper ? "" : query} placeholder="Paste a paper's title or OpenReview link" aria-label="Find a submission" />
-        <button type="submit">Find</button>
+        <input name="q" defaultValue={paper ? "" : query} placeholder={t.placeholder} aria-label={t.placeholder} />
+        {lang === "zh" && <input type="hidden" name="lang" value="zh" />}
+        <button type="submit">{t.find}</button>
       </form>
 
       {query && !paper && (
@@ -97,13 +107,13 @@ export default async function IclrPage({ searchParams }: Props) {
           <ul className="iclr-results">
             {results.map((r) => (
               <li key={r.id}>
-                <Link href={`/iclr?id=${r.id}`}>{r.title}</Link>
-                <span>{r.outcome === "pending" ? r.ratings.join(" · ") || "No reviews yet" : r.outcome.replace("_", " ")}</span>
+                <Link href={`/iclr?id=${r.id}${zh}`}>{r.title}</Link>
+                <span>{r.outcome === "pending" ? r.ratings.join(" · ") || t.noReviews : t.outcomeShort[r.outcome] ?? r.outcome}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="empty">No ICLR {ICLR_YEAR} submission matches that. Try a few exact words from the title, or paste its OpenReview link.</p>
+          <p className="empty">{t.noMatch(ICLR_YEAR)}</p>
         )
       )}
 
@@ -111,32 +121,26 @@ export default async function IclrPage({ searchParams }: Props) {
         paper.outcome !== "pending" || paper.ratings.length < 3 ? (
           <section className="iclr-card">
             <h1 className="iclr-title">{paper.title}</h1>
-            <p className="empty">{OUTCOME[paper.outcome] ?? "This submission doesn't have three reviews yet, so there's nothing to rank."}</p>
+            <p className="empty">{t.outcome[paper.outcome] ?? t.tooFew}</p>
           </section>
         ) : (
-          <IclrStanding stats={s} title={paper.title} area={paper.area} ratings={paper.ratings} confidences={paper.confidences}
+          <IclrStanding lang={lang} stats={s} title={paper.title} area={paper.area} ratings={paper.ratings} confidences={paper.confidences}
             pool={pool} similarLast={paper.similar_last} />
         )
       ) : (
         !query && (
-          <section className="iclr-card" aria-label="All submissions">
+          <section className="iclr-card" aria-label={t.allTitle}>
             <div className="iclr-bh">
-              <h2>All submissions</h2>
-              <p>Mean review score of {s.counts.reviewed.toLocaleString("en-US")} submissions with 3+ reviews ({s.scale[0]}–{s.scale[1]} scale)</p>
+              <h2>{t.allTitle}</h2>
+              <p>{t.allNote(s.counts.reviewed, s.scale[0], s.scale[1])}</p>
             </div>
-            <IclrDistribution stats={s} />
+            <IclrDistribution stats={s} you={t.you} />
           </section>
         )
       )}
 
-      <Findings />
-      <p className="iclr-note">
-        How the chance is computed: the paper&apos;s rank among this year&apos;s submissions (mean, lowest and highest score, and how much
-        reviewers disagree), calibrated on ICLR 2024–2026 decisions. Ranks, not raw scores, because the scale changes almost every year
-        ({ICLR_YEAR} uses {s.scale[0]}–{s.scale[1]}). Held out one year at a time it ranks papers well (AUC 0.89–0.95), but any single year
-        can run 5–10 points above or below, and it was fitted on final scores while these are still before the rebuttal. Similar papers are
-        found with SPECTER2. Not affiliated with ICLR or OpenReview.
-      </p>
+      <Findings t={t} />
+      <p className="iclr-note">{t.foot(ICLR_YEAR, s.scale[0], s.scale[1])}</p>
     </main>
   );
 }

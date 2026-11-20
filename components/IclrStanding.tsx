@@ -5,6 +5,7 @@
 // Everything is computed here from the year's lookup tables (lib/iclr.ts, scripts/iclr_sync.py).
 import { useMemo, useState } from "react";
 import type { IclrNeighbor, IclrStats } from "@/lib/iclr";
+import { ICLR_COPY, type Lang } from "@/lib/iclrCopy";
 
 type Table = { xs: number[]; below: number[]; at: number[]; n: number };
 function table(pairs: [number, number][]): Table {
@@ -36,7 +37,7 @@ function useModel(stats: IclrStats) {
   }, [stats]);
 }
 
-export function IclrDistribution({ stats, at }: { stats: IclrStats; at?: number }) {
+export function IclrDistribution({ stats, at, you = "You" }: { stats: IclrStats; at?: number; you?: string }) {
   const W = 900, H = 190, pad = 28, [lo, hi] = stats.scale;
   const maxC = Math.max(...stats.hist.map((b) => b[1]));
   const x = (v: number) => pad + ((v - lo) / (hi - lo)) * (W - 2 * pad);
@@ -56,7 +57,7 @@ export function IclrDistribution({ stats, at }: { stats: IclrStats; at?: number 
         <g>
           <line x1={x(at)} x2={x(at)} y1={16} y2={H - 28} className="iclr-dist-you" />
           <rect x={x(at) - 36} y={0} width={72} height={19} rx={9.5} className="iclr-dist-tag" />
-          <text x={x(at)} y={13.5} textAnchor="middle" className="iclr-dist-tagtext">You {at.toFixed(2)}</text>
+          <text x={x(at)} y={13.5} textAnchor="middle" className="iclr-dist-tagtext">{you} {at.toFixed(2)}</text>
         </g>
       )}
     </svg>
@@ -83,10 +84,11 @@ function draw(n: number, k: number, random: () => number) {
   return out;
 }
 
-export function IclrStanding({ stats, title, area, ratings: real, confidences, pool, similarLast }: {
-  stats: IclrStats; title: string; area: string | null; ratings: number[]; confidences: number[];
+export function IclrStanding({ lang = "en", stats, title, area, ratings: real, confidences, pool, similarLast }: {
+  lang?: Lang; stats: IclrStats; title: string; area: string | null; ratings: number[]; confidences: number[];
   pool: IclrNeighbor[]; similarLast: { title: string; outcome: string; ratings: number[] }[];
 }) {
+  const t = ICLR_COPY[lang];
   const chance = useModel(stats);
   const [ratings, setRatings] = useState(real);
   const [size, setSize] = useState(15);
@@ -132,62 +134,61 @@ export function IclrStanding({ stats, title, area, ratings: real, confidences, p
 
   return (
     <>
-      <section className="iclr-card" aria-label="All submissions">
+      <section className="iclr-card" aria-label={t.allTitle}>
         <div className="iclr-bh">
-          <h2>All submissions</h2>
-          <p>Mean review score of {stats.counts.reviewed.toLocaleString("en-US")} submissions with 3+ reviews ({lo}–{hi} scale). This paper is ahead of {Math.round(pm * 100)}%.</p>
+          <h2>{t.allTitle}</h2>
+          <p>{t.allNote(stats.counts.reviewed, lo, hi)}{lang === "zh" ? "。" : ". "}{t.ahead(Math.round(pm * 100))}</p>
         </div>
-        <IclrDistribution stats={stats} at={m} />
+        <IclrDistribution stats={stats} at={m} you={t.you} />
       </section>
 
-      <section className="iclr-card" aria-label="Chance of acceptance">
+      <section className="iclr-card" aria-label={t.chance.join(" ")}>
         <div className="iclr-head">
           <div className={`iclr-ring iclr-ring--${tone}`} style={{ ["--p" as string]: `${p * 100}%` }}>
-            <div><b>{fmt(p)}</b><small>chance of<br />acceptance</small></div>
+            <div><b>{fmt(p)}</b><small>{t.chance[0]}<br />{t.chance[1]}</small></div>
           </div>
           <div>
             {area && <p className="iclr-area">{area}</p>}
             <h1 className="iclr-title">{title}</h1>
             <div className="iclr-facts">
-              <span><b>{m.toFixed(2)}</b>mean score</span>
-              <span><b>Top {Math.max(1, Math.round((1 - pm) * 100))}%</b>of submissions</span>
-              {changed && <span><b>{p >= orig ? "+" : "−"}{Math.abs(Math.round((p - orig) * 100))} pts</b>vs the real scores ({fmt(orig)})</span>}
+              <span><b>{m.toFixed(2)}</b>{t.meanScore}</span>
+              <span><b>{t.top(Math.max(1, Math.round((1 - pm) * 100)))}</b>{t.ofSubs}</span>
+              {changed && <span><b>{t.pts(Math.round((p - orig) * 100))}</b>{t.vsReal(fmt(orig))}</span>}
             </div>
           </div>
         </div>
 
         <div className="iclr-bh iclr-sub">
-          <h2>What if a reviewer changes their score?</h2>
-          <p>Tap + or − on a review. Everything on this page updates.</p>
+          <h2>{t.whatIf}</h2>
+          <p>{t.whatIfHint}</p>
         </div>
         <div className="iclr-sim">
           {ratings.map((r, i) => (
             <div key={i} className={`iclr-rev${r !== real[i] ? " is-changed" : ""}`}>
-              <button type="button" aria-label={`Raise review ${i + 1}`} disabled={r >= hi}
+              <button type="button" aria-label={t.raise(i + 1)} disabled={r >= hi}
                 onClick={() => setRatings(ratings.map((v, j) => (j === i ? Math.min(hi, v + step) : v)))}>+</button>
               <Chip r={r} />
-              <button type="button" aria-label={`Lower review ${i + 1}`} disabled={r <= lo}
+              <button type="button" aria-label={t.lower(i + 1)} disabled={r <= lo}
                 onClick={() => setRatings(ratings.map((v, j) => (j === i ? Math.max(lo, v - step) : v)))}>−</button>
-              <small>R{i + 1}{confidences[i] ? ` · conf ${confidences[i]}` : ""}</small>
+              <small>R{i + 1}{confidences[i] ? ` · ${t.conf} ${confidences[i]}` : ""}</small>
             </div>
           ))}
-          {changed && <button type="button" className="iclr-reset" onClick={() => setRatings(real)}>Back to real scores</button>}
+          {changed && <button type="button" className="iclr-reset" onClick={() => setRatings(real)}>{t.reset}</button>}
         </div>
         {std(ratings) > stats.spreadP75 && (
           <p className="iclr-warn">
-            <b>These reviewers disagree</b> more than for 3 in 4 submissions. At the same total score, split papers were
-            accepted less often in each of the last three years (36% vs 61% in 2025). The chance above accounts for it.
+            <b>{t.warnB}</b>{t.warn}
           </p>
         )}
 
         {last && last.n > 0 && (
           <>
             <div className="iclr-bh iclr-sub">
-              <h2>Papers ranked like this one last year</h2>
-              <p>ICLR {"2026"} submissions ranked between {last.a}% and {last.b + 1}% from the bottom ({last.n.toLocaleString("en-US")} papers)</p>
+              <h2>{t.lastTitle}</h2>
+              <p>{t.lastNote(last.a, last.b + 1, last.n)}</p>
             </div>
             <div className="iclr-split">
-              {(["Accepted", "Rejected", "Withdrew"] as const).map((k, j) => (
+              {t.split.map((k, j) => (
                 <div key={k}><b>{Math.round((last.t[j] / last.n) * 100)}%</b><span>{k}</span></div>
               ))}
             </div>
@@ -196,25 +197,25 @@ export function IclrStanding({ stats, title, area, ratings: real, confidences, p
       </section>
 
       {pool.length >= 10 && (
-        <section className="iclr-card" aria-label="Simulated AC batch">
+        <section className="iclr-card" aria-label={t.batchTitle}>
           <div className="iclr-bh">
-            <h2>Simulated AC batch</h2>
-            <p>An area chair gets a stack of submissions close to their own work. We can&apos;t see the real stacks, so we draw them from the {pool.length} submissions closest to this one in content.</p>
+            <h2>{t.batchTitle}</h2>
+            <p>{t.batchNote(pool.length)}</p>
           </div>
           <div className="iclr-controls">
-            <span>Batch size</span>
-            <div className="iclr-seg" role="group" aria-label="Batch size">
+            <span>{t.batchSize}</span>
+            <div className="iclr-seg" role="group" aria-label={t.batchSize}>
               {[10, 15, 25].filter((k) => k <= pool.length).map((k) => (
                 <button key={k} type="button" aria-pressed={k === size} onClick={() => setSize(k)}>{k}</button>
               ))}
             </div>
-            <button type="button" className="iclr-shuffle" onClick={() => setSeed(seed + 1)}>↻ Shuffle batch</button>
+            <button type="button" className="iclr-shuffle" onClick={() => setSeed(seed + 1)}>{t.shuffle}</button>
           </div>
           {summary && (
             <div className="iclr-sum">
-              <div><b>{Math.round(summary.med)} of {size + 1}</b><span>typical rank in 1,000 simulated batches</span></div>
-              <div><b>{Math.round(summary.topThird * 100)}%</b><span>of batches with this paper in the top third</span></div>
-              <div><b>{Math.round(summary.lo)}–{Math.round(summary.hi)}</b><span>rank range in 8 of 10 batches</span></div>
+              <div><b>{t.sumRank(Math.round(summary.med), size + 1)}</b><span>{t.sumRankNote}</span></div>
+              <div><b>{Math.round(summary.topThird * 100)}%</b><span>{t.sumTop}</span></div>
+              <div><b>{Math.round(summary.lo)}–{Math.round(summary.hi)}</b><span>{t.sumRange}</span></div>
             </div>
           )}
           <ol className="iclr-list">
@@ -222,8 +223,8 @@ export function IclrStanding({ stats, title, area, ratings: real, confidences, p
               <li key={q.id} className={q.me ? "is-me" : undefined}>
                 <span className="iclr-rk">{i + 1}</span>
                 <span className="iclr-t">
-                  {q.me ? q.title : <a href={`/iclr?id=${q.id}`}>{q.title}</a>}
-                  {q.me && <b className="iclr-you">This paper</b>}
+                  {q.me ? q.title : <a href={`/iclr?id=${q.id}${lang === "zh" ? "&lang=zh" : ""}`}>{q.title}</a>}
+                  {q.me && <b className="iclr-you">{t.thisPaper}</b>}
                 </span>
                 <span className="iclr-chips">{q.ratings.map((r, j) => <Chip key={j} r={r} />)}</span>
                 <span className="iclr-mn">{q.mean.toFixed(2)}</span>
@@ -231,22 +232,22 @@ export function IclrStanding({ stats, title, area, ratings: real, confidences, p
               </li>
             ))}
           </ol>
-          <p className="iclr-note">This shows who the paper is up against in its niche. It does not change the chance above: we checked, and a weaker batch doesn&apos;t help (see below).</p>
+          <p className="iclr-note">{t.batchFoot}</p>
         </section>
       )}
 
       {similarLast.length > 0 && (
-        <section className="iclr-card" aria-label="Closest accepted papers last year">
+        <section className="iclr-card" aria-label={t.lastAccTitle}>
           <div className="iclr-bh">
-            <h2>Closest accepted papers from ICLR 2026</h2>
-            <p>What got in last year in this corner (scores on last year&apos;s 0–10 scale)</p>
+            <h2>{t.lastAccTitle}</h2>
+            <p>{t.lastAccNote}</p>
           </div>
           <ol className="iclr-list iclr-list--last">
             {similarLast.map((q) => (
               <li key={q.title}>
                 <span className="iclr-t">{q.title}</span>
                 <span className="iclr-chips">{q.ratings.map((r, j) => <i key={j} className="iclr-chip">{r}</i>)}</span>
-                <span className="iclr-pill">{q.outcome[0].toUpperCase() + q.outcome.slice(1)}</span>
+                <span className="iclr-pill">{t.pill[q.outcome] ?? q.outcome}</span>
               </li>
             ))}
           </ol>
