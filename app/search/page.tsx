@@ -37,7 +37,7 @@ export default async function SearchPage({ searchParams }: Props) {
       {authors.length > 0 && (
         <section className="author-hits" aria-label="Authors">
           <h2>
-            {authors.length === 1 ? "Author" : `${authors.length} authors`} named {authors[0].name}
+            {authors.length === 1 ? `Author named ${authors[0].name}` : `${authors.length} authors matching “${query}”`}
           </h2>
           <ul>
             {authors.map((a) => (
@@ -45,7 +45,7 @@ export default async function SearchPage({ searchParams }: Props) {
                 <Link href={`/author/${encodeURIComponent(a.name)}${a.ids.length ? `?a=${a.ids.join(",")}` : ""}`} rel="nofollow">
                   <b>{a.name}</b>
                   <span>{[a.institution, a.topic].filter(Boolean).join(" · ") || (a.ids.length ? "Institution unknown" : "Papers on Good Papers")}</span>
-                  <small>{a.ids.length ? `${a.works.toLocaleString("en-US")} papers` : `${a.works} found here`}</small>
+                  <small>{a.ids.length ? `${a.works.toLocaleString("en-US")} paper${a.works === 1 ? "" : "s"}` : `${a.works} found here`}</small>
                 </Link>
               </li>
             ))}
