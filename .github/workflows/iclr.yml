@@ -1,0 +1,29 @@
+# ICLR standing page (/iclr): once a day, pulls Paper Copilot's crawl of OpenReview and writes the
+# submissions whose scores or status changed (scripts/iclr_sync.py). Neighbours were computed once,
+# locally, with --full. Turn this off (or move the year on) after decisions are out.
+# Needs repository secrets: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+name: iclr
+
+on:
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: iclr
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install httpx numpy
+      - run: python scripts/iclr_sync.py 2027 --download
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
