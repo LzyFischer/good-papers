@@ -12,7 +12,8 @@ export type IclrStats = {
   hist: [number, number][];
   counts: { submitted: number; reviewed: number; live: number; withdrawn: number; deskRejected: number };
   lastBins?: [number, number, number][];
-  model: { coef: number[]; intercept: number };
+  confScale?: [number, number];
+  model: { coef: number[]; intercept: number; shift?: number; targetShare?: number };
 };
 
 export type IclrPaper = {

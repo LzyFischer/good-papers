@@ -25,16 +25,21 @@ const mean = (a: number[]) => a.reduce((s, x) => s + x, 0) / a.length;
 const std = (a: number[]) => { const m = mean(a); return Math.sqrt(mean(a.map((x) => (x - m) ** 2))); };
 const fmt = (p: number) => (p < 0.01 ? "<1%" : p > 0.99 ? ">99%" : `${Math.round(p * 100)}%`);
 
-function useModel(stats: IclrStats) {
+function useModel(stats: IclrStats, confidences: number[]) {
   return useMemo(() => {
     const ref = { mean: table(stats.ref.mean), min: table(stats.ref.min), max: table(stats.ref.max) };
+    const [mu, sd] = stats.confScale ?? [0, 1];
+    // mean z-scored confidence of the reviewers giving the lowest (highest) score; unknown counts as average
+    const edge = (r: number[], e: number) => mean(r.flatMap((a, i) => (a === e ? [confidences[i] ? (confidences[i] - mu) / sd : 0] : [])));
     return (r: number[]) => {
-      const pm = pct(ref.mean, mean(r));
-      const f = [pm, pct(ref.min, Math.min(...r)), pct(ref.max, Math.max(...r)), std(r) / stats.sdMean, pm * pm, pm ** 3];
+      const pm = pct(ref.mean, Math.round(mean(r) * 1e4) / 1e4);
+      const lo = Math.min(...r), hi = Math.max(...r);
+      const f = [pm, pct(ref.min, lo), pct(ref.max, hi), std(r) / stats.sdMean, pm * pm, pm ** 3];
+      if (stats.model.coef.length > 6) f.push(edge(r, lo), edge(r, hi));
       const z = stats.model.intercept + f.reduce((s, x, i) => s + x * stats.model.coef[i], 0);
       return { p: 1 / (1 + Math.exp(-z)), pm };
     };
-  }, [stats]);
+  }, [stats, confidences]);
 }
 
 export function IclrDistribution({ stats, at, you = "You" }: { stats: IclrStats; at?: number; you?: string }) {
@@ -89,7 +94,7 @@ export function IclrStanding({ lang = "en", stats, title, area, ratings: real, c
   pool: IclrNeighbor[]; similarLast: { title: string; outcome: string; ratings: number[] }[];
 }) {
   const t = ICLR_COPY[lang];
-  const chance = useModel(stats);
+  const chance = useModel(stats, confidences);
   const [ratings, setRatings] = useState(real);
   const [size, setSize] = useState(15);
   const [seed, setSeed] = useState(0);

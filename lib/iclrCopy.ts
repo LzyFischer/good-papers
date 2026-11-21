@@ -68,7 +68,7 @@ export const ICLR_COPY = {
       agreeP: "Same total score, e.g. 4, 6, 6 versus 2, 6, 8.",
     },
     foot: (y: number, lo: number, hi: number) =>
-      `How the chance is computed: the paper's rank among this year's submissions (mean, lowest and highest score, and how much reviewers disagree), calibrated on ICLR 2024–2026 decisions. Ranks, not raw scores, because the scale changes almost every year (${y} uses ${lo}–${hi}). Held out one year at a time it ranks papers well (AUC 0.89–0.95), but any single year can run 5–10 points above or below, and it was fitted on final scores while these are still before the rebuttal. Similar papers are found with SPECTER2. Not affiliated with ICLR or OpenReview.`,
+      `How the chance is computed: the paper's rank among this year's submissions (mean, lowest and highest score, how much reviewers disagree, and how confident the lowest and highest scorers are), calibrated on ICLR 2024–2026 decisions, then scaled so that a quarter of all submissions get in (ICLR accepted 27–32% in 2024–2026, and ${y} has twice the submissions). Ranks, not raw scores, because the scale changes almost every year (${y} uses ${lo}–${hi}). Held out one year at a time it ranks papers well (AUC 0.89–0.95), but any single year can run 5–10 points above or below, and it was fitted on final scores while these are still before the rebuttal. Similar papers are found with SPECTER2. Not affiliated with ICLR or OpenReview.`,
     switchTo: "中文",
   },
   zh: {
@@ -134,7 +134,7 @@ export const ICLR_COPY = {
       agreeP: "总分相同，例如 4、6、6 对比 2、6、8。",
     },
     foot: (y: number, lo: number, hi: number) =>
-      `录用概率怎么算：用这篇论文在今年全部投稿中的排名（平均分、最低分、最高分，以及审稿人的分歧程度），并用 ICLR 2024–2026 的录用结果校准。用排名而不是原始分数，是因为评分制度几乎每年都变（${y} 用的是 ${lo}–${hi} 分制）。每次留出一年做验证，排序效果不错（AUC 0.89–0.95），但单独某一年整体可能偏高或偏低 5 到 10 个百分点；而且模型是用 rebuttal 之后的最终分数训练的，现在的分数还在 rebuttal 之前。相似论文用 SPECTER2 计算。本站与 ICLR、OpenReview 无关。`,
+      `录用概率怎么算：用这篇论文在今年全部投稿中的排名（平均分、最低分、最高分、审稿人的分歧程度，以及打最低分和最高分的审稿人有多确定），用 ICLR 2024–2026 的录用结果校准，再整体缩放到全部投稿的四分之一被录用（2024–2026 年 ICLR 录用率在 27%–32%，${y} 的投稿量翻了一倍）。用排名而不是原始分数，是因为评分制度几乎每年都变（${y} 用的是 ${lo}–${hi} 分制）。每次留出一年做验证，排序效果不错（AUC 0.89–0.95），但单独某一年整体可能偏高或偏低 5 到 10 个百分点；而且模型是用 rebuttal 之后的最终分数训练的，现在的分数还在 rebuttal 之前。相似论文用 SPECTER2 计算。本站与 ICLR、OpenReview 无关。`,
     switchTo: "EN",
   },
 };

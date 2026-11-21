@@ -74,22 +74,55 @@ def submissions(year: int, download: bool) -> list[dict]:
 
 
 def stats(rows: list[dict]) -> dict:
-    full = [r["ratings"] for r in rows if len(r["ratings"]) >= 3]
-    ref = np.array([[np.mean(a), np.min(a), np.max(a)] for a in full])
+    full = [r for r in rows if len(r["ratings"]) >= 3]
+    ref = np.array([[np.mean(r["ratings"]), np.min(r["ratings"]), np.max(r["ratings"])] for r in full])
     grid = np.linspace(1, 4, 121) if ref[:, 0].max() <= 4 else np.linspace(0, 10, 121)
     density = np.exp(-((grid[:, None] - ref[None, :, 0]) / (0.04 * (grid[-1] - grid[0]))) ** 2 / 2).sum(1)
-    return {
+    conf = np.array([c for r in rows for c in r["confidences"] if c], float)
+    st = {
         "ref": {k: sorted(Counter(ref[:, j].round(4).tolist()).items()) for j, k in enumerate(["mean", "min", "max"])},
         "sdMean": float(ref[:, 0].std()),
-        "spreadP75": float(np.quantile([np.std(a) for a in full], 0.75)),
+        "spreadP75": float(np.quantile([np.std(r["ratings"]) for r in full], 0.75)),
+        "confScale": [float(conf.mean()), float(conf.std())],
         "scale": [float(grid[0]), float(grid[-1])],
         "hist": list(zip(grid.round(3).tolist(), density.round(1).tolist())),
         "counts": {"submitted": len(rows), "reviewed": len(full),
-                   "live": sum(1 for r in rows if r["outcome"] == "pending" and len(r["ratings"]) >= 3),
+                   "live": sum(1 for r in full if r["outcome"] == "pending"),
                    "withdrawn": sum(1 for r in rows if r["outcome"] == "withdrawn"),
                    "deskRejected": sum(1 for r in rows if r["outcome"] == "desk_rejected")},
         "model": json.loads((HERE / "iclr-model.json").read_text()),
     }
+    # One shift of every paper's log-odds so the expected accepts are the target share of all submissions.
+    live = [r for r in full if r["outcome"] == "pending"]
+    z = np.array([logit(st, r["ratings"], r["confidences"]) for r in live])
+    want = st["model"].get("targetShare", 0) * len(rows)
+    if want and len(z):
+        lo, hi = -10.0, 10.0
+        for _ in range(60):
+            mid = (lo + hi) / 2
+            lo, hi = (mid, hi) if (1 / (1 + np.exp(-(z + mid)))).sum() < want else (lo, mid)
+        st["model"]["shift"] = round((lo + hi) / 2, 4)
+        st["model"]["intercept"] += st["model"]["shift"]
+    return st
+
+
+def pct_in(pairs: list, v: float) -> float:
+    n = sum(c for _, c in pairs)
+    below = sum(c for x, c in pairs if x < v - 1e-9)
+    at = sum(c for x, c in pairs if abs(x - v) < 1e-6)
+    return (below + at / 2) / n
+
+
+def logit(st: dict, ratings: list[float], confs: list[float]) -> float:
+    """The page's formula (components/IclrStanding.tsx), before any target shift."""
+    mu, sd = st["confScale"]
+    def edge(pick):
+        e = pick(ratings)
+        return float(np.mean([((c - mu) / sd) if c else 0.0 for a, c in zip(ratings, confs) if a == e]))
+    pm = pct_in(st["ref"]["mean"], round(float(np.mean(ratings)), 4))
+    f = [pm, pct_in(st["ref"]["min"], min(ratings)), pct_in(st["ref"]["max"], max(ratings)),
+         float(np.std(ratings)) / st["sdMean"], pm ** 2, pm ** 3, edge(min), edge(max)]
+    return st["model"]["intercept"] + sum(x * c for x, c in zip(f, st["model"]["coef"]))
 
 
 def last_year(year: int) -> list[list[int]]:
@@ -140,7 +173,7 @@ def main() -> None:
     a = ap.parse_args()
     rows = submissions(a.year, a.download)
     st = stats(rows)
-    print(f"ICLR {a.year}: {st['counts']}", flush=True)
+    print(f"ICLR {a.year}: {st['counts']}, odds shifted {st['model'].get('shift', 0):+.3f} for a {st['model'].get('targetShare', 0):.0%} share", flush=True)
     http = db()
 
     if a.full:
