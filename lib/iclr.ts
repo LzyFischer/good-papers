@@ -76,3 +76,13 @@ export function openreviewId(q: string): string | null {
   const t = q.trim(); // forum ids are 10 mixed-case characters, unlike a 10-letter word
   return /^[A-Za-z0-9_-]{10}$/.test(t) && /[A-Z0-9]/.test(t) && /[a-z]/.test(t) ? t : null;
 }
+
+export type IclrTopic = { key: string; n: number; left: number; mean: number | null; expected: number; batch?: number; area?: string | null; lastN?: number; lastRate?: number };
+export type IclrTopics = { areas: IclrTopic[]; keywords: IclrTopic[] };
+
+/** Competition by primary area and by author keyword (scripts/iclr_topics.py; migration 031). */
+export async function iclrTopics(year = ICLR_YEAR): Promise<IclrTopics | null> {
+  const { data, error } = await serverClient().from("iclr_stats").select("topics").eq("year", year).maybeSingle();
+  if (error) return null;
+  return ((data as { topics: IclrTopics | null } | null)?.topics) ?? null;
+}

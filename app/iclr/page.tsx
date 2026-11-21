@@ -3,7 +3,8 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { IclrDistribution, IclrStanding } from "@/components/IclrStanding";
-import { ICLR_YEAR, iclrPaper, iclrPool, iclrSearch, iclrStats, openreviewId } from "@/lib/iclr";
+import { IclrTopics } from "@/components/IclrTopics";
+import { ICLR_YEAR, iclrPaper, iclrPool, iclrSearch, iclrStats, iclrTopics, openreviewId } from "@/lib/iclr";
 import { ICLR_COPY, type IclrCopy, type Lang } from "@/lib/iclrCopy";
 
 type Props = { searchParams: Promise<{ id?: string; q?: string; lang?: string }> };
@@ -80,6 +81,7 @@ export default async function IclrPage({ searchParams }: Props) {
   if (id && !paper) notFound();
   const pool = paper ? await iclrPool(paper.neighbors) : [];
   const results = !paper && query ? await iclrSearch(query) : [];
+  const topics = !paper && !query ? await iclrTopics() : null;
   const updated = new Date(stats.updated_at).toLocaleDateString(lang === "zh" ? "zh-CN" : "en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
   return (
@@ -129,6 +131,7 @@ export default async function IclrPage({ searchParams }: Props) {
         )
       ) : (
         !query && (
+          <>
           <section className="iclr-card" aria-label={t.allTitle}>
             <div className="iclr-bh">
               <h2>{t.allTitle}</h2>
@@ -136,6 +139,8 @@ export default async function IclrPage({ searchParams }: Props) {
             </div>
             <IclrDistribution stats={s} you={t.you} />
           </section>
+          {topics && <IclrTopics data={topics} lang={lang} />}
+          </>
         )
       )}
 

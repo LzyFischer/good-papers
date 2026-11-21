@@ -213,7 +213,25 @@ def main() -> None:
                     headers={"Prefer": "resolution=merge-duplicates,return=minimal"})
     if res.status_code >= 300:
         raise SystemExit(f"stats write failed: {res.status_code} {res.text[:300]}")
+    write_topics(http, a.year, rows, st)
     print("done", flush=True)
+
+
+def write_topics(http: httpx.Client, year: int, rows: list[dict], st: dict) -> None:
+    """Competition by area and keyword (scripts/iclr_topics.py), keeping the locally computed fields.
+    Needs migration 031; without it, says so and moves on."""
+    import iclr_topics as T
+
+    old = http.get("/iclr_stats", params={"select": "topics", "year": f"eq.{year}"})
+    if old.status_code >= 300:
+        print(f"topics skipped (run migration 031): {old.text[:120]}", flush=True)
+        return
+    keep = (old.json() or [{}])[0].get("topics") or {}
+    chance = {r["id"]: float(1 / (1 + np.exp(-logit(st, r["ratings"], r["confidences"]))))
+              for r in rows if r["outcome"] == "pending" and len(r["ratings"]) >= 3}
+    t = T.topics(rows, T.raw_keywords(year), chance, keep)
+    res = http.patch("/iclr_stats", params={"year": f"eq.{year}"}, json={"topics": t}, headers={"Prefer": "return=minimal"})
+    print(f"topics: {len(t['areas'])} areas, {len(t['keywords'])} keywords" if res.status_code < 300 else f"topics write failed: {res.text[:200]}", flush=True)
 
 
 if __name__ == "__main__":

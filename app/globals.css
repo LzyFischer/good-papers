@@ -1388,3 +1388,29 @@ button.shelf-more::after { content: none; }
 .iclr-lang { flex: none; margin-top: .35rem; padding: .3rem .7rem; border: 1px solid var(--line-strong); border-radius: 999px; font-size: .82rem; color: var(--ink); background: var(--surface); }
 .iclr-lang:hover { border-color: var(--ink); }
 .iclr-top .iclr-crumb { margin: .4rem 0 1rem; }
+/* ICLR competition by topic (components/IclrTopics.tsx) */
+.iclr-kwsearch { flex: 1 1 14rem; min-width: 0; padding: .45rem .7rem; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--surface); color: var(--ink); font: inherit; font-size: .88rem; }
+.iclr-tablewrap { overflow-x: auto; margin-top: .4rem; }
+.iclr-table { width: 100%; border-collapse: collapse; font-size: .86rem; font-variant-numeric: tabular-nums; }
+.iclr-table th, .iclr-table td { padding: .45rem .55rem; border-top: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.iclr-table thead th { border-top: 0; font-weight: 600; color: var(--muted); font-size: .76rem; }
+.iclr-table thead button { all: unset; cursor: pointer; }
+.iclr-table thead button:hover { color: var(--ink); }
+.iclr-table th[scope="row"], .iclr-table thead th:first-child { text-align: left; white-space: normal; font-weight: 600; color: var(--ink); min-width: 12rem; }
+.iclr-kw { all: unset; cursor: pointer; }
+.iclr-kw:hover { color: var(--link); }
+.iclr-exp { display: inline-block; min-width: 3.6rem; padding: .1rem .35rem; border-radius: 6px; font-weight: 700;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--t5) 22%, var(--surface)) var(--w), transparent var(--w)); }
+.iclr-more { margin-top: .6rem; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); border-radius: 9px; padding: .4rem .8rem; font: 600 .82rem var(--body); cursor: pointer; }
+.iclr-scatter { margin: .4rem 0 .6rem; }
+.iclr-scatter svg { width: 100%; height: auto; display: block; }
+.iclr-scatter text { font: 11px var(--body); fill: var(--muted); }
+.iclr-scatter .iclr-axis { font-size: 12px; }
+.iclr-scatter figcaption { font-size: .78rem; color: var(--muted); margin-top: .3rem; }
+.iclr-grid { stroke: var(--line); }
+.iclr-dot { fill: color-mix(in srgb, var(--mold) 55%, transparent); stroke: var(--surface); stroke-width: .8; cursor: pointer; transition: opacity .15s; }
+.iclr-dot.is-dim { opacity: .18; }
+.iclr-dot.is-hit, .iclr-dot.is-hover { fill: var(--lime); stroke: var(--ink); stroke-width: 1.2; opacity: 1; }
+.iclr-tip { fill: var(--night); }
+.iclr-scatter .iclr-tipt { fill: var(--night-ink); font-weight: 700; font-size: 12px; }
+.iclr-scatter .iclr-tips { fill: var(--night-muted); font-size: 11px; }

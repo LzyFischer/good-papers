@@ -1414,3 +1414,6 @@ create policy "iclr submissions are public" on public.iclr_submissions for selec
 drop policy if exists "iclr stats are public" on public.iclr_stats;
 create policy "iclr stats are public" on public.iclr_stats for select using (true);
 
+
+-- 031: ICLR competition by topic
+alter table public.iclr_stats add column if not exists topics jsonb;
