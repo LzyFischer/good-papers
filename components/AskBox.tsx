@@ -18,6 +18,9 @@ export function AskBox({ value = "", dark = false }: { value?: string; dark?: bo
       <div className="ask-chips">
         <span className="ask-chip ask-chip--featured">
           <span className="ask-chip-badge">New</span>
+          <Link href="/iclr">ICLR 2027: what are your odds?</Link>
+        </span>
+        <span className="ask-chip ask-chip--featured">
           <Link href="/neurips">NeurIPS 2026</Link>
           <span aria-hidden="true">·</span>
           <Link href="/neurips?track=oral">Orals</Link>

@@ -59,7 +59,11 @@ button { font: inherit; }
 .nav { display: flex; gap: 1.1rem; font: 600 .92rem var(--body); }
 .nav a { color: var(--night-muted); text-decoration: none; }
 .nav a:hover { color: var(--head-ink); }
-@media (max-width: 52rem) { .nav { display: none; } }
+/* Narrow screens: the sections become their own row under the search box, scrolling sideways if needed */
+@media (max-width: 52rem) {
+  .nav { order: 10; flex-basis: 100%; gap: .85rem; overflow-x: auto; white-space: nowrap; font-size: .84rem; padding-bottom: .1rem; scrollbar-width: none; }
+  .nav::-webkit-scrollbar { display: none; }
+}
 .top .search { flex: 1 1 16rem; max-width: 30rem; }
 .auth { display: inline-flex; gap: 1rem; align-items: center; margin-left: auto; min-height: 2.25rem; }
 .auth-link {
