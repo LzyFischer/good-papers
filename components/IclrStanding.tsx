@@ -128,10 +128,11 @@ export function IclrStanding({ lang = "en", stats, title, area, ratings: real, c
     ranks.sort((a, b) => a - b);
     // if each AC accepted a fixed share of their batch: the share the year's target implies among papers in review
     const cut = quota * (size + 1);
-    const raw = ranks.filter((r) => r <= cut).length / 1000;
-    // raw shares are too sure of themselves (0% and 100% papers got in 4-9% and 88-95% of the time in
-    // 2024-2026): map them through the fit from scripts/iclr_batch_calib.py
     const c = stats.model.batchCalib;
+    // soft quota (scripts/iclr_batch_calib.py): a draw counts 1 / (1 + e^((rank - cutoff) / tau)), so papers
+    // well below the line still differ; then the fit from past years maps it to a chance
+    const tau = c?.tau ?? 0;
+    const raw = ranks.reduce((s, r) => s + (tau ? 1 / (1 + Math.exp((r - cut) / tau)) : r <= cut ? 1 : 0), 0) / 1000;
     const quotaChance = c ? (() => { const r = Math.min(1 - c.eps, Math.max(c.eps, raw)); return 1 / (1 + Math.exp(-(c.a * Math.log(r / (1 - r)) + c.b + (c.shift ?? 0)))); })() : raw;
     return { med: ranks[500], quota: quotaChance, lo: ranks[100], hi: ranks[900] };
     // eslint-disable-next-line react-hooks/exhaustive-deps

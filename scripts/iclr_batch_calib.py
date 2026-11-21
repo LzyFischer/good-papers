@@ -3,7 +3,7 @@
 For each decided paper of ICLR 2024-2026 (3+ reviews), simulate the page's batches: 15 drawn from
 its 50 nearest decided submissions in the same primary area (SPECTER2, closer ones likelier,
 weight exp(-rank/25)), and count
-how often it makes a quota equal to that year's acceptance share. Then fit actual outcome against that
+how close it comes to a quota equal to that year's acceptance share (soft, TAU). Then fit actual outcome against that
 raw share (Platt, on the logit), leave-one-year-out, and write the fit into scripts/iclr-model.json.
     worker/.venv-embed/bin/python scripts/iclr_batch_calib.py
 """
@@ -20,6 +20,9 @@ HERE = Path(__file__).resolve().parent
 DATA = HERE / "data"
 ACC = {"oral", "spotlight", "poster"}
 POOL, K, DRAWS = 50, 15, 300
+# Soft quota: each draw scores 1 / (1 + exp((rank - cutoff) / TAU)) instead of made-it-or-not, so papers
+# far below the line still differ (a hard cut left 40% of papers on the calibration floor).
+TAU = 2.0
 EPS = 0.005
 
 
@@ -46,7 +49,7 @@ def year(y: int, rng: np.random.Generator) -> tuple[np.ndarray, np.ndarray]:
         g = logw[None, None, :] - np.log(-np.log(rng.random((len(nb), DRAWS, POOL))))
         pick = np.argsort(-g, axis=2)[:, :, :K]
         rank = 1 + np.take_along_axis(np.broadcast_to(ahead[:, None, :], pick.shape[:2] + (POOL,)), pick, 2).sum(2)
-        out[s:s + len(nb)] = (rank <= slots).mean(1)
+        out[s:s + len(nb)] = (1 / (1 + np.exp((rank - slots) / TAU))).mean(1)
     print(f"ICLR {y}: {len(rows)} papers, quota {q:.0%} of {K + 1}", flush=True)
     return out, acc
 
@@ -73,7 +76,7 @@ def main() -> None:
     model = json.loads(f.read_text())
     # keep a level shift fitted on the year in review (its calibrated mean against its quota)
     shift = (model.get("batchCalib") or {}).get("shift", 0)
-    model["batchCalib"] = {"a": round(a, 4), "b": round(b, 4), "eps": EPS, "shift": shift, "draws": "15 of the 50 nearest in the same primary area, weight exp(-rank/25)"}
+    model["batchCalib"] = {"a": round(a, 4), "b": round(b, 4), "eps": EPS, "tau": TAU, "shift": shift, "draws": "15 of the 50 nearest in the same primary area, weight exp(-rank/25)"}
     f.write_text(json.dumps(model))
     print(f"calibrated batch chance = sigmoid({a:.3f} * logit(raw) {b:+.3f}); wrote {f.name}")
 

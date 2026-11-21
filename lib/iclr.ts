@@ -13,7 +13,7 @@ export type IclrStats = {
   counts: { submitted: number; reviewed: number; live: number; withdrawn: number; deskRejected: number };
   lastBins?: [number, number, number][];
   confScale?: [number, number];
-  model: { coef: number[]; intercept: number; shift?: number; targetShare?: number; batchCalib?: { a: number; b: number; eps: number; shift?: number } };
+  model: { coef: number[]; intercept: number; shift?: number; targetShare?: number; batchCalib?: { a: number; b: number; eps: number; tau?: number; shift?: number } };
 };
 
 export type IclrPaper = {
