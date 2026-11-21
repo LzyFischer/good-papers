@@ -109,12 +109,15 @@ export function IclrStanding({ lang = "en", stats, title, area, ratings: real, c
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const batch = useMemo(() => draw(pool.length, size, rng(seed * 7919 + size)), [pool.length, size, seed]);
   const rankIn = (ids: number[]) => 1 + ids.filter((i) => means[i] > m + 1e-9).length + ids.filter((i) => Math.abs(means[i] - m) < 1e-9).length / 2;
+  const quota = Math.min(0.9, ((stats.model.targetShare ?? 0) * stats.counts.submitted) / Math.max(1, stats.counts.live) || 1 / 3);
   const summary = useMemo(() => {
     if (pool.length < size) return null;
     const ranks: number[] = [], random = rng(20270);
     for (let t = 0; t < 1000; t++) ranks.push(rankIn(draw(pool.length, size, random)));
     ranks.sort((a, b) => a - b);
-    return { med: ranks[500], topThird: ranks.filter((r) => r <= (size + 1) / 3).length / 1000, lo: ranks[100], hi: ranks[900] };
+    // if each AC accepted a fixed share of their batch: the share the year's target implies among papers in review
+    const cut = quota * (size + 1);
+    return { med: ranks[500], quota: ranks.filter((r) => r <= cut).length / 1000, lo: ranks[100], hi: ranks[900] };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pool.length, size, m, means]);
 
@@ -219,7 +222,7 @@ export function IclrStanding({ lang = "en", stats, title, area, ratings: real, c
           {summary && (
             <div className="iclr-sum">
               <div><b>{t.sumRank(Math.round(summary.med), size + 1)}</b><span>{t.sumRankNote}</span></div>
-              <div><b>{Math.round(summary.topThird * 100)}%</b><span>{t.sumTop}</span></div>
+              <div><b>{fmt(summary.quota)}</b><span>{t.sumQuota(Math.round(quota * 100))}</span></div>
               <div><b>{Math.round(summary.lo)}–{Math.round(summary.hi)}</b><span>{t.sumRange}</span></div>
             </div>
           )}
