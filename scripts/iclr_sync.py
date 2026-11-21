@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -208,12 +209,21 @@ def main() -> None:
     print(f"{len(changed)} rows to write", flush=True)
     if a.dry:
         return
-    for i in range(0, len(changed), 500):
-        batch = [{**r, "updated_at": "now"} for r in changed[i:i + 500]]  # Postgres reads 'now' as the current time
-        res = http.post("/iclr_submissions", params={"on_conflict": "id"}, json=batch,
-                        headers={"Prefer": "resolution=merge-duplicates,return=minimal"})
-        if res.status_code >= 300:
-            raise SystemExit(f"write failed: {res.status_code} {res.text[:300]}")
+    step = 200 if a.full else 500  # full rows carry 60 neighbour ids each; the small database times out on bigger writes
+    for i in range(0, len(changed), step):
+        batch = [{**r, "updated_at": "now"} for r in changed[i:i + step]]  # Postgres reads 'now' as the current time
+        for attempt in range(4):
+            try:
+                res = http.post("/iclr_submissions", params={"on_conflict": "id"}, json=batch,
+                                headers={"Prefer": "resolution=merge-duplicates,return=minimal"})
+                if res.status_code < 300:
+                    break
+                err = f"{res.status_code} {res.text[:300]}"
+            except httpx.TimeoutException as e:
+                err = f"timeout ({e})"
+            time.sleep(5 * (attempt + 1))
+        else:
+            raise SystemExit(f"write failed at row {i}: {err}")
     res = http.post("/iclr_stats", params={"on_conflict": "year"}, json=[{"year": a.year, "data": st, "updated_at": "now"}],
                     headers={"Prefer": "resolution=merge-duplicates,return=minimal"})
     if res.status_code >= 300:
