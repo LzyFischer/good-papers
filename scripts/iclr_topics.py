@@ -4,7 +4,7 @@ acceptance rate under the page's model (sum of chances / all submissions in the 
 
 scripts/iclr_sync.py calls topics() daily. Two fields need local data and are kept from the last
 local run: batch strength (mean score of each paper's 15 nearest submissions, SPECTER2 vectors from
-scripts/iclr_embed.py) and last year's submissions and acceptance by area. Locally:
+scripts/iclr_embed.py, neighbours within the primary area) and last year's submissions and acceptance by area. Locally:
     worker/.venv-embed/bin/python scripts/iclr_topics.py 2027 [--write]
 """
 from __future__ import annotations
@@ -122,10 +122,13 @@ def local_extras(year: int, rows: list[dict], t: dict) -> None:
     have = np.array([i in mean for i in order])
     ids = [i for i, h in zip(order, have) if h]
     v, m = vec[have], np.array([mean[i] for i in ids])
+    area_of = {r["id"]: r["area"] or "" for r in rows}
+    ar = np.array([area_of.get(i, "") for i in ids])
     strength = {}
     for s in range(0, len(v), 3000):
         sim = v[s:s + 3000] @ v.T
-        sim[np.arange(len(sim)), np.arange(s, s + len(sim))] = -1
+        sim[np.arange(len(sim)), np.arange(s, s + len(sim))] = -9
+        sim -= 4 * (ar[None, :] != ar[s:s + len(sim), None])  # within the primary area, like a real AC batch
         for k, row in enumerate(np.argpartition(-sim, 15, axis=1)[:, :15]):
             strength[ids[s + k]] = float(m[row].mean())
     kmap = keyword_map([k for ks in raw_keywords(year).values() for k in ks])

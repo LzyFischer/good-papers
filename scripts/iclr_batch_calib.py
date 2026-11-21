@@ -1,7 +1,8 @@
 """Calibrates the page's batch-quota chance on past years.
 
 For each decided paper of ICLR 2024-2026 (3+ reviews), simulate the page's batches: 15 drawn from
-its 50 nearest decided submissions (SPECTER2, closer ones likelier, weight exp(-rank/25)), and count
+its 50 nearest decided submissions in the same primary area (SPECTER2, closer ones likelier,
+weight exp(-rank/25)), and count
 how often it makes a quota equal to that year's acceptance share. Then fit actual outcome against that
 raw share (Platt, on the logit), leave-one-year-out, and write the fit into scripts/iclr-model.json.
     worker/.venv-embed/bin/python scripts/iclr_batch_calib.py
@@ -27,13 +28,15 @@ def year(y: int, rng: np.random.Generator) -> tuple[np.ndarray, np.ndarray]:
     vec = np.load(DATA / f"iclr-{y}-decided-emb.npy").astype(np.float32)
     mean = np.array([np.mean([x["rating"] for x in r["reviews"]]) for r in rows])
     acc = np.array([r["outcome"] in ACC for r in rows])
+    area = np.array([r["area"] or "" for r in rows])
     q = acc.mean()
     slots = q * (K + 1)
     logw = -np.arange(POOL) / 25
     out = np.zeros(len(rows))
     for s in range(0, len(rows), 1000):
         sim = vec[s:s + 1000] @ vec.T
-        sim[np.arange(len(sim)), np.arange(s, s + len(sim))] = -1
+        sim[np.arange(len(sim)), np.arange(s, s + len(sim))] = -9
+        sim -= 4 * (area[None, :] != area[s:s + len(sim), None])  # batches stay inside a primary area
         part = np.argpartition(-sim, POOL, axis=1)[:, :POOL]
         nb = np.take_along_axis(part, np.argsort(-np.take_along_axis(sim, part, 1), 1), 1)  # closest first
         m_nb = mean[nb]                                   # (n, POOL)
@@ -70,7 +73,7 @@ def main() -> None:
     model = json.loads(f.read_text())
     # keep a level shift fitted on the year in review (its calibrated mean against its quota)
     shift = (model.get("batchCalib") or {}).get("shift", 0)
-    model["batchCalib"] = {"a": round(a, 4), "b": round(b, 4), "eps": EPS, "shift": shift, "draws": "15 of the 50 nearest, weight exp(-rank/25)"}
+    model["batchCalib"] = {"a": round(a, 4), "b": round(b, 4), "eps": EPS, "shift": shift, "draws": "15 of the 50 nearest in the same primary area, weight exp(-rank/25)"}
     f.write_text(json.dumps(model))
     print(f"calibrated batch chance = sigmoid({a:.3f} * logit(raw) {b:+.3f}); wrote {f.name}")
 

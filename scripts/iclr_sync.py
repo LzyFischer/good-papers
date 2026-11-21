@@ -139,22 +139,27 @@ def last_year(year: int) -> list[list[int]]:
 
 
 def neighbors(year: int, rows: list[dict]) -> tuple[dict[str, list[str]], dict[str, list[dict]]]:
-    """Each reviewed submission's 60 nearest (same year) and its 6 closest accepted papers of last year."""
+    """Each reviewed submission's 60 nearest (same year) and its 6 closest accepted papers of last year,
+    both within its primary area: ICLR hands each area's papers to that area's ACs, so a real AC batch
+    never mixes areas. Other areas only fill in if an area runs short."""
     reviewed = [r for r in json.loads((DATA / f"iclr-{year}.json").read_text()) if r["reviews"]]
     vec = np.load(DATA / f"iclr-{year}-all-emb.npy").astype(np.float32)
     assert len(vec) == len(reviewed), "re-run scripts/iclr_embed.py"
     ids = [r["id"] for r in reviewed]
+    area = np.array([r["area"] or "" for r in reviewed])
     last = [r for r in json.loads((DATA / f"iclr-{year - 1}.json").read_text()) if r["outcome"] in ACC | {"rejected"} and len(r["reviews"]) >= 3]
     lvec = np.load(DATA / f"iclr-{year - 1}-decided-emb.npy").astype(np.float32)
     acc = [i for i, r in enumerate(last) if r["outcome"] in ACC]
     lvec = lvec[acc]
+    larea = np.array([last[i]["area"] or "" for i in acc])
     near, prev = {}, {}
     for s in range(0, len(vec), 2000):
         sim = vec[s:s + 2000] @ vec.T
-        sim[np.arange(len(sim)), np.arange(s, s + len(sim))] = -1
+        sim[np.arange(len(sim)), np.arange(s, s + len(sim))] = -9
+        sim -= 4 * (area[None, :] != area[s:s + len(sim), None])  # cosine is at most 1: same area always first
         part = np.argpartition(-sim, 60, axis=1)[:, :60]
         top = np.take_along_axis(part, np.argsort(-np.take_along_axis(sim, part, 1), 1), 1)
-        ls = vec[s:s + 2000] @ lvec.T
+        ls = vec[s:s + 2000] @ lvec.T - 4 * (larea[None, :] != area[s:s + 2000, None])
         ltop = np.argsort(-ls, axis=1)[:, :6]
         for k in range(len(sim)):
             near[ids[s + k]] = [ids[j] for j in top[k]]
