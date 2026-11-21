@@ -15,6 +15,15 @@ function table(pairs: [number, number][]): Table {
   return { xs, below, at, n };
 }
 /** Share of the year's submissions below v, ties counted half (as in scripts/iclr_model.py). */
+/** [share strictly above v, share above or tied with v] */
+function aboveRange(t: Table, v: number): [number, number] {
+  let lo = 0, hi = t.xs.length;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (t.xs[m] < v - 1e-9) lo = m + 1; else hi = m; }
+  const exact = lo < t.xs.length && Math.abs(t.xs[lo] - v) < 1e-6;
+  const below = lo < t.xs.length ? t.below[lo] : t.n, tied = exact ? t.at[lo] : 0;
+  return [(t.n - below - tied) / t.n, (t.n - below) / t.n];
+}
+
 function pct(t: Table, v: number) {
   let lo = 0, hi = t.xs.length;
   while (lo < hi) { const m = (lo + hi) >> 1; if (t.xs[m] < v - 1e-9) lo = m + 1; else hi = m; }
@@ -103,6 +112,8 @@ export function IclrStanding({ lang = "en", stats, title, area, ratings: real, c
   const orig = chance(real).p;
   const { p, pm } = chance(ratings);
   const m = mean(ratings);
+  const meanTable = useMemo(() => table(stats.ref.mean), [stats]);
+  const ties = aboveRange(meanTable, Math.round(m * 1e4) / 1e4);
   const changed = ratings.some((r, i) => r !== real[i]);
   const means = useMemo(() => pool.map((q) => mean(q.ratings)), [pool]);
 
@@ -145,7 +156,7 @@ export function IclrStanding({ lang = "en", stats, title, area, ratings: real, c
       <section className="iclr-card" aria-label={t.allTitle}>
         <div className="iclr-bh">
           <h2>{t.allTitle}</h2>
-          <p>{t.allNote(stats.counts.reviewed, lo, hi)}{lang === "zh" ? "。" : ". "}{t.ahead(Math.round(pm * 100))}</p>
+          <p>{t.allNote(stats.counts.reviewed, lo, hi)}{lang === "zh" ? "。" : ". "}{t.ahead(Math.round((1 - ties[1]) * 100))}</p>
         </div>
         <IclrDistribution stats={stats} at={m} you={t.you} />
       </section>
@@ -160,7 +171,8 @@ export function IclrStanding({ lang = "en", stats, title, area, ratings: real, c
             <h1 className="iclr-title">{title}</h1>
             <div className="iclr-facts">
               <span><b>{m.toFixed(2)}</b>{t.meanScore}</span>
-              <span><b>{t.top(Math.max(1, Math.round((1 - pm) * 100)))}</b>{t.ofSubs}</span>
+              {/* counting every paper tied at this mean as ahead: the cautious figure */}
+              <span><b>{t.top(Math.max(1, Math.round(ties[1] * 100)))}</b>{t.ofSubs}</span>
               {changed && <span><b>{t.pts(Math.round((p - orig) * 100))}</b>{t.vsReal(fmt(orig))}</span>}
             </div>
           </div>
